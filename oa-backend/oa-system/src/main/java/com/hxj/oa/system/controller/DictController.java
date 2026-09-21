@@ -1,24 +1,28 @@
 package com.hxj.oa.system.controller;
 
+import com.hxj.oa.common.annotation.Audit;
 import com.hxj.oa.common.api.R;
+import com.hxj.oa.common.security.RequirePerm;
+import com.hxj.oa.system.dto.DictSaveReq;
 import com.hxj.oa.system.entity.SysDict;
 import com.hxj.oa.system.service.DictService;
+import com.hxj.oa.system.service.OrgAdminService;
 import lombok.RequiredArgsConstructor;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
 
 /**
- * 字典管理：读接口对全体登录用户开放（前端启动预热一次）。
+ * 字典管理：读接口对全体登录用户开放（前端启动预热一次），写接口挂 {@code system:dict}。
  *
- * <p><b>当前本控制器只有读接口，没有写接口</b>（写接口曾实现过又被回退）。
- * 若要新增 POST/PUT/DELETE，必须同时满足三件事，缺一不可：
- * <ol>
- *   <li>挂 {@code system:dict} 权限点（写接口绝不能只靠登录态）；</li>
- *   <li>补 {@code @Audit(module = "system")}（主数据变更必须留痕）；</li>
- *   <li>补回对应的接口级用例（写接口的越权与唯一性只有用例能钉住）。</li>
- * </ol>
+ * <p>与 {@link DepartmentController} 同一套约定：写接口必须同时满足
+ * 挂权限点、补 {@code @Audit(module = "system")}、有接口级用例三件事。
+ *
+ * <p>注意 {@code SysDict.companyId} 恒为 NULL（全局字典，与库中既有 17 条一致），
+ * 而 MySQL 唯一索引认为多个 NULL 互不相同 ⇒ {@code uk_dict} **不会**拦住重复的
+ * (dictType, dictCode)。查重由 {@code OrgAdminService#assertDictFree} 显式做。
  */
 @RestController
 @RequestMapping("/api/dicts")
@@ -26,6 +30,7 @@ import java.util.Map;
 public class DictController {
 
     private final DictService dictService;
+    private final OrgAdminService orgAdminService;
 
     /** 全量字典（按类型分组），前端启动时预热一次 */
     @GetMapping
@@ -36,6 +41,28 @@ public class DictController {
     @GetMapping("/{dictType}")
     public R<List<SysDict>> byType(@PathVariable String dictType) {
         return R.ok(dictService.listByType(dictType));
+    }
+
+    @PostMapping
+    @RequirePerm("system:dict")
+    @Audit(module = "system", action = "createDict")
+    public R<SysDict> create(@Valid @RequestBody DictSaveReq req) {
+        return R.ok(orgAdminService.createDict(req));
+    }
+
+    @PutMapping("/{id}")
+    @RequirePerm("system:dict")
+    @Audit(module = "system", action = "updateDict")
+    public R<SysDict> update(@PathVariable Long id, @Valid @RequestBody DictSaveReq req) {
+        return R.ok(orgAdminService.updateDict(id, req));
+    }
+
+    @DeleteMapping("/{id}")
+    @RequirePerm("system:dict")
+    @Audit(module = "system", action = "deleteDict")
+    public R<Void> delete(@PathVariable Long id) {
+        orgAdminService.deleteDict(id);
+        return R.ok(null, "已删除");
     }
 
 }
