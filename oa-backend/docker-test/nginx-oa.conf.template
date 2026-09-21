@@ -57,10 +57,16 @@ server {
     listen       443 ssl;
     server_name  @@SERVER_NAME@@;
 
-    # 证书是泛域名 *.wgit123.com，天然覆盖本站点，无需为新域名单独申请。
-    # 【注意有效期】当前这张证书 notAfter = 2026-10-13，**距今只剩三周**。
-    # 到期后浏览器会拦截，且因为 80 是 301 强制跳转，症状会是"整个站点打不开"
-    # 而不是"提示证书错误" —— 续期后覆盖同名文件再 reload nginx 即可。
+    # 证书文件被**三个站点共用**（hxj-oa-test / trace-mng-test / trace-api-test），
+    # 由服务器上的 certbot 自动续期并覆盖同名文件（见 docker-test/cert-deploy-hook.sh）。
+    # 不要手工替换这里的内容 —— 手工改过之后，下一次自动续期会把它覆盖掉，
+    # 而"我明明改过了"会让人怀疑是续期把配置弄坏了。
+    #
+    # 【历史】原先这张是外购的 Certum 通配符 *.wgit123.com，
+    # 2026-10-13 到期且没有任何自动续期（80 是 301 强制跳转，到期症状是
+    # "整站打不开"而不是"提示证书错误"，很容易误判成网络/后端问题）。
+    # 现已换成 Let's Encrypt 三域名证书（90 天有效、到期前 30 天自动续），
+    # 旧证书留在同目录 *.certum.bak 以备回退。
     ssl_certificate      /opt/https/wgit123.com.pem;
     ssl_certificate_key  /opt/https/wgit123.com.key;
     ssl_protocols        TLSv1.2 TLSv1.3;

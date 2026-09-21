@@ -30,7 +30,10 @@ QUIET=0
 # 【必须显式设 PATH】本脚本会被 cron / 非登录 shell 调用，那里的 PATH 通常只有
 # /usr/bin:/bin，而我们要用 `docker`、`ip`、`openssl`、`curl`。
 # 缺了它的表现很迷惑：HOST_IP 算成空串 ⇒ 所有 --resolve 变成空 IP ⇒ 逐项误报故障。
-export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+# 系统目录**放前面**（优先），同时保留调用方原有的 PATH：
+# 直接 `export PATH=<固定列表>` 会把调用方的 PATH 整个丢掉，
+# 于是任何包装/测试用的 PATH 注入都失效（本项目的桩测就因此没生效）。
+export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin${PATH:+:$PATH}"
 
 # ---------------------------------------------------------------- 坐标
 NGINX_CONF="/opt/docker/nginx/conf/include/hxj-oa-test.wgit123.com.conf"
@@ -44,12 +47,20 @@ HOST_IP=$(grep -oE 'server [0-9.]+:[0-9]+' "$NGINX_CONF" 2>/dev/null | head -1 |
 HOST_IP="${HOST_IP:-127.0.0.1}"
 
 # 同机其他项目（用于"我们没把别人搞挂"的回归）
-OTHER_SITES="trace-web-test.wgit123.com trace-mng-test.wgit123.com rlzx-wms-test.wgit123.com"
+# trace-api-test 也在列表里：它的 nginx 配置被我们改过（加 ACME 验证路径），
+# 凡是我们动过的别人的配置，就必须有回归覆盖 —— 否则改坏了没人知道。
+OTHER_SITES="trace-web-test.wgit123.com trace-mng-test.wgit123.com trace-api-test.wgit123.com rlzx-wms-test.wgit123.com"
 
 # 阈值
 DISK_MIN_FREE_PCT=20          # 根分区可用低于此值告警
 MEM_MIN_FREE_MB=500           # 可用内存低于此值告警
-CERT_MIN_DAYS=21              # 证书剩余低于此天数告警
+# 【为什么是 25 天而不是 21 天】证书现在由 certbot 自动续期，
+# 它在**剩余 30 天**时开始尝试续（certbot 默认 renew_before_expiry=30 days）。
+# 阈值定在 25 天 = 续期窗口打开 5 天后仍未成功 ⇒ 这时报警，
+# 剩下的 25 天足够人工介入。
+# 定得太小（如 21）会缩短处置时间；定得太大（如 35，早于续期窗口）
+# 则每轮都会先报一次"假警"再自动恢复 —— 这种周期性噪音最后就是没人看。
+CERT_MIN_DAYS=25              # 证书剩余低于此天数告警（见上方说明）
 
 # 【为什么 curl 参数用数组而不是字符串变量】
 # 写成 C="curl -s -m 10 --noproxy *" 再 `$C ...`，那个 `*` 会被**路径展开**吃掉：
@@ -97,7 +108,7 @@ if [ "$N_OA" = "1" ]; then
 elif [ "$N_OA" = "0" ]; then
   bad "恰好一个 OA 实例在服务" "一个都没跑"
 else
-  ok "恰好一个 OA 实例在服务" "两个在跑（$RUNNING_OA，浪费内存但不算故障）"
+  ok "恰好一个 OA 实例在服务" "两个在跑（${RUNNING_OA}，浪费内存但不算故障）"
 fi
 
 declare_check "实例健康状态(hc)"
@@ -187,7 +198,7 @@ expect_code "接口契约未暴露(/v3/api-docs=404)" 404 "$C2"
 declare_check "swagger-ui 未暴露"
 C3=$("${CURL[@]}" "${RES[@]}" -o /dev/null -w '%{http_code}' "https://${DOMAIN}/swagger-ui/index.html" 2>/dev/null)
 # 404 或 401 都算没暴露
-if [ "$C3" = "404" ] || [ "$C3" = "401" ]; then ok "swagger-ui 未暴露" "HTTP $C3"; else bad "swagger-ui 未暴露" "HTTP $C3（200 即等于对外公开契约）"; fi
+if [ "$C3" = "404" ] || [ "$C3" = "401" ]; then ok "swagger-ui 未暴露" "HTTP $C3"; else bad "swagger-ui 未暴露" "HTTP ${C3}（200 即等于对外公开契约）"; fi
 echo
 
 # ===========================================================================
@@ -253,7 +264,7 @@ fi
 
 declare_check "未污染同实例其他项目的 db0"
 D0=$(docker exec redis redis-cli -a "${RPW:-x}" -n 0 dbsize 2>/dev/null | tr -d '\r')
-if [ -n "$D0" ]; then ok "未污染同实例其他项目的 db0" "db0 keys=$D0（应为 WMS 的既有 25 个左右）"
+if [ -n "$D0" ]; then ok "未污染同实例其他项目的 db0" "db0 keys=${D0}（应为 WMS 的既有 25 个左右）"
 else skip "未污染同实例其他项目的 db0" "未取到 Redis 密码，无法核对"; fi
 echo
 
@@ -312,7 +323,7 @@ MISSING=""
 for chk in "${CHECKS[@]}"; do
   found=0
   for r in ${RESULTS[@]+"${RESULTS[@]}"}; do [ "$r" = "$chk" ] && { found=1; break; }; done
-  [ "$found" = 0 ] && MISSING="$MISSING 「$chk」"
+  [ "$found" = 0 ] && MISSING="$MISSING 「${chk}」"
 done
 
 echo "==================== 结论 ===================="

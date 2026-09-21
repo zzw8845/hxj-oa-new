@@ -104,12 +104,22 @@ scp -q "${SCP_OPTS[@]}" \
     "$DIR/Dockerfile" \
     "$DIR/docker-compose.yml" \
     "$DIR/run.sh" \
+    "$DIR/verify_deployed.sh" \
+    "$DIR/watchdog.sh" \
+    "$DIR/cert-deploy-hook.sh" \
+    "$DIR/patch-acme-location.py" \
     "$DIR/.env" \
     "$SSH_HOST:$REMOTE_DIR/"
 
-# .env 里有库口令、OSS 密钥与 JWT 私钥，权限收到最小
-ssh "${SSH_OPTS[@]}" "$SSH_HOST" "chmod 600 '$REMOTE_DIR/.env'"
-echo "✓ oa.jar / Dockerfile / docker-compose.yml / run.sh / .env 已同步（.env 已设为 600）"
+# .env 里有库口令、OSS 密钥与 JWT 私钥，权限收到最小。
+# 【为什么脚本也要显式同步】上一版只同步了 run.sh，于是 verify_deployed.sh /
+# watchdog.sh 只存在于服务器上、仓库里没有 —— 服务器上的版本改了什么没人知道，
+# 也不能重建。仓库必须是唯一来源。
+ssh "${SSH_OPTS[@]}" "$SSH_HOST" "chmod 600 '$REMOTE_DIR/.env'; \
+    chmod +x '$REMOTE_DIR/run.sh' '$REMOTE_DIR/verify_deployed.sh' \
+             '$REMOTE_DIR/watchdog.sh' '$REMOTE_DIR/cert-deploy-hook.sh'"
+echo "✓ oa.jar / Dockerfile / docker-compose.yml / run.sh / verify_deployed.sh /"
+echo "  watchdog.sh / cert-deploy-hook.sh / patch-acme-location.py / .env 已同步（.env=600）"
 
 # ---------------------------------------------------------------- 3 构建镜像
 if [ "${SKIP_IMAGE:-0}" = "1" ]; then
@@ -119,7 +129,7 @@ else
   # 构建放在服务器上，所以 --platform 不用管：服务器本身就是 x86_64，
   # 不存在上一版"Apple Silicon 构建出 arm64 镜像、服务器报 exec format error"的问题。
   #
-  # tag 规则：同时打 :latest 和 :$TAG。
+  # tag 规则：同时打 :latest 和 :${TAG}。
   #   :latest 给 compose 用；:$TAG 是**回滚凭据** —— 出问题时可以
   #   OA_IMAGE=oa:<上一个tag> docker compose up -d oa 精确回到某一版。
   ssh "${SSH_OPTS[@]}" "$SSH_HOST" "cd '$REMOTE_DIR' && \

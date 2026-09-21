@@ -26,7 +26,10 @@ VERBOSE=0
 # 缺 PATH 的后果不是"报命令找不到"这么明显 —— HOST_IP 会算成空字符串，
 # 所有 --resolve 变成 `域名:443:`（空 IP），于是**每一项都被判成故障**，
 # 而你在终端里手工跑一次却完全正常。这类"只在 cron 里坏"的问题最耗时间。
-export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+# 系统目录**放前面**（优先），同时保留调用方原有的 PATH：
+# 直接 `export PATH=<固定列表>` 会把调用方的 PATH 整个丢掉，
+# 于是任何包装/测试用的 PATH 注入都失效（本项目的桩测就因此没生效）。
+export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin${PATH:+:$PATH}"
 
 DOMAIN="hxj-oa-test.wgit123.com"
 NGINX_CONF="/opt/docker/nginx/conf/include/hxj-oa-test.wgit123.com.conf"
@@ -45,7 +48,13 @@ CURL=(curl -s -m 8 --noproxy '*')
 
 DISK_WARN_PCT=20          # 根分区可用低于此值
 MEM_WARN_MB=400           # 可用内存低于此值（蓝绿发布要同时跑两个实例）
-CERT_WARN_DAYS=21         # 证书剩余低于此天数
+# 【为什么是 25 天而不是 21 天】证书现在由 certbot 自动续期，
+# 它在**剩余 30 天**时开始尝试续（certbot 默认 renew_before_expiry=30 days）。
+# 阈值定在 25 天 = 续期窗口打开 5 天后仍未成功 ⇒ 这时报警，
+# 剩下的 25 天足够人工介入。
+# 定得太小（如 21）会缩短处置时间；定得太大（如 35，早于续期窗口）
+# 则每轮都会先报一次"假警"再自动恢复 —— 这种周期性噪音最后就是没人看。
+CERT_WARN_DAYS=25         # 证书剩余低于此天数就报警（见上方说明）
 CLOG_WARN_MB=2048         # 单个容器日志超过此值
 
 PROBLEMS=()
@@ -108,7 +117,7 @@ if [ -f "$CERT" ]; then
   END_TS=$(date -d "$(openssl x509 -in "$CERT" -noout -enddate 2>/dev/null | cut -d= -f2)" +%s 2>/dev/null || echo 0)
   DAYS=$(( (END_TS - $(date +%s)) / 86400 ))
   if [ "$DAYS" -lt "$CERT_WARN_DAYS" ]; then
-    problem "证书还有 ${DAYS} 天到期（$CERT）。因为 80 端口是 301 强制跳转，到期症状是「整站打不开」而不是「证书报错」。
+    problem "证书还有 ${DAYS} 天到期（${CERT}）。因为 80 端口是 301 强制跳转，到期症状是「整站打不开」而不是「证书报错」。
       续期后：覆盖 $CERT 与同名 .key，再 docker exec nginx nginx -s reload"
   else
     note "✓ 证书剩余 ${DAYS} 天"
