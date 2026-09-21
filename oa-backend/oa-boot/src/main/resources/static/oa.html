@@ -643,6 +643,10 @@ createApp({setup(){
   /* ---------- 工具 ---------- */
   const toDate = function(v){
     if (!v) return null;
+    /* 【修复】v 可能是 Date 实例：String(Date) 得到 "Mon Sep 21 2026 10:36:47 GMT+0800 (...)"，
+       经下面两处 replace 后 V8 解析为 Invalid Date → 返回 null → 所有走 toDate 的格式化都成空串。
+       实测症状：导出文件名成了「台账档案_.csv」（调用点 ymd(new Date())）。Date 实例直接放行。 */
+    if (v instanceof Date) return isNaN(v.getTime()) ? null : v;
     const d = new Date(String(v).replace('T',' ').replace(/-/g,'/'));
     return isNaN(d.getTime()) ? null : d;
   };
@@ -912,7 +916,12 @@ createApp({setup(){
       api.roles().catch(function(){ return []; }),
       api.deptTree().catch(function(){ return []; }),
       api.dicts().catch(function(){ return {}; }),
-      api.allPermissions().catch(function(){ return []; }),
+      /* 【修复】权限点目录只服务于「角色配置」面板，普通员工没有 system:role / system:user，
+         原先无条件拉取会让每次登录白打一个 403（.catch 吞掉了结果，但网络面板与 E2E 的
+         netErrors 都会留痕）。loadBase 执行时 me.value 已由三条进入路径先赋值，can() 可读。 */
+      (can('system:role') || can('system:user'))
+        ? api.allPermissions().catch(function(){ return []; })
+        : Promise.resolve([]),
       api.nodeTemplates().catch(function(){ return []; })
     ]);
     documentTypes.value = results[0] || [];

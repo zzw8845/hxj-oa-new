@@ -564,49 +564,32 @@ function overdueNodeCountSql() {
       '页面=' + afterWide.rows.length + ' 库=' + wideExpect + ' 未设条件=' + base.rows.length
       + '（区间 ' + wv[0] + '~' + wv[1] + '）');
 
-    /* ================= 五点五、#35 人员管理分页 ================= */
-    section('五点五、人员管理表格已接物理分页接口 /api/users/page（#35 工程护栏）');
-
+    /* ================= 五点五、人员管理页（#34/#35 已回退，只留烟测） ================= */
+    // 【为什么本节只剩一条烟测 —— 删掉的那 7 条曾让整套用例静默失效】
+    // 本节原先断言「人员管理表格已接物理分页接口 /api/users/page」，加上页大小/keyword/
+    // 翻页不重叠/普通员工 403 共 7 条，属 #35 工程护栏。但 #34（主数据写接口）与 #35（列表分页）
+    // 已按用户要求整体回退：/api/users/page 在源码与 git 基线 ab2a4a5 里都不存在。
+    //
+    // 后果不是「多两条红灯」那么轻：`D(upAdmin).records.length` 会在 undefined 上直接抛 TypeError，
+    // 脚本在第 592 行**中断**，于是第 600 行之后的 16 条断言（含整条审计留痕链路、分页越权、
+    // Downloads 卫生、权限守卫）**从未执行**，但输出仍然只是「2 条失败」——
+    // 一个静默失效的回归套件比没有套件更危险。
+    //
+    // 注意 **不能**改成断言「普通员工访问 /api/users 必须 403」：人员列表接口刻意不加
+    // @RequirePerm（选人下拉要跨全量做客户端搜索，见 MEMORY「硬约束/接口口径」），
+    // 加了会与设计冲突。
+    //
+    // 若将来重做 #35，可从本文件的历史版本（git 提交 b746593 之前）恢复本节。
     await clickMenu(page, '权限管理');
     await sleep(1500);
     const adminUi = await page.evaluate(() => {
       const vis = el => !!(el && el.offsetParent !== null);
       const rows = [...document.querySelectorAll('.el-table__row')].filter(vis);
-      const totalEl = [...document.querySelectorAll('.el-pagination__total')].find(vis);
-      return {
-        rows: rows.length,
-        firstCell: (rows[0] && rows[0].querySelector('td')) ? rows[0].querySelector('td').textContent.trim() : '',
-        hasPager: [...document.querySelectorAll('.el-pagination')].some(vis),
-        pagerTotal: totalEl ? totalEl.textContent.trim() : ''
-      };
+      return { rows: rows.length,
+               firstCell: (rows[0] && rows[0].querySelector('td')) ? rows[0].querySelector('td').textContent.trim() : '' };
     });
-    check('人员管理表格出现分页控件（表格已接分页接口）',
-      adminUi.hasPager && adminUi.rows > 0 && /共 \d+ 条/.test(adminUi.pagerTotal), JSON.stringify(adminUi));
-    check('  可见行数不超过 pageSize=10', adminUi.rows <= 10, '行数=' + adminUi.rows);
-
-    const D = r => (r.body && r.body.data) || {};
-    const upAdmin = await api('GET', '/api/users/page?pageNum=1&pageSize=5', tkAdmin);
-    check('GET /api/users/page 管理员 200 且返回分页结构',
-      upAdmin.status === 200 && D(upAdmin).total > 0 && Array.isArray(D(upAdmin).records),
-      'HTTP' + upAdmin.status + ' total=' + D(upAdmin).total);
-    check('  pageSize=5 时返回不超过 5 行', D(upAdmin).records.length <= 5,
-      '行=' + D(upAdmin).records.length);
-
-    const upKw = await api('GET', '/api/users/page?pageNum=1&pageSize=20&keyword=zhou', tkAdmin);
-    check('  keyword=zhou 命中且少于全量（姓名/工号/账号模糊过滤生效）',
-      upKw.status === 200 && D(upKw).total >= 1 && D(upKw).total < D(upAdmin).total,
-      'keyword total=' + D(upKw).total + ' 全量=' + D(upAdmin).total);
-
-    const upP2a = await api('GET', '/api/users/page?pageNum=1&pageSize=3', tkAdmin);
-    const upP2b = await api('GET', '/api/users/page?pageNum=2&pageSize=3', tkAdmin);
-    const idsA = D(upP2a).records.map(u => u.id);
-    const idsB = D(upP2b).records.map(u => u.id);
-    check('  翻页不重叠：第1页与第2页 id 集合不相交',
-      upP2a.status === 200 && upP2b.status === 200 && !idsA.some(id => idsB.includes(id)),
-      '页1=[' + idsA.join(',') + '] 页2=[' + idsB.join(',') + ']');
-
-    const upZhou = await api('GET', '/api/users/page', tkZhou);
-    check('  普通员工访问分页接口 403（system:user 权限点）', upZhou.status === 403, 'HTTP' + upZhou.status);
+    check('人员管理页仍能渲染人员行（回退后走全量 GET /api/users，页面没被回退弄白）',
+      adminUi.rows > 0, JSON.stringify(adminUi));
 
     /* ================= 六、审计留痕真的在写 ================= */
     section('六、审计日志：@Audit 切面确实在写库（静默失效是最难发现的故障）');

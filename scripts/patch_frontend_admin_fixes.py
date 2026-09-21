@@ -31,6 +31,21 @@
   于是点击菜单不会有任何分支命中，只会落到最后的空态分支（el-empty「流程管理功能区」）。
   修法是让 index 留在 risk，与模板对齐。
 
+【缺陷 6】导出文件名丢日期（功能性；随 #34/#35 回退被带回来的）
+  toDate() 只处理字符串/数字：v 是 Date 实例时 String(v) 得到
+  "Mon Sep 21 2026 10:36:47 GMT+0800 (China Standard Time)"，经两处 replace 后
+  V8 解析为 Invalid Date → toDate 返回 null → ymd() 返回空串。
+  调用点 L832 是 ymd(new Date())，于是文件名成了「台账档案_.csv」。
+  实测复现：node -e 用同一份 toDate 实现跑 ymd(new Date()) → ""。
+
+【缺陷 7】非管理员登录白打 5 次 /api/permissions 的 403（噪音，非安全漏洞）
+  权限点目录只服务于「角色配置」面板，而 loadBase() 的 Promise.all 无条件拉它。
+  普通员工无 system:role / system:user → 403（.catch 吞掉了结果，但浏览器网络面板
+  与 E2E 的 netErrors 都会留痕）。
+  注意时序：loadBase() 在 afterLogin() 里被调用，而三条进入路径
+  （doLogin L996 / switchAccount L1010 / onMounted L1823）都是**先**赋值 me.value
+  再 afterLogin()，所以 loadBase 执行时 can() 已可读，守卫是安全的。
+
 写法沿用「短且唯一锚点 + 命中数校验」：
   锚点仍在  -> 执行替换
   新串已在  -> SKIP（说明这个补丁跑过了）
@@ -49,11 +64,11 @@ FIXES = [
         r"""<el-form-item label="所属部门"><el-select v-model="newPerson.department"><el-option v-for="d in departments" :label="d" :value="d"></el-option></el-select></el-form-item>""",
         r"""<el-form-item label="所属部门"><el-select v-model="newPerson.deptId" placeholder="请选择部门" style="width:100%"><el-option v-for="d in deptOptions" :key="d.id" :label="d.name" :value="d.id"></el-option></el-select></el-form-item>""",
     ),
-    (
-        '2. 侧边栏·风险预警菜单改名为流程管理（对齐 pageNames.risk）',
-        r"""<el-menu-item index="risk"><span class="mi">△</span>风险预警<el-badge :value="3" type="danger" class="menu-badge"></el-badge></el-menu-item>""",
-        r"""<el-menu-item index="risk"><span class="mi">△</span>流程管理</el-menu-item>""",
-    ),
+    # 【条目 2 已退役】原文是「把 risk 菜单文案改成流程管理以对齐 pageNames.risk」。
+    # 该设计后来被取代：现在「流程管理」是**独立**菜单项 index="flow"，「风险预警」保留 index="risk"，
+    # 两者各有自己的页面分支（frontend_business_gaps_e2e.js 第 310 行正断言这个形态）。
+    # 旧锚点（带 <el-badge :value="3"> 的版本）与旧目标串在文件里都已不存在，
+    # 继续保留只会让本脚本永远 FAIL 从而整体不写入 —— 故删除该条目，仅留本说明。
     (
         '3. 角色树节点补「对应成员」',
         r"""<template v-else><i>角</i><div><b>{{data.role.name}}</b><span>{{data.role.post}} · {{data.role.scope}}</span></div>""",
@@ -64,15 +79,32 @@ FIXES = [
         r"""const roleScope=rolePermissionTemplate?.content.querySelector('.role-scope');roleScope?.insertAdjacentHTML('afterend',`<p class="role-members"><b>对应成员：</b>{{r.members?.join('、')||'暂未配置'}}</p>`);""",
         r"""/* 「对应成员」已挪进角色树节点（见 rolePane 的 role-tree-card 注入）；\n     .role-scope 那个容器在本次改写里已不存在，原先插在它后面的写法是静默失效的死代码。 */""",
     ),
+    # 【条目 5 已退役】原文是「流程管理菜单项 index 必须留在 risk」，因为当时模板只有 page==='risk' 分支。
+    # 现在模板同时有 risk（风险预警）与 flow（流程管理）两个分支，那句按 index 改文案的兜底代码
+    # 也已从文件里删除（frontend_business_gaps_e2e.js 第 313 行断言它不存在）。
+    # 旧锚点与旧目标串在文件里都不存在，保留只会让本脚本永远 FAIL 从而整体不写入 —— 故删除该条目。
     (
-        '5. 流程管理菜单项 index 必须留在 risk（页面模板分支就是 page===\'risk\'）',
-        r"""if (idx === 'risk'){ item.setAttribute('index','flow'); rename('风险预警','流程管理'); }""",
-        r"""/* 流程管理菜单：index 必须保持 "risk"。
-       页面模板的分支条件是 page==='risk'，而 pageNames.risk / pageNames.flow 都叫「流程管理」，
-       所以一旦把 index 改成 'flow'，点击菜单不会有任何分支命中，只会落到最后的空态分支
-       （表现为「流程管理功能区」的 el-empty）——流程管理页等于完全打不开。
-       文案改名在静态 HTML 里已经做好，这里的 rename 保留作为兜底。 */
-    if (idx === 'risk') rename('风险预警','流程管理');""",
+        '6. toDate 兼容 Date 实例（修导出文件名「台账档案_.csv」丢日期）',
+        r"""  const toDate = function(v){
+    if (!v) return null;
+    const d = new Date(String(v).replace('T',' ').replace(/-/g,'/'));""",
+        r"""  const toDate = function(v){
+    if (!v) return null;
+    /* 【修复】v 可能是 Date 实例：String(Date) 得到 "Mon Sep 21 2026 10:36:47 GMT+0800 (...)"，
+       经下面两处 replace 后 V8 解析为 Invalid Date → 返回 null → 所有走 toDate 的格式化都成空串。
+       实测症状：导出文件名成了「台账档案_.csv」（调用点 ymd(new Date())）。Date 实例直接放行。 */
+    if (v instanceof Date) return isNaN(v.getTime()) ? null : v;
+    const d = new Date(String(v).replace('T',' ').replace(/-/g,'/'));""",
+    ),
+    (
+        '7. /api/permissions 按权限点守卫（普通员工不再白打 403）',
+        r"""      api.allPermissions().catch(function(){ return []; }),""",
+        r"""      /* 【修复】权限点目录只服务于「角色配置」面板，普通员工没有 system:role / system:user，
+         原先无条件拉取会让每次登录白打一个 403（.catch 吞掉了结果，但网络面板与 E2E 的
+         netErrors 都会留痕）。loadBase 执行时 me.value 已由三条进入路径先赋值，can() 可读。 */
+      (can('system:role') || can('system:user'))
+        ? api.allPermissions().catch(function(){ return []; })
+        : Promise.resolve([]),""",
     ),
 ]
 
