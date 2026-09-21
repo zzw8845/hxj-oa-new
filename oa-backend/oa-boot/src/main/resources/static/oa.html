@@ -1,0 +1,1899 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>海峡金 · OA审批中心</title><link rel="icon" href="data:,"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/element-plus@2.11.5/dist/index.css"><style>
+:root{--el-color-primary:#5961df;--ink:#182036;--muted:#7e879b;--line:#e8ecf3;--bg:#f5f7fb}*{box-sizing:border-box}body{margin:0;font-family:"Microsoft YaHei","PingFang SC",sans-serif;color:var(--ink);background:var(--bg)}.shell{min-height:100vh}.aside{position:fixed;inset:0 auto 0 0;background:#172036;z-index:20;display:flex;flex-direction:column}.shell>.el-container{margin-left:228px}.logo{height:78px;display:flex;align-items:center;gap:11px;padding:0 22px;color:#fff}.logo i{width:39px;height:39px;border-radius:11px;background:linear-gradient(145deg,#777df1,#5159db);display:grid;place-items:center;font-size:19px;font-style:normal;font-weight:700}.logo b,.logo span{display:block}.logo b{font-size:17px}.logo span{font-size:10px;color:#9ba7c2;margin-top:4px}.el-menu{border-right:0!important}.el-menu-item{height:46px!important;margin:3px 14px;border-radius:9px;padding-left:14px!important}.el-menu-item.is-active{background:linear-gradient(90deg,#5660e2,#666ceb)!important}.mi{width:27px;font-size:18px}.menu-label{font-size:10px;color:#62708e;padding:17px 27px 7px}.menu-badge{margin-left:auto}.menu-badge .el-badge__content{background:#303b59;border:0}.aside-foot{margin:auto 18px 20px;padding-top:14px;border-top:1px solid #29344d;color:#aab5ca;font-size:11px}.aside-foot i{display:inline-block;width:7px;height:7px;background:#43c498;border-radius:50%;margin-right:6px}.aside-foot span{display:block;color:#68758f;margin:7px 0 0 14px}.topbar{height:78px!important;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 30px!important;position:sticky;top:0;z-index:10}.topbar h1{font-size:18px;margin:0 0 6px}.el-breadcrumb{font-size:10px}.top-actions{display:flex;align-items:center;gap:11px}.top-actions .el-avatar{background:#e9eaff;color:#525adc}.who b,.who span{display:block}.who b{font-size:12px}.who span{font-size:9px;color:var(--muted);margin-top:3px}.el-main{padding:27px 31px 50px!important;max-width:1500px;width:100%;margin:auto}.hero{min-height:215px;border-radius:17px;background:linear-gradient(118deg,#303674,#555ddd);color:#fff;padding:31px 38px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 13px 28px rgba(54,61,145,.18);position:relative;overflow:hidden}.hero:after{content:"";position:absolute;width:460px;height:460px;border:60px solid rgba(255,255,255,.035);border-radius:50%;right:-120px;top:-270px}.hero>div,.hero .el-progress{z-index:2}.hero>div>span{font-size:11px;color:#cbd0fa}.hero h2{font-size:26px;margin:10px 0}.hero p{font-size:13px;color:#dee1ff;margin:0 0 23px}.hero .glass{background:rgba(255,255,255,.1);color:#fff;border-color:rgba(255,255,255,.25)}.percent{display:block;color:#fff;font-size:23px}.el-progress small{color:#fff;font-size:9px}.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin:18px 0}.stats .el-card__body{display:flex;align-items:center;gap:14px;padding:19px}.stats i{width:45px;height:45px;border-radius:12px;display:grid;place-items:center;font-style:normal;font-weight:700}.stats i.blue{background:#e9eaff;color:#5961df}.stats i.orange{background:#fff1dc;color:#de932d}.stats i.green{background:#e1f6f0;color:#279b80}.stats i.red{background:#ffe9eb;color:#dc4c5a}.stats span,.stats b,.stats small{display:block}.stats span{font-size:11px;color:var(--muted)}.stats b{font-size:26px;margin:4px 0}.stats small{font-size:9px;color:#2ba486}.el-card{border-color:var(--line)!important;border-radius:13px!important}.grid2{display:grid;grid-template-columns:1.45fr 1fr;gap:17px}.card-title{display:flex;align-items:center;justify-content:space-between}.card-title b,.card-title span{display:block}.card-title b{font-size:14px}.card-title span{font-size:10px;color:var(--muted);margin-top:4px}.todo{display:grid;grid-template-columns:37px 1fr auto;align-items:center;gap:11px;padding:11px 2px;border-bottom:1px solid #f0f2f6;cursor:pointer}.todo:hover{background:#fafaff}.todo>i{width:35px;height:35px;background:#efefff;color:#5961df;border-radius:9px;display:grid;place-items:center;font-style:normal}.todo div b,.todo div span,.todo strong small{display:block}.todo div b{font-size:12px}.todo div span{font-size:9px;color:var(--muted);margin-top:4px}.todo strong{font-size:11px;text-align:right}.todo strong small{font-size:8px;color:#ea6670;margin-top:4px}.transparency{text-align:center;padding:12px 28px 23px}.shield{width:58px;height:58px;border-radius:50%;background:#e4f7f1;color:#269b7e;display:grid;place-items:center;margin:auto;font-size:25px}.transparency h3{font-size:15px}.transparency p{font-size:11px;color:var(--muted);line-height:1.8}.page-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}.page-head h2{margin:0;font-size:21px}.page-head p{margin:6px 0 0;font-size:11px;color:var(--muted)}.work-zones{display:grid;grid-template-columns:1fr 1fr;gap:17px;margin-bottom:18px}.zone-title{display:flex;align-items:center;gap:11px}.zone-title>i{width:38px;height:38px;border-radius:10px;background:#eceeff;color:#5961df;display:grid;place-items:center;font-style:normal;font-weight:700}.zone.business .zone-title>i{background:#e4f7f2;color:#29997f}.zone-title div{flex:1}.zone-title b,.zone-title span{display:block}.zone-title span{font-size:10px;color:var(--muted);margin-top:4px}.quick-docs{display:grid;grid-template-columns:1fr 1fr;gap:10px}.quick-docs button{border:1px solid var(--line);background:#fafbfe;border-radius:10px;padding:13px;text-align:left;display:grid;grid-template-columns:30px 1fr;gap:3px 9px;cursor:pointer}.quick-docs button:hover{border-color:#bfc4f5;background:#f8f8ff}.quick-docs i{grid-row:1/3;width:30px;height:30px;border-radius:8px;background:#edefff;color:#5961df;display:grid;place-items:center;font-style:normal}.quick-docs b{font-size:11px}.quick-docs span{font-size:9px;color:var(--muted)}.click-table .el-table__row{cursor:pointer}.cell-sub{display:block;color:#99a1b0;margin-top:4px}.filters{display:flex;gap:10px;margin-bottom:15px}.filters .el-input{width:300px}.filters .el-select{width:150px}.eff-row{display:grid;grid-template-columns:110px 1fr 55px;gap:12px;align-items:center;margin:20px 0;font-size:11px}.status-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:11px;padding:30px 5px}.status-grid div{background:#f7f8fc;border-radius:11px;text-align:center;padding:24px 10px}.status-grid b,.status-grid span{display:block}.status-grid b{font-size:28px;color:#5961df}.status-grid span{font-size:10px;color:var(--muted);margin-top:6px}.submit-form{margin-top:25px}.form2{display:grid;grid-template-columns:1fr 1fr;gap:0 16px}.form2 .el-select,.form2 .el-input-number{width:100%}.upload-copy b,.upload-copy span{display:block}.upload-copy span{font-size:10px;color:var(--muted);margin-top:5px}.flow-tip{background:#f1f2ff;border-radius:10px;padding:14px}.flow-tip b{font-size:11px;color:#5961df;margin-right:18px}.flow-tip span{font-size:10px;color:#606a7e}.drawer-head{display:flex;justify-content:space-between;align-items:start;margin-bottom:18px}.drawer-head h2{font-size:21px;margin:10px 0 5px}.drawer-head span{font-size:10px;color:var(--muted)}.desc{margin:17px 0}.flow-list{padding:12px 5px}.flow-node{display:grid;grid-template-columns:34px 1fr;gap:13px;position:relative;padding-bottom:23px}.flow-node:not(:last-child):before{content:"";position:absolute;left:16px;top:30px;bottom:0;border-left:2px solid #e5e8ef}.node-dot{width:33px;height:33px;border-radius:50%;background:#eef0f5;color:#929aab;display:grid;place-items:center;font-size:11px;z-index:1}.flow-node.done .node-dot{background:#daf4eb;color:#269679}.flow-node.current .node-dot{background:#fff0d9;color:#d68620}.node-body{border:1px solid var(--line);border-radius:10px;padding:13px}.node-body>div:first-child{display:flex;align-items:center;gap:9px}.node-body>div:first-child span{font-size:9px;color:var(--muted);margin-left:auto}.node-body p{font-size:10px;color:#596277;margin:9px 0}.node-body>small{display:block;color:#78829a;background:#f6f7fa;border-radius:6px;padding:7px;margin-top:9px}.node-files{display:flex;flex-wrap:wrap;gap:6px}.file-card{display:flex;align-items:center;gap:12px;padding:13px;border:1px solid var(--line);border-radius:9px;margin-bottom:9px}.file-card>i{width:35px;height:35px;border-radius:9px;background:#eef0ff;color:#5961df;display:grid;place-items:center;font-style:normal}.file-card>div{flex:1}.file-card b,.file-card span{display:block}.file-card b{font-size:11px}.file-card span{font-size:9px;color:var(--muted);margin-top:4px}.approval-action{border-top:1px solid var(--line);margin-top:18px;padding-top:15px}.approval-action h3{font-size:14px}.approval-action .el-textarea{margin:12px 0}.approval-action>div:last-child{text-align:right}@media(max-width:1000px){.aside{width:74px!important}.logo div,.menu-label,.el-menu-item:not(.is-active){font-size:0}.logo{padding:0 17px}.el-menu-item{margin:3px 10px}.shell>.el-container{margin-left:74px}.stats{grid-template-columns:1fr 1fr}.grid2,.work-zones{grid-template-columns:1fr}.who,.top-actions .el-select{display:none}}@media(max-width:650px){.el-main{padding:18px 12px!important}.topbar{padding:0 16px!important}.stats{grid-template-columns:1fr}.hero{padding:24px}.hero .el-progress{display:none}.quick-docs,.form2{grid-template-columns:1fr}.aside{display:none}.shell>.el-container{margin-left:0}.el-drawer{width:100%!important}}
+
+:root{--el-color-primary:#52a9ef;--el-color-primary-light-3:#83c3f5;--el-color-primary-light-5:#a8d7f8;--el-color-primary-light-7:#d2eafa;--el-color-primary-light-8:#e4f3fd;--el-color-primary-light-9:#f2f9fe;--el-color-primary-dark-2:#348ed6;--sky:#52a9ef;--sky-dark:#3188ce;--sky-soft:#eaf6ff;--sky-pale:#f4faff;--nav:#eaf5fd;--ink:#17334d;--muted:#7892a8;--line:#dcebf6}
+body{background:linear-gradient(135deg,#f4faff 0,#edf7fe 45%,#f8fbff 100%);color:var(--ink)}.el-menu>.el-menu-item:last-child{display:none}.aside{background:linear-gradient(180deg,#eff9ff 0%,#e4f3fd 100%)!important;border-right:1px solid #d5eaf8;box-shadow:8px 0 30px rgba(70,147,202,.07)}.logo{color:#1f5f91}.logo i{background:linear-gradient(145deg,#71c2f5,#469fe2);box-shadow:0 8px 20px rgba(58,149,218,.24)}.logo span{color:#78a1bd}.el-menu{background:transparent!important}.el-menu-item{color:#52728d!important;transition:all .18s ease}.el-menu-item:hover{background:#d9effc!important;color:#2382c7!important;transform:translateX(2px)}.el-menu-item.is-active{background:linear-gradient(90deg,#66b7ef,#45a0e3)!important;color:#fff!important;box-shadow:0 8px 18px rgba(62,156,222,.22)}.el-menu-item:active{transform:translateX(2px) scale(.98)}.menu-label{color:#8daabd}.aside-foot{border-color:#cfe5f3;color:#6091b4}.aside-foot span{color:#91afc3}.topbar{border-color:#dcebf6;box-shadow:0 3px 16px rgba(75,145,194,.05)}.top-actions .el-avatar{background:#dff1fd;color:#2889cf}.hero{background:linear-gradient(118deg,#79c5f4 0%,#51a9e9 52%,#78baf0 100%);box-shadow:0 14px 30px rgba(55,146,211,.19)}.hero .el-button{transition:all .18s}.hero .el-button:hover{transform:translateY(-2px);box-shadow:0 8px 18px rgba(33,112,172,.16)}.hero .el-button:active{transform:translateY(0) scale(.97)}.el-card{border-color:#dcebf6!important;box-shadow:0 4px 18px rgba(71,143,193,.04)}.el-card,.quick-docs button,.todo,.attachment-item,.file-card,.node-body{transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease,background .18s ease}.stat-link{cursor:pointer;position:relative}.stat-link:hover{transform:translateY(-4px);border-color:#9ed2f4!important;box-shadow:0 12px 28px rgba(58,151,216,.13)!important}.stat-link:active{transform:translateY(-1px) scale(.985)}.stat-link em{margin-left:auto;align-self:flex-end;font-size:9px;color:var(--sky-dark);font-style:normal}.stats i.blue,.stats i.orange,.stats i.green,.stats i.red{background:#e5f4fe;color:#318ed2}.todo:hover{background:#f0f8fe;transform:translateX(3px)}.todo:active{background:#e1f2fd;transform:translateX(1px)}.todo>i{background:#e2f2fd;color:#318ed2}.shield{background:#e4f4fe;color:#3292d5}.quick-docs button:hover{border-color:#8ccaf0;background:#eef8fe;transform:translateY(-2px);box-shadow:0 8px 16px rgba(64,148,207,.1)}.quick-docs button:active{transform:translateY(0) scale(.98);background:#dff1fc}.quick-docs i,.zone-title>i,.zone.business .zone-title>i{background:#dff1fd;color:#2b8ed2}.click-table .el-table__row:hover>td.el-table__cell{background:#edf8ff!important}.click-table .el-table__row:active>td.el-table__cell{background:#dff1fd!important}.el-button{transition:all .16s ease}.el-button:hover{transform:translateY(-1px)}.el-button:active{transform:translateY(0) scale(.96)}.el-button--primary{box-shadow:0 5px 12px rgba(63,157,224,.16)}.el-tag{border-radius:14px}.el-input__wrapper,.el-select__wrapper,.el-textarea__inner{transition:border-color .18s,box-shadow .18s!important}.el-input__wrapper:hover,.el-select__wrapper:hover,.el-textarea__inner:hover{box-shadow:0 0 0 1px #8dcaf0 inset!important}.el-input__wrapper.is-focus,.el-select__wrapper.is-focused,.el-textarea__inner:focus{box-shadow:0 0 0 1px var(--sky) inset,0 0 0 3px rgba(82,169,239,.1)!important}.code-banner{display:grid;grid-template-columns:1fr auto;align-items:center;background:#eaf6ff;border:1px solid #c9e6f8;border-radius:10px;padding:12px 15px;margin-bottom:18px}.code-banner span,.code-banner small{font-size:10px;color:#7892a8}.code-banner b{grid-row:1/3;grid-column:2;font-size:18px;color:#2788ce;letter-spacing:1px}.attachment-grid{width:100%;display:grid;gap:9px}.attachment-item{display:flex;align-items:center;gap:12px;border:1px dashed #b7daf0;background:#f7fcff;border-radius:10px;padding:11px 13px}.attachment-item:hover{border-color:#5dafe7;background:#edf8ff;box-shadow:0 7px 16px rgba(62,149,208,.09);transform:translateY(-1px)}.attachment-item>div:first-child{flex:1;display:grid;grid-template-columns:28px 1fr;gap:2px 9px}.attachment-item i{grid-row:1/3;width:27px;height:27px;border-radius:8px;background:#dff1fd;color:#2e8fcf;display:grid;place-items:center;font-style:normal}.attachment-item b{font-size:11px}.attachment-item span{font-size:9px;color:#7892a8}.flow-tip{background:#eaf6ff}.flow-tip b{color:#2788ce}.flow-node.done .node-dot{background:#dff2fd;color:#2588cd}.flow-node.current .node-dot{background:#cfeafd;color:#147dca;box-shadow:0 0 0 5px rgba(79,168,232,.12)}.node-body:hover,.file-card:hover{border-color:#a9d4ef;box-shadow:0 7px 18px rgba(61,143,199,.08)}.archive-filter{display:grid;grid-template-columns:160px 180px 210px 1fr;gap:10px;margin-bottom:16px}.perm-tag{margin:3px 5px 3px 0}.el-checkbox-group{display:grid;grid-template-columns:repeat(2,1fr);gap:4px 16px}.el-overlay{backdrop-filter:blur(3px)}.el-dialog,.el-drawer{box-shadow:0 24px 65px rgba(40,112,163,.2)!important}.el-tabs__item:hover{color:#2e8fd2}.el-tabs__active-bar{background:#52a9ef}@media(max-width:900px){.archive-filter{grid-template-columns:1fr 1fr}.attachment-item{align-items:flex-start}}@media(max-width:600px){.archive-filter,.el-checkbox-group{grid-template-columns:1fr}}
+.role-members{margin:8px 0 12px;color:#667085;font-size:13px;line-height:1.7}.role-members b{color:#344054}.flow-config-grid{grid-template-columns:repeat(auto-fill,minmax(360px,1fr))}.flow-chain{flex-wrap:wrap;row-gap:8px}
+.quick-toggle{display:flex;align-items:center;justify-content:space-between;margin:-2px 0 16px;padding:12px 14px;border:1px solid #d9eaff;border-radius:10px;background:#f7fbff;cursor:pointer;transition:.2s ease}.quick-toggle:hover{border-color:#8fc7ff;background:#eef7ff;box-shadow:0 4px 12px rgba(69,146,232,.08)}.quick-toggle>div{display:flex;flex-direction:column;gap:3px}.quick-toggle b{font-size:15px;color:#26364d}.quick-toggle span{font-size:12px;color:#8a98aa}.fold-button{width:30px;height:30px;border:0;border-radius:50%;background:#dff0ff;color:#3187df;font-size:22px;line-height:28px;cursor:pointer;transition:transform .25s ease,background .2s ease}.fold-button.open{transform:rotate(180deg)}.quick-toggle:hover .fold-button{background:#cfe9ff}.collapse-enter-active,.collapse-leave-active{transition:opacity .2s ease,transform .2s ease}.collapse-enter-from,.collapse-leave-to{opacity:0;transform:translateY(-8px)}
+.work-zones{grid-template-columns:1fr!important}.work-zones>.zone{grid-column:1!important}.flow-config-grid{grid-template-columns:1fr!important}.fold-button{width:auto;min-width:72px;height:34px;padding:0 12px;border-radius:17px;display:flex;align-items:center;justify-content:center;gap:7px;font-size:13px;line-height:1}.fold-button span{font-size:13px;color:#3187df}.fold-button i{font-style:normal;font-size:18px;transition:transform .25s ease}.fold-button.open{transform:none}.fold-button.open i{transform:rotate(180deg)}
+.work-zones{grid-template-columns:repeat(3,minmax(0,1fr))!important;align-items:start;gap:12px}.work-zones>.zone,.work-zones>.zone.stamp{grid-column:auto!important}.work-zones .el-card__header{padding:12px 13px}.work-zones .el-card__body{padding:11px 12px}.work-zones .zone-title{gap:8px;min-width:0}.work-zones .zone-title>i{width:30px;height:30px;min-width:30px;font-size:13px}.work-zones .zone-title>div{min-width:0;flex:1}.work-zones .zone-title b{font-size:15px;white-space:nowrap}.work-zones .zone-title span{font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.work-zones .zone-title .el-button{height:28px;padding:0 9px;font-size:12px}.work-zones .quick-toggle{justify-content:flex-end;margin:-2px 0 8px;padding:0;border:0;background:transparent;box-shadow:none}.work-zones .quick-toggle:hover{border:0;background:transparent;box-shadow:none}.work-zones .fold-button{min-width:62px;height:28px;padding:0 9px}.work-zones .quick-docs{grid-template-columns:1fr!important;gap:6px}.work-zones .quick-docs button{min-height:50px;padding:8px 9px;gap:8px}.work-zones .quick-docs button i{width:28px;height:28px;min-width:28px}.work-zones .quick-docs button b{font-size:12px}.work-zones .quick-docs button span{font-size:9px}.work-zones+.el-card .el-table__cell{padding:7px 0}.work-zones+.el-card .el-button{white-space:nowrap}@media(max-width:1100px){.work-zones{grid-template-columns:1fr!important}.work-zones>.zone{grid-column:1!important}}
+.work-zones .zone.daily .quick-docs,.work-zones .zone.business .quick-docs{grid-template-columns:repeat(2,minmax(0,1fr))!important}.work-zones .zone.stamp .quick-docs{grid-template-columns:repeat(3,minmax(0,1fr))!important}.work-zones .quick-toggle{order:2;margin:8px 0 0;justify-content:center}.work-zones .quick-docs button{height:58px;min-width:0;border-radius:10px;background:#fff;overflow:hidden}.work-zones .quick-docs button:hover{background:#edf7ff;border-color:#77bdf0}.work-zones .quick-docs .line-doc-icon{position:relative;width:32px;height:32px;min-width:32px;border-radius:9px;background:#edf7ff;font-size:0;color:#368fd4}.work-zones .quick-docs .line-doc-icon:before{content:"";display:block;width:12px;height:15px;border:1.6px solid currentColor;border-radius:2px;box-sizing:border-box}.work-zones .quick-docs .line-doc-icon:after{content:"";position:absolute;width:7px;height:1.5px;background:currentColor;box-shadow:0 4px 0 currentColor;left:13px;top:12px}.work-zones .quick-docs button:nth-child(3n+2) .line-doc-icon{background:#eef8f4;color:#34a77a}.work-zones .quick-docs button:nth-child(3n) .line-doc-icon{background:#fff4e8;color:#e58b34}.quick-copy{min-width:0;flex:1;text-align:left;display:flex;flex-direction:column;gap:3px}.work-zones .quick-docs .quick-copy b{display:block;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.work-zones .quick-docs .quick-copy span{display:block;max-width:100%;color:#98a2b3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.filters{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.filters>.el-input{width:260px}.filters>.el-select{width:145px}.filters .query-button{min-width:74px}@media(max-width:1100px){.work-zones .zone.stamp .quick-docs{grid-template-columns:repeat(3,minmax(0,1fr))!important}}@media(max-width:700px){.work-zones .zone.daily .quick-docs,.work-zones .zone.business .quick-docs,.work-zones .zone.stamp .quick-docs{grid-template-columns:1fr!important}}
+
+.stats .el-card{cursor:pointer;position:relative;transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease}.stats .el-card:hover{transform:translateY(-4px);border-color:#9ed2f4!important;box-shadow:0 12px 28px rgba(58,151,216,.13)!important}.stats .el-card:active{transform:translateY(-1px) scale(.985)}.el-menu-item{display:flex!important;align-items:center!important}.el-menu-item .mi{display:inline-flex;align-items:center;justify-content:center;height:20px;line-height:20px}.menu-badge{display:inline-flex!important;align-items:center!important;justify-content:center;margin-left:16px!important;margin-right:auto;height:20px;line-height:20px}.menu-badge .el-badge__content{position:static!important;display:inline-flex!important;align-items:center;justify-content:center;transform:none!important;margin:0!important;line-height:18px}
+
+@media(min-width:1001px){.el-main:has(>.hero){display:grid;grid-template-columns:320px minmax(0,1fr);grid-template-rows:auto auto;gap:18px}.el-main:has(>.hero)>.stats{grid-column:1;grid-row:1;display:grid;grid-template-columns:1fr;margin:0;gap:10px}.el-main:has(>.hero)>.hero{grid-column:2;grid-row:1;min-height:205px}.el-main:has(>.hero)>.grid2{grid-column:2;grid-row:2;display:block;margin:0}.el-main:has(>.hero)>.grid2>.el-card:last-child{display:none}.el-main:has(>.hero)>.home-analytics{grid-column:1;grid-row:2}}.work-zones .zone-title>.el-button--primary,.work-zones .zone-title>.el-button--primary span{color:#fff!important;font-weight:700!important}.work-zones .zone-title>.el-button--primary:hover{color:#fff!important}.work-zones .zone-title>.el-button--primary:active{color:#fff!important}.link-search{display:grid;grid-template-columns:1fr auto;gap:10px;margin:18px 0}.link-search+.el-table{border:1px solid #dcebf6;border-radius:10px;overflow:hidden}.page-head>.el-date-editor--daterange{display:none!important}.el-main:has(>.page-head + .el-card .filters)>.page-head>.el-button{display:none!important}.role-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}.role-scope{font-size:11px;color:#7892a8;background:#f3f9fd;padding:10px;border-radius:8px}.flow-config-grid{display:grid;gap:14px}.flow-chain{display:flex;align-items:center;flex-wrap:wrap;gap:8px}.flow-chain span{padding:8px 11px;border-radius:8px;background:#e8f5fd;color:#277fbf;font-size:11px;font-weight:600}.flow-chain i{color:#8db8d6;font-style:normal}.flow-editor{margin-top:18px}.stamp-form .el-select,.stamp-form .el-date-editor{width:100%}.home-analytics{display:grid;grid-template-columns:1fr;gap:14px}.mini-bars{height:170px;display:flex;align-items:end;gap:9px;padding:20px 5px 25px;border-bottom:1px solid #e2edf5}.mini-bars>div{height:100%;flex:1;display:flex;align-items:center;justify-content:end;flex-direction:column;position:relative}.mini-bars i{width:18px;max-height:110px;background:linear-gradient(180deg,#62b6ed,#9bd6f7);border-radius:5px 5px 2px 2px}.mini-bars b{font-size:9px;color:#327fac;margin-top:4px}.mini-bars span{position:absolute;bottom:-21px;font-size:8px;color:#8399aa}.home-donut-wrap{display:flex;align-items:center;justify-content:center;gap:22px;padding:10px 0}.home-donut{width:112px;height:112px;border-radius:50%;background:conic-gradient(#57afe8 0 54%,#9bd5f5 54% 88%,#ef8d93 88%);display:grid;place-items:center;position:relative}.home-donut:after{content:"";position:absolute;inset:19px;background:white;border-radius:50%}.home-donut b,.home-donut span{z-index:1;position:absolute}.home-donut b{font-size:22px;margin-top:-13px}.home-donut span{font-size:8px;color:#8296a6;margin-top:22px}.home-legend p{font-size:9px;color:#71889b}.home-legend i{display:inline-block;width:8px;height:8px;border-radius:3px;margin-right:6px}.home-legend i.done{background:#57afe8}.home-legend i.doing{background:#9bd5f5}.home-legend i.back{background:#ef8d93}.home-legend b{margin-left:6px;color:#17334d}@media(max-width:1000px){.home-analytics{grid-template-columns:1fr 1fr}}@media(max-width:800px){.role-grid,.home-analytics{grid-template-columns:1fr}}
+
+@media(min-width:1001px){.el-main:has(>.hero){grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important}}.el-main.approval-page .filters .el-select{display:none!important}.el-main:has(>.hero)>.stats .el-card__body{display:grid!important;grid-template-columns:45px auto auto;grid-template-rows:auto auto;justify-content:start!important;align-items:center;column-gap:12px;row-gap:4px;text-align:left}.el-main:has(>.hero)>.stats .el-card__body>i{grid-column:1;grid-row:1}.el-main:has(>.hero)>.stats .el-card__body>div{display:contents}.el-main:has(>.hero)>.stats .el-card__body span{grid-column:2;grid-row:1;white-space:nowrap;text-align:left;font-size:13px;color:#496980}.el-main:has(>.hero)>.stats .el-card__body b{grid-column:3;grid-row:1;margin:0;text-align:left;line-height:1;font-size:27px}.el-main:has(>.hero)>.stats .el-card__body small{grid-column:2/4;grid-row:2;text-align:left;white-space:nowrap}
+.role-tree-card .el-card__body{padding:10px 18px}.role-tree-card .el-tree{background:transparent}.role-tree-card .el-tree-node__content{height:auto;min-height:54px;border-bottom:1px solid #e8f1f7}.role-tree-card .el-tree-node__content:hover{background:#eef8fe}.role-tree-node{width:100%;display:flex;align-items:center;gap:10px;padding:8px}.role-tree-node>i{width:31px;height:31px;border-radius:9px;background:#dff1fd;color:#2988c8;display:grid;place-items:center;font-style:normal;font-size:11px}.role-tree-node.department>b{font-size:13px}.role-tree-node.department>.el-tag{margin-left:6px}.role-tree-node.role>div:nth-child(2){min-width:190px}.role-tree-node.role b,.role-tree-node.role span{display:block}.role-tree-node.role b{font-size:12px}.role-tree-node.role span{font-size:9px;color:#7f95a8;margin-top:3px}.tree-perms{display:flex;gap:5px;flex:1}.role-tree-node.role>.el-button{margin-left:auto}
+
+@media(min-width:1001px){.el-main:has(>.hero){align-items:stretch}.el-main:has(>.hero)>.stats{grid-template-columns:repeat(3,minmax(0,1fr))!important;align-self:stretch}.el-main:has(>.hero)>.stats>.el-card{height:100%}.el-main:has(>.hero)>.stats>.el-card>.el-card__body{height:100%;align-content:center!important}.el-main:has(>.hero)>.hero{height:100%;min-height:0!important;align-self:stretch}.el-main:has(>.hero)>.stats .el-card__body{grid-template-columns:40px minmax(0,1fr) auto;column-gap:8px;padding:16px 13px}.el-main:has(>.hero)>.stats .el-card__body>i{width:40px;height:40px}.el-main:has(>.hero)>.stats .el-card__body span{font-size:13px;font-weight:600}.el-main:has(>.hero)>.stats .el-card__body b{font-size:25px;font-variant-numeric:tabular-nums;transition:transform .15s}.el-main:has(>.hero)>.stats .el-card__body small{font-size:10px;line-height:1.4}}.hero>div>span{display:inline-flex!important;align-items:center;color:#fff!important;background:rgba(255,255,255,.24);border:1px solid rgba(255,255,255,.44);border-radius:16px;padding:6px 10px;font-size:12px!important;font-weight:700;letter-spacing:.3px;text-shadow:0 1px 3px rgba(24,89,139,.26);box-shadow:0 4px 12px rgba(35,109,165,.12)}
+
+@media(min-width:1001px){.el-main:has(>.hero)>.grid2{height:100%;align-self:stretch}.el-main:has(>.hero)>.grid2>.el-card:first-child{height:100%;display:flex;flex-direction:column}.el-main:has(>.hero)>.grid2>.el-card:first-child>.el-card__body{flex:1}.work-zones>.zone.stamp{grid-column:1/-1}}
+
+</style></head><body><div id="app">
+<el-container class="shell"><el-aside width="228px" class="aside"><div class="logo"><i>峡</i><div><b>海峡金</b><span>OA 内控审批中心</span></div></div><el-menu :default-active="page" background-color="#172036" text-color="#aeb8cf" active-text-color="#fff" @select="page=$event"><el-menu-item index="home"><span class="mi">⌂</span>首页</el-menu-item><el-menu-item index="work"><span class="mi">▦</span>工作台<el-badge :value="unreadCount" :max="99" :hidden="!unreadCount" class="menu-badge"></el-badge></el-menu-item><el-menu-item index="board"><span class="mi">▥</span>工作看板</el-menu-item><div class="menu-label">业务管理</div><el-menu-item index="forms"><span class="mi">▤</span>全部表单</el-menu-item><el-menu-item index="approve"><span class="mi">✓</span>审批中心<el-badge :value="todos.length" :max="99" :hidden="!todos.length" class="menu-badge"></el-badge></el-menu-item><el-menu-item index="archive"><span class="mi">≡</span>台账档案</el-menu-item><div class="menu-label">系统管理</div><el-menu-item index="permission"><span class="mi">♙</span>权限管理</el-menu-item><el-menu-item index="flow"><span class="mi">▷</span>流程管理</el-menu-item><el-menu-item index="risk"><span class="mi">△</span>风险预警</el-menu-item></el-menu><div class="aside-foot"><i></i>系统运行正常<span>数据更新于 10:28</span></div></el-aside>
+<el-container><el-header class="topbar"><div><h1>{{pageNames[page]}}</h1><el-breadcrumb separator="/"><el-breadcrumb-item>审批中心</el-breadcrumb-item><el-breadcrumb-item>{{pageNames[page]}}</el-breadcrumb-item></el-breadcrumb></div><div class="top-actions"><el-button circle>⌕</el-button><el-badge :value="3"><el-button circle>♧</el-button></el-badge><el-avatar shape="square">林</el-avatar><div class="who"><b>林安然</b><span>{{role}}</span></div><el-select v-model="role" size="small" style="width:112px"><el-option v-for="r in roles" :key="r" :label="r" :value="r"></el-option></el-select></div></el-header><el-main>
+<template v-if="page==='home'"><section class="hero"><div><span>2026年8月26日 · 星期三</span><h2>早上好，林安然</h2><p>今日有 <b>{{todoCount}} 项审批</b>待处理，{{riskOverview.overdue}} 项风险预警需要关注。</p><el-button type="primary" plain @click="openSubmit('员工报销')">＋ 发起报销</el-button><el-button class="glass" @click="openSubmit('日常付款')">＋ 付款申请</el-button></div><el-progress type="circle" :percentage="96" color="#fff"><template #default><b class="percent">96%</b><small>流程合规率</small></template></el-progress></section><div class="stats"><el-card v-for="s in stats" :key="s.name" shadow="never"><i :class="s.color">{{s.icon}}</i><div><span>{{s.name}}</span><b>{{s.value}}</b><small>{{s.note}}</small></div></el-card></div><div class="grid2"><el-card shadow="never"><template #header><div class="card-title"><div><b>待办审批</b><span>优先处理临近超时的申请</span></div><el-button link type="primary" @click="page='approve'">查看全部 →</el-button></div></template><div class="todo" v-for="d in documents.slice(0,4)" :key="d.id" @click="openDetail(d)"><i>{{d.type[0]}}</i><div><b>{{d.title}}</b><span>{{d.applicant}} · {{d.department}} · {{d.current}}</span></div><strong>{{money(d.amount)}}<small>{{d.updated}}</small></strong></div></el-card><el-card shadow="never"><template #header><div class="card-title"><div><b>流程透明度</b><span>所有节点均可穿透查看前置资料</span></div><el-tag type="success">100% 留痕</el-tag></div></template><div class="transparency"><div class="shield">✓</div><h3>前置流程完整可见</h3><p>审批人可查看申请表、历史附件、全部前置节点意见和操作时间。</p><el-button type="primary" plain @click="page='approve'">进入审批中心</el-button></div></el-card></div></template>
+<template v-else-if="page==='work'"><div class="page-head"><div><h2>工作台</h2><p>按业务区域发起申请，常用单据一键提交</p></div></div><div class="work-zones"><el-card shadow="never" class="zone daily"><template #header><div class="zone-title"><i>日</i><div><b>日常提交</b><span>个人日常费用与行政类申请</span></div><el-button type="primary" @click="openSubmit('员工报销')">新建报销</el-button></div></template><div class="quick-docs"><button v-for="q in dailyQuick" @click="quickSubmit(q,'报销申请单')"><i>{{q[0]}}</i><b>{{q}}</b><span>快捷提交 →</span></button></div></el-card><el-card shadow="never" class="zone business"><template #header><div class="zone-title"><i>业</i><div><b>业务单据提交</b><span>付款、供应商及经营业务申请</span></div><el-button type="primary" @click="openSubmit('日常付款')">新建付款</el-button></div></template><div class="quick-docs"><button v-for="q in businessQuick" @click="quickSubmit(q,'付款申请单')"><i>{{q[0]}}</i><b>{{q}}</b><span>快捷提交 →</span></button></div></el-card></div><el-card shadow="never"><template #header><div class="card-title"><div><b>我已发起的单据</b><span>点击查看全流程，或复制历史单据再次提交</span></div><el-input v-model="keyword" clearable placeholder="搜索单号或事项" style="width:260px"></el-input></div></template><el-table :data="myDocuments" @row-click="openDetail" class="click-table"><el-table-column prop="id" label="单据编号" width="165"></el-table-column><el-table-column prop="title" label="申请事项" min-width="210"></el-table-column><el-table-column prop="type" label="类型" width="110"></el-table-column><el-table-column label="金额" width="130"><template #default="s">{{money(s.row.amount)}}</template></el-table-column><el-table-column prop="current" label="当前节点" width="130"></el-table-column><el-table-column label="状态" width="110"><template #default="s"><el-tag :type="tagType(s.row.status)">{{s.row.status}}</el-tag></template></el-table-column><el-table-column label="操作" width="180"><template #default="s"><el-button link type="primary" @click.stop="openDetail(s.row)">查看全流程</el-button><el-button link @click.stop="repeatSubmit(s.row)">再次提交</el-button></template></el-table-column></el-table></el-card></template>
+<template v-else-if="page==='board'"><div class="page-head"><div><h2>工作看板</h2><p>审批进度、效能与风险实时总览</p></div><el-date-picker v-model="boardDate" type="daterange" range-separator="至"></el-date-picker></div><div class="stats"><el-card v-for="s in boardStats" shadow="never"><div><span>{{s.name}}</span><b>{{s.value}}</b><small>{{s.note}}</small></div></el-card></div><div class="grid2"><el-card shadow="never"><template #header><b>各节点处理效率</b></template><div class="eff-row" v-for="e in efficiency"><span>{{e.name}}</span><el-progress :percentage="e.p" :color="e.color"></el-progress><b>{{e.time}}</b></div></el-card><el-card shadow="never"><template #header><b>单据状态分布</b></template><div class="status-grid"><div v-for="s in statusBoard"><b>{{s[1]}}</b><span>{{s[0]}}</span></div></div></el-card></div></template>
+<template v-else-if="page==='forms'||page==='approve'"><div class="page-head"><div><h2>{{listMode==='warning'?'风险单据':pageNames[page]}}</h2><p>{{listMode==='warning'?'展示系统识别出的高金额及异常关注单据':page==='forms'?'超级管理员可查看、提交和审批所有表单':'审批人可查看前置流程全部表单信息、附件与审批记录'}}</p></div><el-button v-if="page==='forms'" type="primary" @click="openSubmit('日常付款')">＋ 新建申请</el-button></div><el-card shadow="never"><div class="filters"><el-input v-model="keyword" clearable placeholder="搜索单号、申请人或事项"></el-input><el-select v-model="statusFilter"><el-option label="全部状态" value="全部"></el-option><el-option v-for="x in ['待审批','审批中','已通过','已驳回']" :label="x" :value="x"></el-option></el-select></div><el-table :data="filteredDocs" @row-click="openDetail" class="click-table"><el-table-column prop="id" label="申请单号" width="165"></el-table-column><el-table-column prop="title" label="申请事项" min-width="190"></el-table-column><el-table-column label="申请人/部门" width="150"><template #default="s">{{s.row.applicant}}<small class="cell-sub">{{s.row.department}}</small></template></el-table-column><el-table-column label="金额" width="130"><template #default="s">{{money(s.row.amount)}}</template></el-table-column><el-table-column prop="current" label="当前节点" width="130"></el-table-column><el-table-column label="状态" width="100"><template #default="s"><el-tag :type="tagType(s.row.status)">{{s.row.status}}</el-tag></template></el-table-column><el-table-column label="操作" width="170"><template #default="s"><el-button link type="primary" @click.stop="openDetail(s.row)">{{page==='approve'?'进入审批':'查看全流程'}}</el-button></template></el-table-column></el-table></el-card></template>
+<template v-else-if="page==='archive'"><div class="page-head"><div><h2>台账档案</h2><p>仅归档全部审批通过的单据，支持多条件组合查询</p></div><el-button v-if="can('document:export')" :loading="exporting" @click="exportLedger">导出台账</el-button></div><el-card shadow="never"><div class="archive-filter"><el-input v-model="archiveApplicant" clearable placeholder="申请人"></el-input><el-select v-model="archiveDepartment" clearable placeholder="申请部门"><el-option v-for="d in departments" :label="d" :value="d"></el-option></el-select><el-input v-model="archiveCode" clearable placeholder="单据编号"></el-input><el-date-picker v-model="archiveDate" type="daterange" range-separator="至" start-placeholder="开始时间" end-placeholder="结束时间"></el-date-picker></div><el-table :data="archiveDocs" @row-click="openDetail" class="click-table"><el-table-column prop="id" label="单据编号" width="170"></el-table-column><el-table-column prop="title" label="申请事项" min-width="210"></el-table-column><el-table-column prop="applicant" label="申请人" width="100"></el-table-column><el-table-column prop="department" label="申请部门" width="120"></el-table-column><el-table-column label="金额" width="130"><template #default="s">{{money(s.row.amount)}}</template></el-table-column><el-table-column prop="updated" label="归档时间" width="120"></el-table-column><el-table-column label="状态" width="100"><template #default><el-tag type="success">已通过</el-tag></template></el-table-column><el-table-column label="操作" width="110"><template #default="s"><el-button link type="primary" @click.stop="openDetail(s.row)">查看档案</el-button></template></el-table-column></el-table></el-card></template>
+<template v-else-if="page==='permission'"><div class="page-head"><div><h2>权限管理</h2><p>人员仅分配部门、岗位和角色；权限统一由角色配置</p></div><el-button v-if="permissionTab==='people'" type="primary" @click="personVisible=true">＋ 增加员工</el-button><el-button v-else type="primary" @click="newRole">＋ 新增角色</el-button></div><el-tabs v-model="permissionTab" class="permission-tabs"><el-tab-pane label="人员管理" name="people"><el-card shadow="never"><el-table :data="people"><el-table-column prop="name" label="姓名" width="100"></el-table-column><el-table-column prop="jobNo" label="工号" width="110"></el-table-column><el-table-column prop="department" label="部门" width="110"></el-table-column><el-table-column prop="post" label="岗位" width="130"></el-table-column><el-table-column prop="position" label="分配角色" width="150"></el-table-column><el-table-column label="状态" width="90"><template #default><el-tag type="success">在职</el-tag></template></el-table-column><el-table-column label="操作" min-width="200"><template #default="s"><el-button link type="primary" @click="editPerson(s.row)">编辑员工</el-button><el-button link @click="adjustRole(s.row)">调整角色</el-button><el-button link type="danger" @click="deletePerson(s.row)">删除</el-button></template></el-table-column></el-table></el-card></el-tab-pane><el-tab-pane label="角色管理" name="roles"><div class="role-grid"><el-card v-for="r in roleConfigs" :key="r.name" shadow="hover"><template #header><div class="card-title"><div><b>{{r.name}}</b><span>{{r.post}}</span></div><el-button link type="primary" @click="editRole(r)">配置权限</el-button></div></template><p class="role-scope">数据范围：{{r.scope}}</p><div><el-tag v-for="p in r.permissions" :key="p" class="perm-tag" effect="plain">{{p}}</el-tag></div></el-card></div></el-tab-pane></el-tabs></template><template v-else-if="page==='risk'"><div class="page-head"><div><h2>风险预警</h2><p>处理时限已超期或即将到期的审批节点，仅含你数据范围内可见的单据</p></div><el-button type="primary" plain @click="refreshRisks">刷新</el-button></div><div class="stats"><el-card v-for="s in riskStats" :key="s.name" shadow="never"><i :class="s.color">{{s.icon}}</i><div><span>{{s.name}}</span><b>{{s.value}}</b><small>{{s.note}}</small></div></el-card></div><el-card shadow="never"><template #header><div class="card-title"><div><b>超期 / 临期明细</b><span>按处理时限升序，点行可打开单据</span></div><el-tag type="info">{{riskOverview.runningTotal}} 个进行中节点</el-tag></div></template><el-table :data="riskRows" @row-click="openDetail" class="click-table" empty-text="当前数据范围内没有超期或临期的审批节点"><el-table-column prop="docNo" label="单据编号" width="165"></el-table-column><el-table-column prop="title" label="申请事项" min-width="190"></el-table-column><el-table-column prop="docTypeName" label="单据类型" width="110"></el-table-column><el-table-column prop="applicant" label="申请人" width="90"></el-table-column><el-table-column prop="department" label="申请部门" width="120"></el-table-column><el-table-column prop="nodeName" label="卡在节点" width="140"></el-table-column><el-table-column prop="assignee" label="承办人" width="95"></el-table-column><el-table-column prop="deadlineText" label="处理时限" width="150"></el-table-column><el-table-column label="风险" width="130"><template #default="s"><el-tag :type="s.row.tag">{{s.row.riskText}}</el-tag></template></el-table-column></el-table></el-card></template><template v-else-if="page==='flow'"><div class="page-head"><div><h2>流程管理</h2><p>查看、修改或新增所有业务单据的审批流程</p></div><el-button type="primary" @click="newFlow">＋ 新增流程</el-button></div><div class="flow-config-grid"><el-card v-for="f in flowConfigs" :key="f.type" shadow="hover"><template #header><div class="card-title"><div><b>{{f.type}}</b><span>{{f.category}}</span></div><el-button type="primary" plain @click="editFlow(f)">修改流程</el-button></div></template><div class="flow-chain"><template v-for="(n,i) in f.nodes"><span>{{n}}</span><i v-if="i<f.nodes.length-1">→</i></template></div></el-card></div></template><template v-else><el-empty :description="pageNames[page]+'功能区'"></el-empty></template>
+</el-main></el-container></el-container>
+<el-dialog v-model="submitVisible" :title="submitForm.type" width="760px" destroy-on-close><div class="code-banner"><span>本次单据编码</span><b>{{submitForm.code}}</b><small>编码已自动生成，提交后不可修改</small></div><el-steps :active="1" align-center><el-step title="填写申请"></el-step><el-step title="上传附件"></el-step><el-step title="提交审批"></el-step></el-steps><el-form :model="submitForm" label-position="top" class="submit-form"><div class="form2"><el-form-item label="申请人"><el-input v-model="submitForm.applicant" disabled></el-input></el-form-item><el-form-item label="所属部门"><el-select v-model="submitForm.department"><el-option v-for="d in departments" :label="d" :value="d"></el-option></el-select></el-form-item><el-form-item label="申请事项"><el-input v-model="submitForm.title"></el-input></el-form-item><el-form-item label="申请金额（元）"><el-input-number v-model="submitForm.amount" :min="0" :controls="false"></el-input-number></el-form-item></div><el-form-item label="申请事由"><el-input v-model="submitForm.reason" type="textarea" :rows="3"></el-input></el-form-item><el-form-item label="附件与关联资料"><div class="attachment-grid"><div class="attachment-item" v-for="(a,i) in attachmentRules"><div><i>{{i+1}}</i><b>{{a}}</b><span v-if="isLinkRule(i)">{{linkedDocument?'已关联：'+(linkMode==='daily'?linkedDocument.code:linkedDocument.contract)+' · '+linkedDocument.name:'请查询并选择已审批的前置单据'}}</span><span v-else>请上传与“{{a}}”对应的清晰文件</span></div><el-button v-if="isLinkRule(i)" type="primary" plain @click="openLink">{{linkedDocument?'重新关联':'关联单据'}}</el-button><el-upload v-else action="#" :auto-upload="false" :limit="1" :on-change="onApplyFileChange.bind(null, i)" :on-remove="onApplyFileRemove.bind(null, i)"><el-button type="primary" plain>＋ 上传文件</el-button><template #tip><span style="font-size:11px;color:#909399">提交时统一上传</span></template></el-upload></div></div></el-form-item><div class="flow-tip"><b>审批流程</b><span>提交人 → 部门负责人 → 核算会计 → 内控合规/公司负责人 → 出纳回单</span></div></el-form><template #footer><el-button @click="submitVisible=false">取消</el-button><el-button>保存草稿</el-button><el-button type="primary" @click="submitRequest">提交审批</el-button></template></el-dialog>
+<el-dialog v-model="personVisible" title="增加人员与审批权限" width="620px"><el-form label-position="top"><div class="form2"><el-form-item label="姓名"><el-input v-model="newPerson.name"></el-input></el-form-item><el-form-item label="工号"><el-input v-model="newPerson.jobNo"></el-input></el-form-item><el-form-item label="所属部门"><el-select v-model="newPerson.deptId" placeholder="请选择部门" style="width:100%"><el-option v-for="d in deptOptions" :key="d.id" :label="d.name" :value="d.id"></el-option></el-select></el-form-item><el-form-item label="岗位/角色"><el-select v-model="newPerson.position"><el-option v-for="r in roles" :label="r" :value="r"></el-option></el-select></el-form-item></div><el-form-item label="审批权限配置"><el-checkbox-group v-model="newPerson.permissions"><el-checkbox v-for="p in ['查看本人表单','查看本部门表单','查看全部表单','提交全部表单','部门负责人审批','核算会计审批','内控合规审批','出纳审批','审批全部节点','上传审批凭证']" :label="p">{{p}}</el-checkbox></el-checkbox-group></el-form-item></el-form><template #footer><el-button @click="personVisible=false">取消</el-button><el-button type="primary" @click="addPerson">保存人员</el-button></template></el-dialog>
+<el-drawer v-model="detailVisible" size="760px" :with-header="false"><template v-if="selected"><div class="drawer-head"><div><el-tag>{{selected.type}}</el-tag><h2>{{selected.title}}</h2><span>{{selected.id}} · {{selected.applicant}} · {{selected.department}}</span></div><el-button circle @click="detailVisible=false">×</el-button></div><el-alert title="流程信息完全可见" description="当前审批人可查看申请表、全部前置附件、历史审批意见与操作时间。" type="success" :closable="false" show-icon></el-alert><el-descriptions :column="3" border class="desc"><el-descriptions-item label="申请金额">{{money(selected.amount)}}</el-descriptions-item><el-descriptions-item label="当前节点">{{selected.current}}</el-descriptions-item><el-descriptions-item label="状态"><el-tag :type="tagType(selected.status)">{{selected.status}}</el-tag></el-descriptions-item><el-descriptions-item label="申请事由" :span="3">{{selected.reason}}</el-descriptions-item></el-descriptions><el-tabs v-model="detailTab"><el-tab-pane label="全流程" name="flow"><div class="flow-list"><div v-for="(n,i) in selected.nodes" :class="['flow-node',n.state]"><div class="node-dot">{{n.state==='done'?'✓':i+1}}</div><div class="node-body"><div><b>{{n.name}}</b><el-tag size="small" :type="n.state==='done'?'success':n.state==='current'?'warning':'info'">{{n.state==='done'?'已完成':n.state==='current'?'处理中':'待处理'}}</el-tag><span>{{n.time}}</span></div><p v-if="n.person">审批人：{{n.person}}</p><p v-if="n.comment">审批意见：{{n.comment}}</p><div v-if="n.files?.length" class="node-files"><el-button v-for="f in n.files" size="small" plain>▧ {{f}}</el-button></div><small v-if="i>0">可查看前 {{i}} 个节点的全部信息与附件</small></div></div></div></el-tab-pane><el-tab-pane :label="`附件资料 (${allFiles.length})`" name="files"><el-empty v-if="!allFiles.length" description="暂无附件" :image-size="70"></el-empty><div class="file-card" v-for="f in allFiles" :key="f.id"><i>▧</i><div><b>{{f.name}}</b><span>{{f.node}} · {{f.uploader}} · {{f.time}} · {{f.sizeText}}</span></div><el-button link type="primary" v-if="f.previewable" @click="previewAttachment(f.id)">预览</el-button><el-button link @click="downloadAttachment(f.id)">下载</el-button><el-button link type="danger" v-if="canDeleteFile(f)" @click="removeAttachment(f.id)">删除</el-button></div></el-tab-pane><el-tab-pane :label="'关联单据 (' + ((selected.links||[]).length) + ')'" name="links"><el-empty v-if="!selected.links||!selected.links.length" description="未关联前置单据" :image-size="70"></el-empty><div class="file-card" v-for="l in selected.links" :key="l.id"><i>⇄</i><div><b>{{l.linkedDocNo||('#'+l.linkedId)}} · {{l.linkedTitle||'关联单据已不存在'}}</b><span>{{l.linkType==='prev_doc'?'前置单据':(l.linkType||'关联')}}</span></div></div></el-tab-pane><el-tab-pane label="申请表信息" name="form"><el-descriptions :column="2" border><el-descriptions-item label="申请人">{{selected.applicant}}</el-descriptions-item><el-descriptions-item label="所属部门">{{selected.department}}</el-descriptions-item><el-descriptions-item label="单据类型">{{selected.type}}</el-descriptions-item><el-descriptions-item label="申请金额">{{money(selected.amount)}}</el-descriptions-item><el-descriptions-item label="申请事项" :span="2">{{selected.title}}</el-descriptions-item><el-descriptions-item label="申请事由" :span="2">{{selected.reason}}</el-descriptions-item></el-descriptions></el-tab-pane></el-tabs><div v-if="canApprove" class="approval-action"><h3>当前节点审批</h3><el-upload action="#" :auto-upload="false" :limit="3" :on-change="onVoucherChange" :on-remove="onVoucherChange"><el-button>＋ 上传{{selected.current}}凭证{{selected.requireAttachment?'（必填）':''}}</el-button><template #tip><span style="font-size:11px;color:#909399" v-if="selected.requireAttachment">该节点办理必须上传凭证，否则无法通过</span></template></el-upload><el-input v-model="approvalComment" type="textarea" placeholder="请输入审批意见"></el-input><div><el-button type="danger" plain @click="reject">驳回</el-button><el-button type="primary" @click="approve">通过审批</el-button></div></div></template></el-drawer>
+</div><script src="https://cdn.jsdelivr.net/npm/vue@3.5.22/dist/vue.global.prod.js"></script><script src="https://cdn.jsdelivr.net/npm/element-plus@2.11.5/dist/index.full.min.js"></script><script src="https://cdn.jsdelivr.net/npm/element-plus@2.11.5/dist/locale/zh-cn.min.js"></script><script>
+document.querySelector('#app').insertAdjacentHTML('beforeend',`<el-dialog v-model="linkVisible" :title="linkMode==='daily'?'关联前置单据':'关联合同或前置审批'" width="780px" append-to-body><el-alert :title="linkMode==='daily'?'可按单据编号、单据名称或提交人查询':'可按合同编号、单据名称或提交人查询'" type="info" :closable="false" show-icon></el-alert><div class="link-search"><el-input v-model="linkKeyword" clearable :placeholder="linkMode==='daily'?'输入单据编号、名称或提交人':'输入合同编号、单据名称或提交人'"><template #prepend>⌕</template></el-input><el-button type="primary">查询</el-button></div><el-table :data="filteredLinks" highlight-current-row><el-table-column v-if="linkMode==='daily'" prop="code" label="单据编号" width="160"></el-table-column><el-table-column v-else prop="contract" label="合同编号" width="160"></el-table-column><el-table-column prop="name" label="单据名称" min-width="210"></el-table-column><el-table-column label="提交人信息" min-width="170"><template #default="s"><b>{{s.row.applicant}}</b><small class="cell-sub">{{s.row.department}}</small></template></el-table-column><el-table-column label="操作" width="90"><template #default="s"><el-button link type="primary" @click="chooseLink(s.row)">选择关联</el-button></template></el-table-column></el-table><template #footer><el-button @click="linkVisible=false">取消</el-button></template></el-dialog>`);
+document.querySelector('#app').insertAdjacentHTML('beforeend',`<el-dialog v-model="flowVisible" :title="editingFlow?.isNew?'新增审批流程':'修改审批流程'" width="640px" append-to-body><template v-if="editingFlow"><el-form label-position="top" class="flow-editor"><div class="form2"><el-form-item label="流程名称"><el-input v-model="editingFlow.type" :disabled="!editingFlow.isNew" placeholder="例如：采购申请单"></el-input></el-form-item><el-form-item label="关联单据类型"><el-select v-model="editingFlow.docTypeId" placeholder="该流程服务的单据类型" style="width:100%"><el-option v-for="d in documentTypes" :key="d.id" :label="d.name" :value="d.id"></el-option></el-select></el-form-item></div><el-form-item label="审批节点（按审批顺序选择，可输入新节点）"><el-select v-model="editingFlow.nodes" multiple filterable allow-create default-first-option style="width:100%" placeholder="按审批顺序选择节点"><el-option v-for="n in nodeTemplateList" :key="n.name" :label="n.name" :value="n.name"><span>{{n.name}}</span><span style="float:right;color:#909399;font-size:12px;margin-left:16px">{{n.ruleLabel}}</span></el-option></el-select><el-alert title="保存后会生成新版本并自动部署；已在审批中的单据仍走原版本，不受影响。" type="info" :closable="false" style="margin-top:10px"></el-alert></el-form-item></el-form></template><template #footer><el-button v-if="!editingFlow?.isNew" type="danger" plain @click="removeFlow">废弃流程</el-button><el-button @click="flowVisible=false">取消</el-button><el-button type="primary" :loading="personSaving" @click="saveFlow">保存并部署</el-button></template></el-dialog>`);
+document.querySelector('#app').insertAdjacentHTML('beforeend',`<el-dialog v-model="roleVisible" :title="editingRole?.isNew?'新增角色':'配置角色权限'" width="680px" append-to-body><template v-if="editingRole"><el-form label-position="top"><div class="form2"><el-form-item label="角色名称"><el-input v-model="editingRole.name" :disabled="!editingRole.isNew"></el-input></el-form-item><el-form-item label="对应部门"><el-select v-model="editingRole.deptId" clearable placeholder="不选=全公司" style="width:100%"><el-option v-for="d in deptOptions" :key="d.id" :label="d.name" :value="d.id"></el-option></el-select></el-form-item><el-form-item label="对应岗位"><el-select v-model="editingRole.post" filterable allow-create default-first-option style="width:100%"><el-option v-for="p in ['系统管理员','部门负责人岗','财务核算岗','内控合规岗','资金出纳岗','总经办审批岗','印章管理岗']" :label="p" :value="p"></el-option></el-select></el-form-item><el-form-item label="数据范围"><el-select v-model="editingRole.scopeType" style="width:100%"><el-option v-for="s in scopeOptions" :key="s.value" :label="s.label" :value="s.value"></el-option></el-select></el-form-item></div><el-form-item label="权限配置（来自后端权限点目录；保存后该角色成员需重新登录才生效）"><el-checkbox-group v-model="editingRole.permCodes"><el-checkbox v-for="p in allPermissions" :key="p.code" :label="p.code">{{p.name}}</el-checkbox></el-checkbox-group></el-form-item></el-form></template><template #footer><el-button v-if="!editingRole?.isNew" type="danger" plain @click="removeRole">删除角色</el-button><el-button @click="roleVisible=false">取消</el-button><el-button type="primary" :loading="personSaving" @click="saveRole">保存角色</el-button></template></el-dialog>`);
+document.head.insertAdjacentHTML('beforeend',`<style>.notify-list{max-height:calc(100vh - 200px);overflow:auto}.notify-item{position:relative;padding:12px 14px;border:1px solid #ebeef5;border-radius:10px;margin-bottom:10px;cursor:pointer;background:#fff;transition:background .15s}.notify-item:hover{background:#f5f7fa}.notify-item.is-unread{border-left:3px solid #f56c6c}.notify-item.is-read{opacity:.72}.notify-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px}.notify-head b{font-size:14px;color:#1f2d3d}.notify-head span{font-size:12px;color:#909399;white-space:nowrap}.notify-item p{margin:6px 0 0;font-size:13px;color:#5a6a7a;line-height:1.5}</style>`);
+document.querySelector('#app').insertAdjacentHTML('beforeend',`<el-drawer v-model="notifyVisible" title="通知中心" size="520px" append-to-body><div v-loading="notifyLoading" class="notify-list"><el-empty v-if="!notifyList.length" description="暂无通知" :image-size="80"></el-empty><div v-for="n in notifyList" :key="n.id" :class="['notify-item', n.isRead ? 'is-read' : 'is-unread']" @click="markNotifyRead(n)"><div class="notify-head"><b>{{n.title}}</b><span>{{n.time}}</span></div><p>{{n.content}}</p><el-tag v-if="!n.isRead" size="small" type="danger" effect="plain">未读</el-tag></div></div><el-pagination v-if="notifyTotal > 20" small layout="prev, pager, next" :current-page="1" :page-size="20" :total="notifyTotal" @current-change="changeNotifyPage"></el-pagination><template #footer><el-button @click="notifyVisible=false">关闭</el-button><el-button type="primary" :loading="notifyLoading" @click="markAllNotifyRead">全部已读</el-button></template></el-drawer>`);
+/* 调整员工角色（行内入口） */
+document.querySelector('#app').insertAdjacentHTML('beforeend',`<el-dialog v-model="roleAssignVisible" :title="'调整角色：'+(roleAssignTarget?.name||'')" width="520px" append-to-body><el-form label-position="top"><el-form-item label="分配角色（可多选）"><el-select v-model="roleAssignCodes" multiple placeholder="请选择角色" style="width:100%"><el-option v-for="r in roleConfigs" :key="r.code" :label="r.name" :value="r.code"></el-option></el-select></el-form-item></el-form><template #footer><el-button @click="roleAssignVisible=false">取消</el-button><el-button type="primary" :loading="personSaving" @click="confirmAssignRoles">保存</el-button></template></el-dialog>`);
+document.querySelector('#app').insertAdjacentHTML('beforeend',`<el-dialog v-model="rejectVisible" title="驳回审批" width="560px" append-to-body><el-form label-position="top"><el-form-item label="指定驳回层级"><el-select v-model="rejectForm.level" style="width:100%"><el-option v-for="n in ['提交人','直属部门负责人','核算会计','内控合规','出纳']" :label="n" :value="n"></el-option></el-select></el-form-item><el-form-item label="驳回原因"><el-input v-model="rejectForm.reason" type="textarea" :rows="3" placeholder="请写明驳回原因"></el-input></el-form-item><el-form-item label="需要补充材料"><el-input v-model="rejectForm.materials" placeholder="请输入需要补充的材料"></el-input></el-form-item></el-form><template #footer><el-button @click="rejectVisible=false">取消</el-button><el-button type="danger" @click="confirmReject">确认驳回</el-button></template></el-dialog><el-dialog v-model="supplementVisible" title="通过，但要求补充材料" width="590px" append-to-body><el-form label-position="top"><el-form-item label="补充模式"><el-radio-group v-model="supplementForm.mode"><el-radio-button label="付款前">付款前补充</el-radio-button><el-radio-button label="付款后">付款后补充</el-radio-button></el-radio-group></el-form-item><el-form-item label="指定补充对象"><el-select v-model="supplementForm.role" style="width:100%"><el-option v-for="r in ['提交人','直属部门负责人','核算会计']" :label="r" :value="r"></el-option></el-select></el-form-item><el-form-item label="需要补充材料"><el-input v-model="supplementForm.materials" type="textarea" :rows="3"></el-input></el-form-item><el-alert title="付款前补完后跳过当前审批人直接进入下一节点；付款后未补齐则流程不可闭环。" type="info" :closable="false"></el-alert></el-form><template #footer><el-button @click="supplementVisible=false">取消</el-button><el-button type="primary" @click="confirmSupplement">确认通过并补充</el-button></template></el-dialog><el-dialog v-model="signVisible" title="发起加签" width="520px" append-to-body><el-form label-position="top"><el-form-item label="加签人员"><el-select v-model="signForm.person" filterable style="width:100%"><el-option v-for="p in people" :label="p.name+' · '+p.department+' · '+p.post" :value="p.name"></el-option></el-select></el-form-item><el-form-item label="加签说明"><el-input v-model="signForm.reason" type="textarea" :rows="3"></el-input></el-form-item></el-form><template #footer><el-button @click="signVisible=false">取消</el-button><el-button type="primary" @click="confirmSign">发送加签</el-button></template></el-dialog>`);
+document.querySelector('el-select[v-model="statusFilter"]')?.setAttribute('v-if',"page!=='approve'");
+const submitTemplate=document.querySelector('.submit-form');if(submitTemplate){const genericGrid=submitTemplate.querySelector('.form2');genericGrid?.setAttribute('v-if',"!submitForm.type.includes('盖章')");genericGrid?.insertAdjacentHTML('beforebegin',`<div v-if="submitForm.type.includes('盖章')" class="form2 stamp-form"><el-form-item label="用印项目"><el-input v-model="submitForm.sealProject" placeholder="请输入用印项目"></el-input></el-form-item><el-form-item label="用印部门"><el-select v-model="submitForm.sealDepartment"><el-option v-for="d in departments" :label="d" :value="d"></el-option></el-select></el-form-item><el-form-item label="用印时间"><el-date-picker v-model="submitForm.sealTime" type="datetime" placeholder="选择用印时间" style="width:100%"></el-date-picker></el-form-item><el-form-item label="用印文件名称"><el-input v-model="submitForm.fileName" placeholder="请输入文件名称"></el-input></el-form-item><el-form-item label="用章类型"><el-radio-group v-model="submitForm.sealType"><el-radio-button label="合同章">合同章</el-radio-button><el-radio-button label="公章">公章</el-radio-button></el-radio-group></el-form-item><el-form-item label="用印原因"><el-input v-model="submitForm.sealReason" type="textarea" :rows="3" placeholder="请输入用印原因"></el-input></el-form-item></div>`);const directItems=[...submitTemplate.children].filter(x=>x.tagName==='EL-FORM-ITEM');directItems[0]?.setAttribute('v-if',"!submitForm.type.includes('盖章')");const linkButton=submitTemplate.querySelector('.attachment-item > el-button');linkButton?.setAttribute('v-if','isLinkRule(i)');const upload=submitTemplate.querySelector('.attachment-item > el-upload');upload?.removeAttribute('v-else');upload?.setAttribute('v-if','!isLinkRule(i)');const spans=submitTemplate.querySelectorAll('.attachment-item span');spans[0]?.setAttribute('v-if','isLinkRule(i)');spans[1]?.removeAttribute('v-else');spans[1]?.setAttribute('v-if','!isLinkRule(i)');const flowText=submitTemplate.querySelector('.flow-tip span');if(flowText)flowText.textContent="{{submitForm.type.includes('盖章')?'发起人 → 核算会计 → 总经办 → 公司章管理人 → 发起人回传盖章文件':'提交人 → 部门负责人 → 核算会计 → 内控合规/公司负责人 → 出纳回单'}}"}
+const personSetupDialog=document.querySelector('el-dialog[title="增加人员与审批权限"]');if(personSetupDialog){personSetupDialog.setAttribute('title','增加员工');personSetupDialog.innerHTML=`<el-form label-position="top"><div class="form2"><el-form-item label="姓名"><el-input v-model="newPerson.name"></el-input></el-form-item><el-form-item label="工号"><el-input v-model="newPerson.jobNo"></el-input></el-form-item><el-form-item label="登录账号"><el-input v-model="newPerson.account" autocomplete="off" placeholder="请输入员工登录账号"></el-input></el-form-item><el-form-item label="初始密码"><el-input v-model="newPerson.password" type="password" show-password autocomplete="new-password" :placeholder="editingPerson?'留空表示不修改密码':'请设置初始密码'"></el-input></el-form-item><el-form-item label="所属部门"><el-select v-model="newPerson.deptId" placeholder="请选择部门" style="width:100%"><el-option v-for="d in deptOptions" :key="d.id" :label="d.name" :value="d.id"></el-option></el-select></el-form-item><el-form-item label="岗位"><el-input v-model="newPerson.post" placeholder="请输入员工岗位"></el-input></el-form-item><el-form-item label="分配角色"><el-select v-model="newPerson.roleCode" placeholder="请选择角色" style="width:100%"><el-option v-for="r in roleConfigs" :key="r.code" :label="r.name" :value="r.code"></el-option></el-select></el-form-item></div><el-alert title="员工权限由所分配角色自动继承，无需单独配置。" type="info" :closable="false"></el-alert></el-form><template #footer><el-button @click="closePerson">取消</el-button><el-button type="primary" :loading="personSaving" @click="addPerson">{{editingPerson?'保存修改':'保存员工'}}</el-button></template>`}
+const homeTemplate=[...document.querySelectorAll('template')].find(t=>t.getAttribute('v-if')==="page==='home'");/* 这里只建容器：真实内容由后面「首页右下：近7天发起量」那段补丁填充。原先此处内联了一整套写死的图表（共 26 单 / 26-14-9-3 / 七天假柱状图），虽然会被后面那段整体替换掉、并不渲染，但它是个雷：两段补丁顺序一变，假数字就复活。 */if(homeTemplate){homeTemplate.innerHTML+=`<div class="home-analytics"></div>`}
+const permissionTemplate=[...document.querySelectorAll('template')].find(t=>t.getAttribute('v-else-if')==="page==='permission'");if(permissionTemplate){const rolePane=permissionTemplate.content.querySelector('el-tab-pane[name="roles"]');if(rolePane)rolePane.innerHTML=`<el-card shadow="never" class="role-tree-card"><template #header><div class="card-title"><div><b>部门角色架构</b><span>按部门展开查看岗位、角色及权限</span></div></div></template><el-tree :data="roleTreeData" node-key="label" default-expand-all :expand-on-click-node="false"><template #default="{data}"><div :class="['role-tree-node',data.type]"><template v-if="data.type==='department'"><i>部</i><b>{{data.label}}</b><el-tag size="small">{{data.children.length}} 个角色</el-tag></template><template v-else><i>角</i><div><b>{{data.role.name}}</b><span>{{data.role.post}} · {{data.role.scope}}</span><span class="role-members-line">对应成员：{{data.role.members && data.role.members.length ? data.role.members.join('、') : '暂无'}}</span></div><div class="tree-perms"><el-tag v-for="p in data.role.permissions.slice(0,3)" size="small" effect="plain">{{p}}</el-tag></div><el-button link type="primary" @click.stop="editRole(data.role)">配置权限</el-button></template></div></template></el-tree></el-card>`}
+const workTemplate=[...document.querySelectorAll('template')].find(t=>t.getAttribute('v-else-if')==="page==='work'");if(workTemplate){const zones=workTemplate.content.querySelector('.work-zones');if(zones)zones.innerHTML=`<el-card shadow="never" class="zone daily"><template #header><div class="zone-title"><i>日</i><div><b>日常付款</b><span>无紧急时效要求的部门日常申请</span></div><el-button type="primary" @click="openSubmit('日常付款')">新建日常付款</el-button></div></template><div class="quick-toggle" @click="dailyExpanded=!dailyExpanded"><div><b>部门快捷提交单据</b><span>仅展示本部门可发起的日常付款单据</span></div><button class="fold-button" :class="{open:dailyExpanded}" :aria-expanded="dailyExpanded">⌄</button></div><transition name="collapse"><div v-show="dailyExpanded" class="quick-docs"><button v-for="q in dailyQuick" @click="quickSubmit(q,'日常付款')"><i>{{q[0]}}</i><b>{{q}}</b><span>快捷提交 →</span></button></div></transition></el-card><el-card shadow="never" class="zone business"><template #header><div class="zone-title"><i>业</i><div><b>业务付款</b><span>具有明确付款时效要求的部门业务申请</span></div><el-button type="primary" @click="openSubmit('业务付款')">新建业务付款</el-button></div></template><div class="quick-toggle" @click="businessExpanded=!businessExpanded"><div><b>部门快捷提交单据</b><span>仅展示本部门可发起的业务付款单据</span></div><button class="fold-button" :class="{open:businessExpanded}" :aria-expanded="businessExpanded">⌄</button></div><transition name="collapse"><div v-show="businessExpanded" class="quick-docs"><button v-for="q in businessQuick" @click="quickSubmit(q,'员工报销')"><i>{{q[0]}}</i><b>{{q}}</b><span>快捷提交 →</span></button></div></transition></el-card><el-card shadow="never" class="zone reimburse"><template #header><div class="zone-title"><i>报</i><div><b>员工报销</b><span>与对外付款区分的独立员工申请类型</span></div><el-button type="primary" @click="openSubmit('员工报销')">新建员工报销</el-button></div></template><div class="quick-docs"><button v-for="q in reimburseQuick" @click="quickSubmit(q,'员工报销')"><i>{{q[0]}}</i><b>{{q}}</b><span>快捷提交 →</span></button></div></el-card><el-card shadow="never" class="zone stamp"><template #header><div class="zone-title"><i>章</i><div><b>盖章申请</b><span>各类合同章、公章用印工单</span></div><el-button type="primary" @click="openSubmit('盖章申请')">新建盖章申请</el-button></div></template><div class="stamp-entry"><b>独立用印审批条线</b><span>发起人 → 核算会计 → 总经办 → 公司章管理人 → 发起人回传盖章文件</span><el-button type="primary" plain @click="openSubmit('盖章申请')">发起用印工单</el-button></div></el-card>`}
+const paymentGrid=document.querySelector('.submit-form .form2');if(paymentGrid){paymentGrid.insertAdjacentHTML('afterbegin',`<el-form-item label="所属公司"><el-select v-model="submitForm.company" style="width:100%"><el-option label="海峡金" value="海峡金"></el-option><el-option label="海峡金供应链" value="海峡金供应链"></el-option></el-select></el-form-item>`);const projectItem=paymentGrid.querySelector('el-form-item[label="申请事项"]');if(projectItem){projectItem.setAttribute('label','对应项目');projectItem.innerHTML=`<el-select v-model="submitForm.title" filterable allow-create default-first-option style="width:100%"><el-option v-for="p in (submitForm.type==='业务付款'?businessQuick:submitForm.type==='员工报销'?reimburseQuick:dailyQuick)" :label="p" :value="p"></el-option></el-select>`}paymentGrid.insertAdjacentHTML('afterend',`<el-form-item v-if="!submitForm.type.includes('盖章')" label="简易发票明细"><el-input v-model="submitForm.invoiceSummary" type="textarea" :rows="2" placeholder="例如：增值税专用发票2张，含税金额50,000元"></el-input></el-form-item><el-form-item v-if="!submitForm.type.includes('盖章')" label="付款后置材料"><el-checkbox v-model="submitForm.needPostMaterial">付款后需要补充发票或其他材料，未补齐前流程不可完结</el-checkbox></el-form-item>`)}
+const approvalAction=document.querySelector('.approval-action');if(approvalAction){const rejectButton=approvalAction.querySelector('.el-button--danger');rejectButton?.setAttribute('@click','rejectVisible=true');const passButton=[...approvalAction.querySelectorAll('el-button')].find(b=>b.textContent.includes('通过审批'));passButton?.insertAdjacentHTML('beforebegin',`<el-button @click="signVisible=true">加签</el-button><el-button type="warning" plain @click="supplementVisible=true">通过但补材料</el-button>`)}
+const detailDescriptions=document.querySelector('el-descriptions.desc');if(detailDescriptions)detailDescriptions.innerHTML=`<el-descriptions-item label="所属公司">{{selected.company||'海峡金'}}</el-descriptions-item><el-descriptions-item label="对应项目">{{selected.title}}</el-descriptions-item><el-descriptions-item label="申请金额">{{money(selected.amount)}}</el-descriptions-item><el-descriptions-item label="简易发票明细" :span="2">{{selected.invoiceSummary||'暂无发票明细'}}</el-descriptions-item><el-descriptions-item label="当前节点">{{selected.current}}</el-descriptions-item><el-descriptions-item label="状态"><el-tag :type="tagType(selected.status)">{{selected.status}}</el-tag></el-descriptions-item><el-descriptions-item label="申请事由" :span="2">{{selected.reason}}</el-descriptions-item>`
+document.querySelector('.stamp-form el-form-item[label="所属公司"]')?.remove();const properPaymentGrid=document.querySelector('.submit-form .form2:not(.stamp-form)');if(properPaymentGrid&&!properPaymentGrid.querySelector('el-form-item[label="所属公司"]')){properPaymentGrid.insertAdjacentHTML('afterbegin',`<el-form-item label="所属公司"><el-select v-model="submitForm.company" style="width:100%"><el-option label="海峡金" value="海峡金"></el-option><el-option label="海峡金供应链" value="海峡金供应链"></el-option></el-select></el-form-item>`);const properProject=properPaymentGrid.querySelector('el-form-item[label="申请事项"]');if(properProject){properProject.setAttribute('label','对应项目');properProject.innerHTML=`<el-select v-model="submitForm.title" filterable allow-create default-first-option style="width:100%"><el-option v-for="p in (submitForm.type==='业务付款'?businessQuick:submitForm.type==='员工报销'?reimburseQuick:dailyQuick)" :label="p" :value="p"></el-option></el-select>`}}
+const drawerTemplate=document.querySelector('el-drawer template[v-if="selected"]');if(drawerTemplate){const drawerContent=drawerTemplate.content;const drawerDesc=drawerContent.querySelector('el-descriptions.desc');if(drawerDesc)drawerDesc.innerHTML=`<el-descriptions-item label="所属公司">{{selected.company||'海峡金'}}</el-descriptions-item><el-descriptions-item label="对应项目">{{selected.title}}</el-descriptions-item><el-descriptions-item label="申请金额">{{money(selected.amount)}}</el-descriptions-item><el-descriptions-item label="简易发票明细" :span="2">{{selected.invoiceSummary||'暂无发票明细'}}</el-descriptions-item><el-descriptions-item label="当前节点">{{selected.current}}</el-descriptions-item><el-descriptions-item label="状态"><el-tag :type="tagType(selected.status)">{{selected.status}}</el-tag></el-descriptions-item><el-descriptions-item label="申请事由" :span="2">{{selected.reason}}</el-descriptions-item>`;const drawerAction=drawerContent.querySelector('.approval-action');if(drawerAction){const drawerReject=drawerAction.querySelector('el-button[type="danger"]');drawerReject?.setAttribute('@click','rejectVisible=true');const drawerPass=[...drawerAction.querySelectorAll('el-button')].find(b=>b.textContent.includes('通过审批'));drawerPass?.insertAdjacentHTML('beforebegin',`<el-button @click="signVisible=true">加签</el-button><el-button type="warning" plain @click="supplementVisible=true">通过但补材料</el-button>`)}}
+['daily','business'].forEach(kind=>{const zone=workTemplate?.content.querySelector(`.zone.${kind}`),expanded=`${kind}Expanded`,quick=kind==='daily'?'dailyQuick':'businessQuick';const docs=zone?.querySelector('.quick-docs');docs?.removeAttribute('v-show');const item=docs?.querySelector('button');item?.setAttribute('v-for',`q in (${expanded}?${quick}:${quick}.slice(0,4))`);const toggle=zone?.querySelector('.quick-toggle');toggle?.querySelector('div')?.remove();const fold=zone?.querySelector('.fold-button');if(fold)fold.innerHTML=`<span>{{${expanded}?'收起':'展开'}}</span><i>⌄</i>`});workTemplate?.content.querySelector('.zone.reimburse')?.remove();const stampZone=workTemplate?.content.querySelector('.zone.stamp');if(stampZone){const stampTitle=stampZone.querySelector('.zone-title b');if(stampTitle)stampTitle.textContent='用印申请';const stampDesc=stampZone.querySelector('.zone-title span');if(stampDesc)stampDesc.textContent='公章、合同章、法人章等';const stampButton=stampZone.querySelector('.zone-title el-button');if(stampButton){stampButton.textContent='新建';stampButton.setAttribute('@click',"openSubmit('用印申请')")}const stampEntry=stampZone.querySelector('.stamp-entry');if(stampEntry){stampEntry.className='quick-docs';stampEntry.innerHTML=`<button v-for="q in stampQuick" @click="quickSubmit(q,'用印申请')"><i>{{q[0]}}</i><b>{{q}}</b><span>快捷提交 →</span></button>`}};['daily','business'].forEach(kind=>{const zone=workTemplate?.content.querySelector(`.zone.${kind}`),create=zone?.querySelector('.zone-title el-button');if(create)create.textContent='新建'});const initiatedTable=workTemplate?.content.querySelector('.click-table');const repeatButton=[...(initiatedTable?.querySelectorAll('el-button')||[])].find(b=>b.textContent.includes('再次提交'));if(repeatButton){repeatButton.textContent='详情';repeatButton.setAttribute('@click.stop','openDetail(s.row)')}
+document.querySelectorAll('[v-if*="盖章"]').forEach(el=>el.setAttribute('v-if',el.getAttribute('v-if').replaceAll('盖章','用印')));const sealTypeItem=document.querySelector('.stamp-form el-form-item[label="用章类型"]');if(sealTypeItem)sealTypeItem.innerHTML=`<el-select v-model="submitForm.sealType" placeholder="请选择用章类型" style="width:100%"><el-option v-for="t in sealTypeChoices" :label="t" :value="t"></el-option></el-select>`;const submitFlowText=document.querySelector('.submit-form .flow-tip span');if(submitFlowText)submitFlowText.textContent="{{currentFlowText()}}";const rolePermissionTemplate=[...document.querySelectorAll('template')].find(t=>t.getAttribute('v-else-if')==="page==='permission'");/* 「对应成员」已挪进角色树节点（见 rolePane 的 role-tree-card 注入）；\n     .role-scope 那个容器在本次改写里已不存在，原先插在它后面的写法是静默失效的死代码。 *//* 登录账号/初始密码字段已由 personSetupDialog 的完整 innerHTML 重写覆盖，
+     此处不再二次追加（原实现会让这两个字段在弹窗里各出现两遍）。 */const peopleTable=rolePermissionTemplate?.content.querySelector('el-tab-pane[name="people"] el-table');peopleTable?.querySelector('el-table-column[prop="jobNo"]')?.insertAdjacentHTML('afterend',`<el-table-column prop="account" label="登录账号" width="130"></el-table-column>`);const listTemplate=[...document.querySelectorAll('template')].find(t=>t.getAttribute('v-else-if')==="page==='forms'||page==='approve'");const listTitleCol=listTemplate?.content.querySelector('el-table-column[prop="title"]');listTitleCol?.insertAdjacentHTML('afterend',`<el-table-column label="单据类型" width="120"><template #default="s">{{documentType(s.row)}}</template></el-table-column><el-table-column prop="type" label="业务类型" width="110"></el-table-column>`);const archiveTemplate=[...document.querySelectorAll('template')].find(t=>t.getAttribute('v-else-if')==="page==='archive'");const archiveTitleCol=archiveTemplate?.content.querySelector('el-table-column[prop="title"]');archiveTitleCol?.insertAdjacentHTML('afterend',`<el-table-column label="单据类型" width="120"><template #default="s">{{documentType(s.row)}}</template></el-table-column><el-table-column prop="type" label="业务类型" width="110"></el-table-column>`)
+;['daily','business','stamp'].forEach(kind=>{const zone=workTemplate?.content.querySelector(`.zone.${kind}`),docs=zone?.querySelector('.quick-docs'),item=docs?.querySelector('button');if(item)item.innerHTML=`<i class="line-doc-icon"></i><div class="quick-copy"><b :title="q">{{docTitle(q)}}</b><span v-if="docSubtitle(q)">{{docSubtitle(q)}}</span></div>`;const toggle=zone?.querySelector('.quick-toggle'),anchor=docs?.parentElement?.tagName==='TRANSITION'?docs.parentElement:docs;if(toggle&&anchor)anchor.insertAdjacentElement('afterend',toggle)});const sharedListTemplate=[...document.querySelectorAll('template')].find(t=>t.getAttribute('v-else-if')==="page==='forms'||page==='approve'");const sharedFilters=sharedListTemplate?.content.querySelector('.filters');if(sharedFilters){sharedFilters.insertAdjacentHTML('beforeend',`<el-select v-if="page==='approve'" v-model="businessTypeFilter" clearable placeholder="业务类型"><el-option v-for="x in bizTypeOptions" :label="x" :value="x"></el-option></el-select><el-select v-if="page==='approve'" v-model="docTypeFilter" clearable placeholder="单据类型"><el-option v-for="x in docTypeOptions" :label="x" :value="x"></el-option></el-select><el-select v-if="page==='approve'" v-model="applicantFilter" clearable filterable placeholder="申请人"><el-option v-for="x in applicantOptions" :label="x" :value="x"></el-option></el-select><el-select v-if="page==='approve'" v-model="statusFilter" placeholder="状态"><el-option label="全部状态" value="全部"></el-option><el-option v-for="x in ['待审批','审批中','已通过','已驳回']" :label="x" :value="x"></el-option></el-select><el-button type="primary" class="query-button" @click="runQuery">查询</el-button>`)}
+const sharedQueryButton=sharedFilters?.querySelector('.query-button');sharedQueryButton?.setAttribute('v-if',"page==='approve'");sharedFilters?.querySelector('el-input')?.insertAdjacentHTML('afterend',`<el-button v-if="page==='forms'" type="primary" class="query-button" @click="runQuery">查询</el-button>`);
+/* ===========================================================================
+   联调修复补丁：修正原型两处表单结构缺陷 + 补齐后端表单模板要求的字段
+   （必须在 Vue mount 之前执行，因为此时元素尚未被编译）
+   =========================================================================== */
+(function fixSubmitForm(){
+  var sf = document.querySelector('.submit-form'); if (!sf) return;
+
+  // 修复①：判断条件统一。单据类型名实际为「用印申请」，原型写的是 includes('盖章') 永远不成立
+  Array.prototype.forEach.call(sf.querySelectorAll('*'), function(el){
+    var v = el.getAttribute && el.getAttribute('v-if');
+    if (v && v.indexOf('盖章') >= 0) el.setAttribute('v-if', v.split('盖章').join('用印'));
+  });
+
+  // 修复②：用章类型改为字典驱动，value 用后端 dictCode（网关分支条件依赖它）
+  var sealItem = sf.querySelector('.stamp-form el-form-item[label="用章类型"]');
+  if (sealItem) sealItem.innerHTML =
+    '<el-select v-model="submitForm.sealType" placeholder="请选择用章类型" style="width:100%">'
+    + '<el-option v-for="d in sealOptions" :key="d.dictCode" :label="d.dictLabel" :value="d.dictCode"></el-option>'
+    + '</el-select>';
+
+  // 修复③：原补丁把「简易发票明细 / 付款后置材料」插到了用印表单旁边，位置错乱。
+  //        这里把它们移到「申请事由」之后，并只对非用印单据显示。
+  var stray = Array.prototype.filter.call(sf.children, function(c){
+    if (c.tagName !== 'EL-FORM-ITEM') return false;
+    var l = c.getAttribute('label') || '';
+    return l === '简易发票明细' || l === '付款后置材料';
+  });
+  var anchor = sf.querySelector('el-form-item[label="申请事由"]') || sf.querySelector('.form2:not(.stamp-form)');
+  if (stray.length && anchor){
+    stray.forEach(function(el){ el.setAttribute('v-if', "!submitForm.type.includes('用印')"); });
+    for (var i = stray.length - 1; i >= 0; i--) anchor.insertAdjacentElement('afterend', stray[i]);
+  }
+
+  // 修复④：补齐后端 form_template 标记为 required 但原型缺失的字段，避免提交payload与模板不一致
+  var grid = sf.querySelector('.form2:not(.stamp-form)');
+  var nseal = "!submitForm.type.includes('用印')";
+  var reimb = "submitForm.type.includes('报销')";
+  if (grid && !grid.querySelector('el-form-item[label="收款方名称"]')){
+    grid.insertAdjacentHTML('beforeend',
+        '<el-form-item v-if="' + nseal + '" label="款项类型"><el-select v-model="submitForm.payType" style="width:100%">'
+      +   '<el-option v-for="d in payOptions" :key="d.dictCode" :label="d.dictLabel" :value="d.dictCode"></el-option></el-select></el-form-item>'
+      + '<el-form-item v-if="' + nseal + '" label="收款方名称"><el-input v-model="submitForm.payeeName" placeholder="收款单位/个人全称"></el-input></el-form-item>'
+      + '<el-form-item v-if="' + nseal + '" label="收款方账号"><el-input v-model="submitForm.payeeAccount" placeholder="银行账号"></el-input></el-form-item>'
+      + '<el-form-item v-if="' + nseal + '" label="开户行"><el-input v-model="submitForm.payeeBank" placeholder="开户银行名称"></el-input></el-form-item>'
+      + '<el-form-item v-if="' + reimb + '" label="费用类型"><el-select v-model="submitForm.expenseType" style="width:100%">'
+      +   '<el-option v-for="d in expenseOptions" :key="d.dictCode" :label="d.dictLabel" :value="d.dictCode"></el-option></el-select></el-form-item>'
+      + '<el-form-item v-if="' + reimb + '" label="费用发生日期"><el-date-picker v-model="submitForm.occurDate" type="date" value-format="YYYY-MM-DD" placeholder="选择日期" style="width:100%"></el-date-picker></el-form-item>'
+    );
+  }
+})();
+
+/* 修复⑤：原型工作台「用印区」遗留了「盖章申请 / 新建盖章申请」等文案，
+   而后端单据类型名为「用印申请」，文案不一致会让人以为点了不会走用印流程。
+   注意：这些文案位于 el-card 的 <template #header> 里，querySelector 无法穿透
+   <template>（其 content 是独立的 DocumentFragment），必须显式递归进去。 */
+(function renameStampWording(){
+  // .work-zones 位于 <template v-else-if="page==='work'"> 内部，挂载前必须从模板里取
+  var workTpl = Array.prototype.find.call(document.querySelectorAll('template'), function(t){
+    return t.getAttribute('v-else-if') === "page==='work'";
+  });
+  if (!workTpl || !workTpl.content) return;
+
+  // 找 .zone.stamp（可能被嵌套的 <template> 隔开，需要逐层递进去找）
+  var stamp = null;
+  (function findZone(node){
+    if (stamp || !node.querySelectorAll) return;
+    var hit = node.querySelectorAll('.zone.stamp');
+    if (hit.length) { stamp = hit[0]; return; }
+    Array.prototype.forEach.call(node.querySelectorAll('template'), function(t){
+      if (t.content) findZone(t.content);
+    });
+  })(workTpl.content);
+  if (!stamp) return;
+
+  // 整棵子树（含嵌套 template.content）里的文本节点统一替换
+  (function sweep(node){
+    Array.prototype.forEach.call(node.childNodes || [], function(c){
+      if (c.nodeType === 3 && c.nodeValue.indexOf('盖章') >= 0){
+        c.nodeValue = c.nodeValue.split('盖章').join('用印');
+      }
+    });
+    Array.prototype.forEach.call(node.children || [], sweep);
+    if (node.tagName === 'TEMPLATE' && node.content) sweep(node.content);
+  })(stamp);
+})();
+
+const {createApp,ref,reactive,computed,onMounted,watch,nextTick}=Vue;
+
+/* =========================================================================
+   海峡金 OA —— 前端联调版（真实后端驱动）
+   后端：Spring Boot 3 + Flowable 7，默认 http://127.0.0.1:8080
+   本文件替换原型的 mock 逻辑层；模板与样式保持原样。
+   ========================================================================= */
+/* 后端地址：
+   ① 优先 window.HXJ_API_BASE（换环境时在页面顶部覆盖即可）；
+   ② 若页面本身由后端提供（同源 8080），直接用同源地址 —— 此时请求不受 CORS 约束，
+      可绕开「CORS 类浏览器扩展改写响应头」导致的跨域拦截；
+   ③ 否则（file:// 直开）回落到 http://127.0.0.1:8080。 */
+const API_BASE = (window.HXJ_API_BASE
+  || (location.protocol.indexOf('http') === 0 && location.port === '8080' ? location.origin : 'http://127.0.0.1:8080')
+).replace(/\/$/, '');
+const TOKEN_KEY = 'hxj_oa_token';
+
+const STATUS_TEXT = {0:'草稿',1:'待审批',2:'审批中',3:'已通过',4:'已驳回',5:'已撤回',6:'已归档'};
+/* 后端 document.business_category（DAILY/BIZ/REIMBURSE/SEAL）→ 界面业务类型。
+   此前 toDoc 压根没映射这个字段，导致「业务类型」筛选拿不到可比对的值。 */
+const BIZ_CATEGORY_TEXT = {DAILY:'日常付款', BIZ:'业务付款', REIMBURSE:'员工报销', SEAL:'用印申请'};
+const REJECT_TARGETS = [
+  {label:'提交人',        value:'START'},
+  {label:'直属部门负责人', value:'n2'},
+  {label:'核算会计',      value:'n3'},
+  {label:'内控合规',      value:'n3'},
+  {label:'出纳',          value:'n5'}
+];
+const DEMO_ACCOUNTS = [
+  {account:'admin',     name:'系统管理员', title:'全部权限'},
+  {account:'huangxm',   name:'黄小明',    title:'普通员工 · 发起人'},
+  {account:'linjl',     name:'林经理',    title:'部门负责人'},
+  {account:'wangkj',    name:'王会计',    title:'核算会计'},
+  {account:'zhangzong', name:'张总',      title:'公司领导 · 大额'},
+  {account:'zhaocs',    name:'赵出纳',    title:'出纳'},
+  {account:'chennk',    name:'陈内控',    title:'内控合规'},
+  /* 以下两个审批人此前缺失，导致「用印申请」和「大额报销」两条链路在界面上无法走完 */
+  {account:'zhouzh',    name:'周综合',    title:'部门负责人 · 综合管理部 · 用印办理'},
+  {account:'lifinance', name:'李财务',    title:'财务总监 · 报销大额'}
+];
+const DEMO_PASSWORD = '123456';
+
+/* ================= HTTP 封装 ================= */
+function getToken(){ return localStorage.getItem(TOKEN_KEY) || ''; }
+function setToken(t){ t ? localStorage.setItem(TOKEN_KEY, t) : localStorage.removeItem(TOKEN_KEY); }
+
+let onUnauthorized = null;
+
+/* ---------- 故障判定：真离线 vs 被浏览器拦截跨域 ----------
+   两者在 fetch 里都表现为 TypeError，但成因与解法完全不同：
+   · 真离线      → 服务没起，启动后端会自动重连。
+   · 跨域被拦    → 服务活着，但响应头被改写（典型是 CORS 类浏览器扩展 / 抓包代理），
+                   此时改用同源地址打开页面即可彻底绕开，不需要动后端。 */
+const OFFLINE_HINT = '连不上后端 ' + API_BASE + '（服务未启动或已停止）。启动后端后会自动重连，也可点下方「重试连接」。';
+const CORS_HINT = '后端其实在运行，但这次请求被浏览器拦截了跨域（多见于 CORS 类浏览器扩展改写了响应头）。'
+  + '请改用同源地址打开本页面，即可彻底绕开：' + API_BASE + '/oa.html';
+/** no-cors 模式不受 CORS 约束：只要服务活着就能拿到 opaque 响应 → 说明是跨域被拦而非离线 */
+async function probeReachable(){
+  try {
+    const ctl = new AbortController();
+    const timer = setTimeout(function(){ ctl.abort(); }, 2500);
+    await fetch(API_BASE + '/v3/api-docs', {mode:'no-cors', cache:'no-store', signal: ctl.signal});
+    clearTimeout(timer);
+    return true;
+  } catch (e) { return false; }
+}
+
+async function http(path, opts){
+  opts = opts || {};
+  let url = API_BASE + path;
+  if (opts.params){
+    const q = new URLSearchParams();
+    Object.entries(opts.params).forEach(function(kv){
+      if (kv[1] !== '' && kv[1] !== null && kv[1] !== undefined) q.append(kv[0], kv[1]);
+    });
+    const qs = q.toString();
+    if (qs) url += (url.indexOf('?') >= 0 ? '&' : '?') + qs;
+  }
+  const headers = {'Content-Type':'application/json'};
+  const tk = getToken();
+  if (tk) headers['Authorization'] = 'Bearer ' + tk;
+
+  let res;
+  try {
+    res = await fetch(url, {
+      method: opts.method || 'GET',
+      headers: headers,
+      body: opts.body === undefined ? undefined : JSON.stringify(opts.body)
+    });
+  } catch (e) {
+    const reachable = await probeReachable();
+    const err = new Error(reachable ? CORS_HINT : OFFLINE_HINT);
+    err.network = true;
+    err.cors = reachable;
+    throw err;
+  }
+  if (res.status === 401){ if (onUnauthorized) onUnauthorized(); throw new Error('未登录或登录已过期'); }
+  let json;
+  try { json = await res.json(); }
+  catch (e) { throw new Error('响应解析失败（HTTP ' + res.status + '）'); }
+  if (json.code !== 0){
+    const err = new Error(json.msg || ('请求失败 HTTP ' + res.status));
+    err.code = json.code;
+    err.data = json.data;
+    throw err;
+  }
+  return json.data;
+}
+
+const api = {
+  login:        function(a,p){ return http('/api/auth/login', {method:'POST', body:{account:a, password:p}}); },
+  me:           function(){ return http('/api/auth/me'); },
+  docTypes:     function(){ return http('/api/documents/types'); },
+  docs:         function(params){ return http('/api/documents', {params:params}); },
+  docStats:     function(){ return http('/api/documents/stats'); },
+  /* 风险预警：后端按「进行中节点 + deadline」盘点，受行级数据范围约束。
+     导出用的是 httpBlob（要带 Authorization 头），不走这里的 http()。 */
+  risks:        function(){ return http('/api/risks'); },
+  notifications:function(params){ return http('/api/notifications', {params:params||{}}); },
+  unreadCount:  function(){ return http('/api/notifications/unread-count'); },
+  readAllNotify:function(){ return http('/api/notifications/read-all', {method:'POST'}); },
+  readNotify:   function(id){ return http('/api/notifications/' + id + '/read', {method:'POST'}); },
+  docDetail:    function(id){ return http('/api/documents/' + id); },
+  createDoc:    function(body){ return http('/api/documents', {method:'POST', body:body}); },
+  submitDoc:    function(id){ return http('/api/documents/' + id + '/submit', {method:'POST'}); },
+  withdrawDoc:  function(id){ return http('/api/documents/' + id + '/withdraw', {method:'POST'}); },
+  todos:        function(){ return http('/api/todos', {params:{limit:200}}); },
+  doneTodos:    function(){ return http('/api/todos/done'); },
+  approve:      function(body){ return http('/api/todos/approve', {method:'POST', body:body}); },
+  countersign:  function(body){ return http('/api/todos/countersign', {method:'POST', body:body}); },
+  flowConfigs:  function(){ return http('/api/flows/configs'); },
+  flowDetail:   function(id){ return http('/api/flows/configs/' + id); },
+  flowPreview:  function(id, body){ return http('/api/flows/configs/' + id + '/preview', {method:'POST', body:body||{}}); },
+  deptTree:     function(){ return http('/api/depts/tree'); },
+  users:        function(){ return http('/api/users'); },
+  roles:        function(){ return http('/api/roles'); },
+  dicts:        function(){ return http('/api/dicts'); },
+
+  /* ---- 管理端接口（本轮补齐：此前前端只有读接口，写操作是桩）---- */
+  allPermissions: function(){ return http('/api/permissions'); },
+  nodeTemplates:  function(){ return http('/api/flows/node-templates'); },
+
+  createUser:   function(body){ return http('/api/users', {method:'POST', body:body}); },
+  updateUser:   function(id, body){ return http('/api/users/' + id, {method:'PUT', body:body}); },
+  setUserRoles: function(id, roleCodes){ return http('/api/users/' + id + '/roles', {method:'PUT', body:{roleCodes:roleCodes}}); },
+  deleteUser:   function(id){ return http('/api/users/' + id, {method:'DELETE'}); },
+
+  createRole:   function(body){ return http('/api/roles', {method:'POST', body:body}); },
+  updateRole:   function(id, body){ return http('/api/roles/' + id, {method:'PUT', body:body}); },
+  setRolePerms: function(id, permCodes){ return http('/api/roles/' + id + '/permissions', {method:'PUT', body:{permCodes:permCodes}}); },
+  setRoleScope: function(id, scopeType, deptIds){ return http('/api/roles/' + id + '/data-scope', {method:'PUT', body:{scopeType:scopeType, scopeDeptIds:deptIds||[]}}); },
+  deleteRole:   function(id){ return http('/api/roles/' + id, {method:'DELETE'}); },
+
+  createFlow:   function(body){ return http('/api/flows/configs', {method:'POST', body:body}); },
+  updateFlow:   function(id, body){ return http('/api/flows/configs/' + id, {method:'PUT', body:body}); },
+  retireFlow:   function(id){ return http('/api/flows/configs/' + id, {method:'DELETE'}); },
+  uploadAttachment: function(file, opt){
+    opt = opt || {};
+    const fd = new FormData();
+    fd.append('file', file);
+    if (opt.documentId) fd.append('documentId', opt.documentId);
+    if (opt.nodeKey)    fd.append('nodeKey', opt.nodeKey);
+    fd.append('bizType', opt.bizType || 'apply');
+    return httpForm('/api/attachments', fd);
+  },
+  deleteAttachment: function(id){ return http('/api/attachments/' + id, {method:'DELETE'}); }
+};
+
+/* 附件上传不能复用 http —— 它固定发 Content-Type: application/json，
+   而 multipart 必须让浏览器自己生成带 boundary 的头，手写会覆盖掉 boundary，
+   后端就只能收到「解析不出文件」的 400。 */
+async function httpForm(path, formData){
+  const headers = {};
+  const tk = getToken();
+  if (tk) headers['Authorization'] = 'Bearer ' + tk;
+  let res;
+  try {
+    res = await fetch(API_BASE + path, {method:'POST', headers:headers, body:formData});
+  } catch (e) {
+    const reachable = await probeReachable();
+    const err = new Error(reachable ? CORS_HINT : OFFLINE_HINT);
+    err.network = true; err.cors = reachable;
+    throw err;
+  }
+  if (res.status === 401){ if (onUnauthorized) onUnauthorized(); throw new Error('未登录或登录已过期'); }
+  let json;
+  try { json = await res.json(); }
+  catch (e) { throw new Error('上传响应解析失败（HTTP ' + res.status + '）'); }
+  if (json.code !== 0){
+    const err = new Error(json.msg || ('上传失败 HTTP ' + res.status));
+    err.code = json.code;
+    throw err;
+  }
+  return json.data;
+}
+
+/* 附件下载/预览必须带 Authorization 头（后端要按单据可见性鉴权），
+   所以不能用 <a href> 或 window.open 直接指向接口地址 —— 那样没有请求头，只会拿到 401。
+   统一 fetch 成 blob，再在本地触发下载 / 预览。 */
+async function httpBlob(path){
+  const headers = {};
+  const tk = getToken();
+  if (tk) headers['Authorization'] = 'Bearer ' + tk;
+  const res = await fetch(API_BASE + path, {headers:headers});
+  if (res.status === 401){ if (onUnauthorized) onUnauthorized(); throw new Error('未登录或登录已过期'); }
+  if (!res.ok){
+    let msg = '下载失败 HTTP ' + res.status;
+    try { const j = await res.json(); if (j && j.msg) msg = j.msg; } catch(e){}
+    throw new Error(msg);
+  }
+  return res.blob();
+}
+
+/* ================= 登录门禁样式 ================= */
+document.head.insertAdjacentHTML('beforeend', `<style>
+.login-gate{position:fixed;inset:0;z-index:3000;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#eef7ff 0,#e4f2fe 45%,#f7fbff 100%);overflow:auto;padding:32px 16px}
+.lg-card{width:480px;max-width:100%;background:#fff;border:1px solid #dcebf6;border-radius:16px;padding:28px 30px 24px;box-shadow:0 18px 46px rgba(58,149,218,.12)}
+.lg-logo{display:flex;align-items:center;gap:11px;margin-bottom:18px}
+.lg-logo i{width:40px;height:40px;border-radius:11px;background:linear-gradient(145deg,#71c2f5,#469fe2);color:#fff;display:grid;place-items:center;font-style:normal;font-weight:500;font-size:17px}
+.lg-logo b{display:block;font-size:16px;color:#17334d}
+.lg-logo span{display:block;font-size:12px;color:#7892a8}
+.lg-card h2{font-size:19px;font-weight:500;color:#17334d;margin:0 0 4px}
+.lg-tip{font-size:13px;color:#7892a8;margin:0 0 16px;line-height:1.6}
+.lg-accounts{margin-top:18px;border-top:1px solid #eaf3fa;padding-top:14px}
+.lg-accounts>b{font-size:12px;font-weight:500;color:#7892a8;display:block;margin-bottom:9px}
+.lg-chips{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.lg-chips button{display:flex;flex-direction:column;gap:2px;align-items:flex-start;padding:9px 11px;border:1px solid #dcebf6;border-radius:10px;background:#f9fcff;cursor:pointer;text-align:left;transition:.15s}
+.lg-chips button:hover{border-color:#77bdf0;background:#eef7ff}
+.lg-chips button b{font-size:13px;font-weight:500;color:#26364d}
+.lg-chips button span{font-size:11px;color:#8a98aa}
+.lg-backend{margin:16px 0 0;font-size:11px;color:#8a98aa;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.lg-backend code{background:#f2f7fb;border-radius:4px;padding:1px 5px;color:#52728d}
+.dot{width:7px;height:7px;border-radius:50%;display:inline-block}
+.dot.ok{background:#35b6a4}.dot.bad{background:#e2564f}
+.mode-tag{margin-left:8px;font-size:11px;padding:1px 7px;border-radius:9px;background:#eaf6ff;color:#3188ce;border:1px solid #cfe8fb;vertical-align:middle}
+.lg-retry{cursor:pointer;color:#3188ce;text-decoration:underline;font-size:11px;margin-left:2px}
+.lg-retry:hover{color:#1869a8}
+.lg-alt{margin:10px 0 0;font-size:11px;line-height:1.7;color:#a8632f;background:#fff8ee;border:1px solid #f6dfc2;border-radius:6px;padding:8px 10px}
+.lg-alt a{color:#1869a8;word-break:break-all}
+</style>`);
+
+/* ================= 登录门禁 DOM（须在 mount 之前插入） ================= */
+document.querySelector('#app').insertAdjacentHTML('beforeend', `<div class="login-gate" v-if="!me">
+  <div class="lg-card">
+    <div class="lg-logo"><i>峡</i><div><b>海峡金</b><span>OA 内控审批中心 · 联调版</span></div></div>
+    <h2>登录</h2>
+    <p class="lg-tip">使用真实账号登录，全部数据来自后端接口。</p>
+    <el-form label-position="top" @submit.prevent>
+      <el-form-item label="登录账号">
+        <el-input v-model="loginForm.account" placeholder="请输入登录账号" @keyup.enter="doLogin"></el-input>
+      </el-form-item>
+      <el-form-item label="登录密码">
+        <el-input v-model="loginForm.password" type="password" show-password placeholder="请输入登录密码" @keyup.enter="doLogin"></el-input>
+      </el-form-item>
+    </el-form>
+    <el-button type="primary" style="width:100%" :loading="logging" @click="doLogin">{{logging?'登录中…':'登 录'}}</el-button>
+    <el-alert v-if="loginError" :title="loginError" type="error" :closable="false" show-icon style="margin-top:12px"></el-alert>
+    <div class="lg-accounts">
+      <b>演示账号（密码统一 123456，点选即切换身份体验完整审批链）</b>
+      <div class="lg-chips">
+        <button v-for="a in demoAccounts" :key="a.account" @click="fillLogin(a)">
+          <b>{{a.name}}</b><span>{{a.title}}</span>
+        </button>
+      </div>
+    </div>
+    <p class="lg-backend">
+      后端 <code>{{apiBase}}</code>
+      <span class="dot" :class="pingOk?'ok':'bad'"></span>{{pingText}}
+      <span v-if="!pingOk" class="lg-retry" @click="ping()">重试连接</span>
+      <span v-else class="lg-retry" @click="ping()">刷新</span>
+    </p>
+    <p class="lg-alt" v-if="corsBlocked">
+      检测到后端在跑，但请求被浏览器拦截了跨域（CORS 类扩展常见）。
+      点这里用<b>同源地址</b>打开，可彻底绕开：
+      <a :href="altUrl" target="_blank" rel="noopener">{{altUrl}}</a>
+    </p>
+  </div>
+</div>`);
+document.querySelector('.shell').setAttribute('v-if','me');
+
+/* ================= 顶栏与工作台改造（须在 mount 之前执行） ================= */
+(function patchShell(){
+  /* 挂载前有两点必须注意：
+     ① 自定义标签还没有 class（要用标签选择器）；
+     ② <template> 里的内容不在实时 DOM 中，普通 querySelector 不会进入，
+        必须递归进 .content 查找。 */
+  function roots(){
+    const found = [];
+    (function walk(node){
+      if (!node || !node.querySelectorAll) return;
+      found.push(node);
+      node.querySelectorAll('template').forEach(function(t){ if (t.content) walk(t.content); });
+    })(document);
+    return found;
+  }
+  function qAll(sel){
+    const out = [];
+    roots().forEach(function(r){
+      r.querySelectorAll(sel).forEach(function(el){ if (out.indexOf(el) < 0) out.push(el); });
+    });
+    return out;
+  }
+  function qOne(sel){ return qAll(sel)[0] || null; }
+  /* 元素→后代 的深度查询：会穿透元素内部的 <template> */
+  function deepQuery(el, sel){
+    if (!el) return null;
+    const direct = el.querySelector(sel);
+    if (direct) return direct;
+    const ts = el.querySelectorAll('template');
+    for (let i = 0; i < ts.length; i++){
+      if (!ts[i].content) continue;
+      const hit = deepQuery(ts[i].content, sel);
+      if (hit) return hit;
+    }
+    return null;
+  }
+  function setHtml(el, html){ if (el) el.innerHTML = html; }
+
+  /* ---- 顶栏：真实用户 + 账号切换 ---- */
+  setHtml(qOne('.topbar el-avatar'), '{{ (me && me.realName) ? me.realName.slice(0,1) : "?" }}');
+  setHtml(qOne('.topbar .who'), '<b>{{me?me.realName:""}}</b><span>{{roleText}}</span>');
+  const acctSel = qOne('.top-actions > el-select');
+  if (acctSel){
+    acctSel.setAttribute('v-model','currentAccount');
+    acctSel.setAttribute('@change','switchAccount');
+    acctSel.setAttribute('placeholder','切换登录身份');
+    acctSel.setAttribute('style','width:196px');
+    setHtml(acctSel, '<el-option v-for="a in demoAccounts" :key="a.account" :label="a.name + \' · \' + a.title" :value="a.account"></el-option>');
+  }
+  /* 铃铛＝通知中心入口，必须**常驻**：角标红点用 :hidden 控制，
+     不能用 v-if —— 否则未读为 0 时铃铛整个从 DOM 消失，用户再也打不开通知中心。 */
+  const bell = qOne('.top-actions el-badge');
+  if (bell){ bell.setAttribute(':value','unreadCount'); bell.setAttribute(':max','99');
+             bell.setAttribute(':hidden','!unreadCount'); bell.setAttribute('@click','openNotify');
+             bell.setAttribute('style','cursor:pointer'); }
+  setHtml(qOne('.logo span'), 'OA 内控审批中心 · 联调版');
+
+  /* ---- 侧栏菜单：待办数字只挂在「待我审批」上，流程管理替换风险预警 ---- */
+  qAll('el-menu-item').forEach(function(item){
+    const idx = item.getAttribute('index');
+    item.querySelectorAll('el-badge').forEach(function(b){
+      if (idx === 'approve'){ b.setAttribute(':value','todoCount'); b.setAttribute('v-if','todoCount'); }
+      else if (idx === 'work'){ b.setAttribute(':value','unreadCount'); b.setAttribute(':max','99'); b.setAttribute('v-if','unreadCount'); }
+      else { b.setAttribute('v-if','false'); }
+    });
+    const rename = function(from, to){
+      item.childNodes.forEach(function(n){
+        if (n.nodeType === 3 && n.textContent.indexOf(from) >= 0) n.textContent = to;
+      });
+    };
+    if (idx === 'approve') rename('审批中心','待我审批');
+    /* 菜单 index 与页面分支的对应关系（改之前先看这里）：
+       · flow → pageNames.flow='流程管理'，模板分支 v-else-if="page==='flow'"
+       · risk → pageNames.risk='风险预警'，模板分支 v-else-if="page==='risk'"
+       两页曾经共用 index='risk'（风险预警页因此没有入口），现已拆开。
+       这里**不要**再加按 index 改文案的兜底：静态标记里的文案已经是对的，
+       任何按 index 匹配的 rename 都会把其中一页的名字改错。 */
+  });
+
+  /* ---- 首页：问候语、日期、合规率、发起按钮 ---- */
+  setHtml(qOne('.hero h2'), '{{greeting}}，{{me?me.realName:""}}');
+  setHtml(qOne('.hero span'), '{{todayText}} —— 数据来自后端实时接口<span class="mode-tag">联调版</span>');
+  const rate = qOne('.hero .el-progress');
+  if (rate) rate.setAttribute(':percentage','completionRate');
+  setHtml(qOne('.hero .percent'), '{{completionRate}}%');
+  const rateLabel = qOne('.hero .el-progress small');
+  if (rateLabel) rateLabel.textContent = '办结率';
+  /* 首页两个发起按钮的 @click 已在静态标记里改成正确的别名键（'员工报销' / '日常付款'）。
+     这里原本有一段"按按钮文案改写 @click"的兜底，但它用的是 .hero .el-button ——
+     挂载前自定义标签还没有 class（见本函数开头 ①），选择器恒为空，
+     属于永远不会执行的死代码，反而让人误以为首页按钮已经修过了。已删除。 */
+
+  /* ---- 首页右下：近7天发起量与状态分布，改为真实统计 ---- */
+  const analytics = qOne('.home-analytics');
+  if (analytics){
+    setHtml(analytics, '<el-card shadow="never" class="weekly-chart"><template #header><div class="card-title"><div><b>近7天发起量</b><span>按提交时间真实统计</span></div><el-tag>共 {{weekTotal}} 单</el-tag></div></template>'
+      + '<div class="mini-bars"><div v-for="d in weekBars" :key="d.day"><i :style="{height:d.height+\'%\'}"></i><b>{{d.count}}</b><span>{{d.label}}</span></div></div></el-card>'
+      + '<el-card shadow="never" class="flow-donut-card"><template #header><div class="card-title"><div><b>流程状态</b><span>当前可见单据的状态分布</span></div></div></template>'
+      + '<div class="home-donut-wrap"><div class="home-donut"><b>{{statusDist.total}}</b><span>全部单据</span></div>'
+      + '<div class="home-legend"><p><i class="done"></i>已办结 <b>{{statusDist.done}}</b></p>'
+      + '<p><i class="doing"></i>审批中 <b>{{statusDist.doing}}</b></p>'
+      + '<p><i class="back"></i>已驳回 <b>{{statusDist.back}}</b></p></div></div></el-card>');
+  }
+  const homeTodoTitle = qAll('.card-title b').find(function(b){ return b.textContent.indexOf('待办审批') >= 0; });
+  if (homeTodoTitle) homeTodoTitle.textContent = '我的待办';
+
+  /* ---- 工作台三区对齐到后端真实存在的 3 种单据类型 ---- */
+  /* 按钮文案也一并按类型重写：原型里「员工报销」区沿用旧文案「新建业务付款」，
+     容易误以为创建的是付款单（实际绑定的是 openSubmit('员工报销')）。 */
+  const dayZone = qOne('.work-zones .zone.daily');
+  if (dayZone){
+    setHtml(deepQuery(dayZone, '.zone-title b'), '日常付款');
+    setHtml(deepQuery(dayZone, '.zone-title span'), '无紧急时效要求的部门日常申请');
+    const dBtn = deepQuery(dayZone, '.zone-title el-button');
+    if (dBtn){ dBtn.setAttribute('@click',"openSubmit('日常付款')"); dBtn.textContent = '新建日常付款'; }
+  }
+  const bizZone = qOne('.work-zones .zone.business');
+  if (bizZone){
+    setHtml(deepQuery(bizZone, '.zone-title b'), '员工报销');
+    setHtml(deepQuery(bizZone, '.zone-title span'), '与对外付款区分的独立员工申请类型');
+    const bBtn = deepQuery(bizZone, '.zone-title el-button');
+    if (bBtn){ bBtn.setAttribute('@click',"openSubmit('员工报销')"); bBtn.textContent = '新建员工报销'; }
+  }
+  const stampZone = qOne('.work-zones .zone.stamp');
+  if (stampZone){
+    setHtml(deepQuery(stampZone, '.zone-title b'), '用印申请');
+    setHtml(deepQuery(stampZone, '.zone-title span'), '公章、合同章、法人章等');
+    const sBtn = deepQuery(stampZone, '.zone-title el-button');
+    if (sBtn){ sBtn.setAttribute('@click',"openSubmit('用印申请')"); sBtn.textContent = '新建用印申请'; }
+  }
+
+  /* ---- 详情抽屉：按可执行动作渲染按钮 ----
+     这里曾经会顺手把 .approval-action 里的 el-upload 删掉（当年它只是 action="#" 的摆设）。
+     附件后端补齐后，审批凭证上传是真实能力、也是「办理节点凭证必填」的唯一上传入口，
+     挂载前删掉它等于把该规则在界面上废掉，所以不再移除；显隐仍由下面的 v-if(canApprove) 控制。 */
+  qAll('.approval-action').forEach(function(block){
+    block.setAttribute('v-if','canApprove||canReject||canWithdraw||loading');
+    const row = block.querySelector('div');
+    if (row && !row.querySelector('[data-withdraw]')){
+      row.insertAdjacentHTML('beforeend','<el-button data-withdraw v-if="canWithdraw" @click="withdrawDoc(null)">撤 回</el-button>');
+    }
+  });
+})();
+
+/* ================= 应用 ================= */
+createApp({setup(){
+  const apiBase = API_BASE;
+  /* 同源访问入口：把本页面由后端自己提供（静态资源），彻底规避跨域被拦截 */
+  const altUrl = API_BASE + '/oa.html';
+
+  const me = ref(null), logging = ref(false), loginError = ref(''), pingOk = ref(false), pingText = ref('检测中…'), corsBlocked = ref(false);
+  const loginForm = reactive({account:'admin', password:DEMO_PASSWORD});
+  const currentAccount = ref('admin');
+  const demoAccounts = DEMO_ACCOUNTS;
+  const rejectTargets = REJECT_TARGETS;
+
+  const page = ref('home'), role = ref(''), keyword = ref(''), statusFilter = ref('全部');
+  const businessTypeFilter = ref(''), docTypeFilter = ref(''), applicantFilter = ref('');
+  const listMode = ref('all'), submitVisible = ref(false), detailVisible = ref(false);
+  const selected = ref(null), detailTab = ref('flow'), approvalComment = ref('');
+  const boardDate = ref(''), archiveApplicant = ref(''), archiveDepartment = ref('');
+  const archiveCode = ref(''), archiveDate = ref('');
+  const personVisible = ref(false), linkVisible = ref(false), linkMode = ref('daily'), linkKeyword = ref('');
+  const linkedDocument = ref(null), permissionTab = ref('people'), flowVisible = ref(false);
+  const editingFlow = ref(null), roleVisible = ref(false), editingRole = ref(null);
+  const rejectVisible = ref(false), supplementVisible = ref(false), signVisible = ref(false);
+  const dailyExpanded = ref(false), businessExpanded = ref(false);
+  const loading = ref(false), detailLoading = ref(false);
+
+  const pageNames = {home:'首页', work:'工作台', board:'工作看板', forms:'全部表单', approve:'待我审批',
+                     archive:'台账档案', permission:'权限管理', risk:'风险预警', flow:'流程管理'};
+
+  const documentTypes = ref([]), allUsers = ref([]), allRoles = ref([]), deptFlat = ref([]);
+  const flowConfigList = ref([]), dictMap = reactive({});
+  const documents = ref([]), todos = ref([]), doneList = ref([]);
+  const totalDocs = ref(0), serverFlowNodes = reactive({});
+  const departments = ref([]), people = ref([]), roleConfigs = ref([]), flowConfigs = ref([]);
+  const linkCandidates = ref([]), attachmentRules = ref([]), previewNodes = ref(null);
+  /* 看板/首页统计与菜单角标一律取后端真值；接口不可用时为 null，由计算属性降级 */
+  const docStats = ref(null), unreadCount = ref(0);
+  /* 通知中心（铃铛抽屉）：列表走 /api/notifications 分页，未读数走 unread-count */
+  const notifyVisible = ref(false), notifyList = ref([]), notifyTotal = ref(0);
+  const notifyLoading = ref(false), notifyPage = ref(1);
+  const NOTIFY_PAGE_SIZE = 20;
+
+  const submitForm = reactive({code:'', type:'', typeId:null, applicant:'', company:'海峡金', department:'',
+    title:'', amount:0, invoiceSummary:'', reason:'', needPostMaterial:false,
+    /* 后端「日常付款申请」表单模板必填：payType/payeeName/payeeAccount/payeeBank */
+    payType:'OTHER', payeeName:'', payeeAccount:'', payeeBank:'',
+    /* 后端「员工报销」表单模板必填：expenseType/occurDate */
+    expenseType:'OTHER', occurDate:'',
+    /* 后端「用印申请」表单模板必填：sealType(字典 code)/copies/isCarryOut */
+    sealProject:'', sealReason:'', sealDepartment:'', sealTime:'', fileName:'',
+    sealType:'OFFICIAL', copies:1, isCarryOut:'N'});
+  const rejectForm = reactive({level:'提交人', target:'START', reason:'', materials:''});
+  const supplementForm = reactive({mode:'付款前', role:'提交人', materials:''});
+  const signForm = reactive({person:'', reason:''});
+  const newPerson = reactive({name:'', jobNo:'', account:'', password:'', deptId:null, post:'', roleCode:''});
+  /* ---- 管理端状态（本轮新增）---- */
+  const editingPerson = ref(null);        // 正在编辑的员工；null 表示新建
+  const personSaving = ref(false);        // 提交中，用于按钮 loading 防重复点击
+  const allPermissions = ref([]);         // 全量权限点（GET /api/permissions）
+  const nodeTemplateList = ref([]);       // 流程节点模板库（含各自的审批人规则说明）
+  const roleAssignVisible = ref(false);
+  const roleAssignTarget = ref(null);
+  const roleAssignCodes = ref([]);
+  /* 数据范围用后端编码，避免前端再维护一份中文映射 */
+  const scopeOptions = [
+    {value:'self', label:'本人单据'},
+    {value:'dept', label:'本部门单据'},
+    {value:'center', label:'本中心单据'},
+    {value:'custom_dept', label:'指定部门单据'},
+    {value:'company', label:'全公司单据'}
+  ];
+  const deptOptions = computed(function(){ return deptFlat.value.map(function(d){ return {id:d.id, name:d.name}; }); });
+
+  /* ---------- 工具 ---------- */
+  const toDate = function(v){
+    if (!v) return null;
+    const d = new Date(String(v).replace('T',' ').replace(/-/g,'/'));
+    return isNaN(d.getTime()) ? null : d;
+  };
+  const fmtDateTime = function(v){
+    const d = toDate(v);
+    if (!d) return v ? String(v) : '';
+    const p = function(n){ return String(n).padStart(2,'0'); };
+    return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+' '+p(d.getHours())+':'+p(d.getMinutes());
+  };
+  const relTime = function(v){
+    const d = toDate(v);
+    if (!d) return v ? String(v) : '';
+    const diff = Date.now() - d.getTime();
+    if (diff < 60000) return '刚刚';
+    if (diff < 3600000) return Math.floor(diff/60000) + '分钟前';
+    if (diff < 86400000) return Math.floor(diff/3600000) + '小时前';
+    if (diff < 86400000*7) return Math.floor(diff/86400000) + '天前';
+    return fmtDateTime(v);
+  };
+  const money = function(v){ return '¥ ' + Number(v||0).toLocaleString('zh-CN',{minimumFractionDigits:2}); };
+  const tagType = function(s){ return s==='已通过'?'success':s==='已驳回'?'danger':s==='审批中'?'warning':s==='待审批'?'warning':'info'; };
+  const docTypeById = function(id){ return documentTypes.value.find(function(t){ return t.id === id; }); };
+  const docTypeName = function(id){ const t = docTypeById(id); return t ? t.name : ('类型' + id); };
+  const deptNameById = function(id){ const d = deptFlat.value.find(function(x){ return x.id === id; }); return d ? d.name : ''; };
+  /* 字典：/api/dicts 返回 { dictType: [{dictCode, dictLabel, ...}] } */
+  const dictList = function(type){ const v = dictMap[type]; return Array.isArray(v) ? v : []; };
+  const sealOptions = computed(function(){ return dictList('seal_type'); });
+  /* 用章类型选项：优先用字典，字典未就绪时退回静态清单。
+     原先运行时补丁把它写死成 5 项、与字典各维护一份，字典改了前端不会跟着变。 */
+  const sealTypeChoices = computed(function(){
+    const fromDict = sealOptions.value.map(function(o){ return o.dictLabel; }).filter(Boolean);
+    return fromDict.length ? fromDict : ['公章','合同章','法人章','财务专用章','发票专用章'];
+  });
+  const payOptions = computed(function(){ return dictList('pay_type'); });
+  const expenseOptions = computed(function(){ return dictList('expense_type'); });
+  /** 表单里可能存的是中文标签，而流程网关条件用的是字典 code（如 doc.sealType=='OFFICIAL'），提交前统一转成 code */
+  const dictCodeOf = function(type, value){
+    if (!value) return value;
+    const hit = dictList(type).find(function(d){ return d.dictCode === value || d.dictLabel === value; });
+    return hit ? hit.dictCode : value;
+  };
+  const documentType = function(d){
+    const t = (d.type || '');
+    if (t.indexOf('用印') >= 0) return '用印申请单';
+    if (t.indexOf('报销') >= 0) return '报销申请单';
+    return '付款申请单';
+  };
+  const docTitle = function(q){ return String(q||'').replace(/[（(].*?[）)]/g,'').trim(); };
+  const docSubtitle = function(q){ const m = String(q||'').match(/[（(](.*?)[）)]/); return m ? m[1] : ''; };
+
+  const greeting = computed(function(){
+    const h = new Date().getHours();
+    if (h < 6) return '凌晨好'; if (h < 12) return '早上好';
+    if (h < 14) return '中午好'; if (h < 19) return '下午好'; return '晚上好';
+  });
+  const todayText = computed(function(){
+    const d = new Date(), w = ['星期日','星期一','星期二','星期三','星期四','星期五','星期六'];
+    return d.getFullYear()+'年'+(d.getMonth()+1)+'月'+d.getDate()+'日 · '+w[d.getDay()];
+  });
+  const roleText = computed(function(){
+    if (!me.value) return '';
+    const codes = me.value.roleCodes || [];
+    const names = codes.map(function(c){ const r = allRoles.value.find(function(x){ return x.code === c; }); return r ? r.name : c; });
+    return (names.length ? names.join(' / ') : '无角色') + (me.value.deptName ? ' · ' + me.value.deptName : '');
+  });
+  const scopeText = computed(function(){
+    const m = {SELF:'仅本人', DEPT:'本部门及下级', CENTER:'本中心', CUSTOM_DEPT:'指定部门', COMPANY:'全公司'};
+    return me.value ? (m[me.value.dataScope] || me.value.dataScope || '') : '';
+  });
+  const todoCount = computed(function(){ return todos.value.length; });
+
+  /* ---------- 后端记录 → 原型视图模型 ---------- */
+  const toDoc = function(r){
+    return {
+      id: r.docNo, docId: r.id, docNo: r.docNo,
+      title: r.title || '', type: docTypeName(r.docTypeId), docTypeId: r.docTypeId,
+      applicant: r.applicantName || '', applicantId: r.applicantId,
+      company: '海峡金', department: r.deptName || '',
+      amount: Number(r.amount || 0), invoiceSummary: r.invoiceSummary || '',
+      current: r.currentNodeName || (r.status === 0 ? '未提交' : ''),
+      status: STATUS_TEXT[r.status] !== undefined ? STATUS_TEXT[r.status] : '未知',
+      statusCode: r.status, reason: r.reason || '',
+      needPostMaterial: r.needPostMaterial === 1, postMaterialStatus: r.postMaterialStatus,
+      submittedAt: r.submittedAt, updatedAt: r.updatedAt, closedAt: r.closedAt,
+      bizCategory: BIZ_CATEGORY_TEXT[r.businessCategory] || '',
+      updated: relTime(r.updatedAt || r.createdAt),
+      availableActions: [], nodes: []
+    };
+  };
+  const toNode = function(n){
+    const st = Number(n.status);
+    return {
+      name: n.nodeName || n.nodeKey,
+      state: st >= 2 ? 'done' : ((st === 1 || st === 0) ? 'current' : 'wait'),
+      person: n.assigneeName || '', time: fmtDateTime(n.actionAt),
+      comment: n.commentText || '', action: n.action || '', files: []
+    };
+  };
+  const toUser = function(u){
+    return {id:u.id, name:u.realName, jobNo:u.jobNo, account:u.account,
+            department:u.deptName || deptNameById(u.deptId), deptId:u.deptId, postId:u.postId,
+            post:u.postName || '',
+            position:(u.roleNames && u.roleNames.length) ? u.roleNames.join('、') : '—',
+            roleCodes:u.roleCodes || [], roleNames:u.roleNames || [],
+            status:u.status, lastLoginAt:u.lastLoginAt};
+  };
+  const flattenDept = function(list, out){
+    out = out || [];
+    (list || []).forEach(function(d){
+      out.push({id:d.id, name:d.name, parentId:d.parentId, leaderName:d.leaderName, level:d.level});
+      if (d.children && d.children.length) flattenDept(d.children, out);
+    });
+    return out;
+  };
+
+  /* ---------- 风险预警 ---------- */
+  /* 只读后端 /api/risks 的结果，**不在前端重算超期**：deadline 是节点创建时按节点配置的
+     sla_hours 写进 flow_instance_node.deadline 的，前端再算一遍就会与待办页的 overdue
+     标记、以及首页那句汇总对不上（同一屏两个数字各说各话）。
+     接口不可用时保留上一次的值 —— 宁可显示旧值，也不凭空编一个 0 出来。 */
+  const riskOverview = ref({overdue:0, dueSoon:0, runningTotal:0, noDeadline:0,
+                            riskTotal:0, dueSoonHours:24, items:[]});
+  const refreshRisks = async function(){
+    try {
+      const r = await api.risks();
+      if (r) riskOverview.value = r;
+    } catch(e){ /* 保留上一次的值 */ }
+  };
+  const riskStats = computed(function(){
+    const r = riskOverview.value;
+    return [
+      {name:'已超期', value:r.overdue, note: r.overdue ? '已超出处理时限' : '暂无超期',
+       icon:'超', color:'red'},
+      {name:'即将到期', value:r.dueSoon, note: r.dueSoonHours + ' 小时内到期',
+       icon:'临', color:'orange'},
+      {name:'进行中节点', value:r.runningTotal,
+       note:'其中无时限 ' + r.noDeadline + ' 个', icon:'行', color:'blue'}
+    ];
+  });
+  const riskRows = computed(function(){
+    return (riskOverview.value.items || []).map(function(it){
+      const overdue = it.level === 'overdue';
+      return {
+        id: it.docNo, docId: it.documentId, docNo: it.docNo, title: it.title || '',
+        docTypeName: it.docTypeName || '', applicant: it.applicantName || '',
+        department: it.deptName || '', nodeName: it.nodeName || '',
+        assignee: it.assigneeName || '多人候选',
+        deadlineText: fmtDateTime(it.deadline),
+        riskText: overdue
+          ? ('已超期 ' + (it.overdueHours || 0) + ' 小时')
+          : ('剩 ' + (it.remainHours || 0) + ' 小时'),
+        tag: overdue ? 'danger' : 'warning'
+      };
+    });
+  });
+
+  /* ---------- 台账导出 ---------- */
+  /* 权限点来自登录时的快照（me.permCodes）——后端把权限点编在 JWT 里、校验零查库，
+     所以改了角色必须重新登录才生效，这里读到的也永远是登录那一刻的快照。 */
+  const can = function(code){
+    const p = me.value && me.value.permCodes;
+    return Array.isArray(p) && p.indexOf(code) >= 0;
+  };
+  const exporting = ref(false);
+  const ymd = function(v){
+    const d = toDate(v);
+    if (!d) return '';
+    const p = function(n){ return String(n).padStart(2, '0'); };
+    return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
+  };
+  /* 导出条件与页面筛选保持一致，保证「导出的就是所见的」；
+     后端会再按行级数据范围收一次，且不带 status 参数（台账口径固定已通过/已归档）。 */
+  const exportLedger = async function(){
+    if (exporting.value) return;
+    exporting.value = true;
+    try {
+      const qs = [];
+      if (archiveApplicant.value) qs.push('applicant=' + encodeURIComponent(archiveApplicant.value));
+      if (archiveDepartment.value) qs.push('department=' + encodeURIComponent(archiveDepartment.value));
+      if (archiveCode.value) qs.push('docNo=' + encodeURIComponent(archiveCode.value));
+      const range = archiveDate.value;
+      if (Array.isArray(range) && range.length === 2 && range[0] && range[1]){
+        qs.push('dateFrom=' + ymd(range[0]));
+        qs.push('dateTo=' + ymd(range[1]));
+      }
+      const blob = await httpBlob('/api/documents/export' + (qs.length ? '?' + qs.join('&') : ''));
+      saveBlob(blob, '台账档案_' + ymd(new Date()) + '.csv');
+      ElementPlus.ElMessage.success('台账已导出');
+    } catch(e){
+      ElementPlus.ElMessage.error('导出失败：' + e.message);
+    } finally {
+      exporting.value = false;
+    }
+  };
+
+  /* ---------- 加载 ---------- */
+  const refreshDocs = async function(){
+    const res = await api.docs({pageNum:1, pageSize:500});
+    documents.value = (res.records || []).map(toDoc);
+    totalDocs.value = res.total || documents.value.length;
+  };
+  const refreshTodos = async function(){
+    todos.value = (await api.todos()) || [];
+  };
+  const refreshStats = async function(){
+    try { docStats.value = await api.docStats(); } catch(e){ docStats.value = null; }
+  };
+  const refreshUnread = async function(){
+    try { unreadCount.value = (await api.unreadCount()) || 0; } catch(e){ unreadCount.value = 0; }
+  };
+  /* ---------- 通知中心 ---------- */
+  const toNotify = function(n){
+    return {id:n.id, title:n.title, content:n.content,
+            isRead:Number(n.isRead) === 1, time:fmtDateTime(n.createdAt),
+            bizType:n.bizType, bizId:n.bizId};
+  };
+  const refreshNotify = async function(){
+    notifyLoading.value = true;
+    try {
+      const res = await api.notifications({pageNum:notifyPage.value, pageSize:NOTIFY_PAGE_SIZE});
+      notifyList.value = ((res && res.records) || []).map(toNotify);
+      notifyTotal.value = (res && res.total) || notifyList.value.length;
+    } catch(e){
+      notifyList.value = []; notifyTotal.value = 0;
+      ElementPlus.ElMessage.error('通知加载失败：' + (e.message || ''));
+    } finally { notifyLoading.value = false; }
+  };
+  const openNotify = async function(){
+    notifyVisible.value = true; notifyPage.value = 1;
+    await refreshNotify();
+  };
+  /** 标记单条已读：已是已读就不打接口（避免无意义写库）；顺带刷新未读角标 */
+  const markNotifyRead = async function(n){
+    if (!n.isRead){
+      try { await api.readNotify(n.id); n.isRead = true; refreshUnread().catch(function(){}); }
+      catch(e){ ElementPlus.ElMessage.error('标记已读失败：' + (e.message || '')); return; }
+    }
+    // 能在这张单上定位到就直接打开详情，省得用户自己再去搜
+    if (n.bizType === 'document' && n.bizId){
+      const hit = documents.value.find(function(d){ return Number(d.docId) === Number(n.bizId); });
+      if (hit){ notifyVisible.value = false; openDetail(hit); }
+    }
+  };
+  const markAllNotifyRead = async function(){
+    notifyLoading.value = true;
+    try {
+      await api.readAllNotify();
+      ElementPlus.ElMessage.success('已全部标记为已读');
+      notifyPage.value = 1;
+      await refreshNotify(); await refreshUnread();
+    } catch(e){
+      ElementPlus.ElMessage.error('操作失败：' + (e.message || ''));
+    } finally { notifyLoading.value = false; }
+  };
+  const changeNotifyPage = async function(p){ notifyPage.value = p; await refreshNotify(); };
+  /* 资料清单里哪一项是「关联前置单据」必须按规则名判定，不能按下标 0：
+     用印申请的资料清单是 ['用印文件附件']，按下标写会把上传控件换成关联按钮，
+     结果「用印文件附件」根本没有地方上传。 */
+  const isLinkRule = function(i){
+    const rule = (attachmentRules.value || [])[i];
+    return typeof rule === 'string' && rule.indexOf('关联前置单据') >= 0;
+  };
+  const loadBase = async function(){
+    const results = await Promise.all([
+      api.docTypes().catch(function(){ return []; }),
+      api.users().catch(function(){ return []; }),
+      api.roles().catch(function(){ return []; }),
+      api.deptTree().catch(function(){ return []; }),
+      api.dicts().catch(function(){ return {}; }),
+      api.allPermissions().catch(function(){ return []; }),
+      api.nodeTemplates().catch(function(){ return []; })
+    ]);
+    documentTypes.value = results[0] || [];
+    allUsers.value = results[1] || [];
+    allRoles.value = results[2] || [];
+    deptFlat.value = flattenDept(results[3] || []);
+    Object.assign(dictMap, results[4] || {});
+    allPermissions.value = results[5] || [];
+    nodeTemplateList.value = results[6] || [];
+    departments.value = deptFlat.value.map(function(d){ return d.name; });
+    people.value = allUsers.value.map(toUser);
+    roleConfigs.value = allRoles.value.map(function(r){
+      return {id:r.id, code:r.code, name:r.name,
+              department:r.deptName || deptNameById(r.deptId) || '全公司',
+              deptId:r.deptId, post:r.postName || '',
+              scopeType:r.scopeType || 'self', scope:r.scopeLabel || '本人单据',
+              scopeDeptIds:r.scopeDeptIds || [],
+              members:r.members || [],
+              permCodes:r.permCodes || [], permissions:r.permNames || [],
+              isBuiltin:r.isBuiltin === 1};
+    });
+    flowConfigList.value = (await api.flowConfigs().catch(function(){ return []; })) || [];
+    await loadFlowNodes();
+  };
+  const loadFlowNodes = async function(){
+    await Promise.all(flowConfigList.value.map(async function(f){
+      try {
+        const d = await api.flowDetail(f.id);
+        const nodes = ((d && d.nodes) || []).slice().sort(function(a,b){ return (a.seqNo||0)-(b.seqNo||0); });
+        serverFlowNodes[f.id] = nodes.map(function(n){ return n.nodeName || n.nodeKey; });
+      } catch(e){ serverFlowNodes[f.id] = []; }
+    }));
+    flowConfigs.value = flowConfigList.value.map(function(f){
+      return {id:f.id, type:f.name,
+              category: f.category === 'SEAL' ? '用章' : (f.category === 'DAILY' ? '日常' : '业务'),
+              nodes: serverFlowNodes[f.id] || [], version:f.version, procDefKey:f.procDefKey,
+              deployStatus:f.deployStatus, engineType:f.engineType, docTypeId:f.docTypeId};
+    });
+  };
+
+  /* ---------- 登录 / 切换 / 登出 ---------- */
+  /* 连通性探测：未连接时每 3s 自动重试，连上后降频到 30s。
+     这样后端晚于页面启动也不会一直卡在「未连接」。 */
+  let pingTimer = null, pingBusy = false;
+  const ping = async function(){
+    if (pingBusy) return;
+    pingBusy = true;
+    const wasOk = pingOk.value;
+    try {
+      const r = await fetch(API_BASE + '/v3/api-docs', {method:'GET'});
+      pingOk.value = r.ok; pingText.value = r.ok ? '已连接' : ('HTTP ' + r.status);
+      corsBlocked.value = false;
+    } catch(e){
+      pingOk.value = false;
+      const alive = await probeReachable();
+      corsBlocked.value = alive;
+      pingText.value = alive ? '被跨域拦截' : '未连接';
+    } finally { pingBusy = false; }
+    /* 后端恢复：清掉过期的「连不上后端」报错，避免用户以为还不能用 */
+    if (!wasOk && pingOk.value){
+      if (loginError.value && loginError.value.indexOf('连不上后端') >= 0) loginError.value = '';
+      ElementPlus.ElMessage.success('后端已连接，可以登录了');
+    }
+    schedulePing();
+  };
+  const schedulePing = function(){
+    if (pingTimer) clearTimeout(pingTimer);
+    pingTimer = setTimeout(ping, pingOk.value ? 30000 : 3000);
+  };
+  const afterLogin = async function(){
+    await loadBase();
+    await Promise.all([refreshDocs(), refreshTodos(), refreshStats(), refreshUnread(), refreshRisks()]);
+    api.doneTodos().then(function(d){ doneList.value = d || []; }).catch(function(){});
+  };
+  const doLogin = async function(){
+    if (!loginForm.account || !loginForm.password){ loginError.value = '请输入账号和密码'; return; }
+    logging.value = true; loginError.value = '';
+    try {
+      const r = await api.login(loginForm.account, loginForm.password);
+      setToken(r.token);
+      me.value = r.user;
+      currentAccount.value = loginForm.account;
+      await afterLogin();
+      ElementPlus.ElMessage.success('欢迎回来，' + (me.value.realName || ''));
+    } catch(e){
+      loginError.value = e.message;
+    } finally { logging.value = false; }
+  };
+  const fillLogin = function(a){ loginForm.account = a.account; loginForm.password = DEMO_PASSWORD; doLogin(); };
+  const switchAccount = async function(account){
+    if (!account) return;
+    logging.value = true;
+    try {
+      const r = await api.login(account, DEMO_PASSWORD);
+      setToken(r.token); me.value = r.user; currentAccount.value = account;
+      await afterLogin();
+      page.value = 'home'; detailVisible.value = false; keyword.value = '';
+      ElementPlus.ElMessage.success('已切换为 ' + me.value.realName + '（' + (me.value.roleCodes||[]).join('/') + '）');
+    } catch(e){
+      ElementPlus.ElMessage.error('切换失败：' + e.message);
+      currentAccount.value = me.value ? me.value.account : 'admin';
+    } finally { logging.value = false; }
+  };
+  const logout = function(){
+    setToken(''); me.value = null; documents.value = []; todos.value = [];
+    loginError.value = ''; detailVisible.value = false;
+  };
+  onUnauthorized = function(){ logout(); ElementPlus.ElMessage.warning('登录已过期，请重新登录'); };
+
+  /* ---------- 单据类型快捷清单（来自后端 /api/documents/types） ---------- */
+  const quickOf = function(category, fallback){
+    const t = documentTypes.value.filter(function(x){ return x.category === category; }).map(function(x){ return x.name; });
+    return t.length ? t : fallback;
+  };
+  const dailyQuick     = computed(function(){ return quickOf('DAILY', ['日常付款申请']); });
+  const businessQuick  = computed(function(){ return quickOf('REIMBURSE', ['员工报销']); });
+  const reimburseQuick = computed(function(){ return quickOf('REIMBURSE', ['员工报销']); });
+  const stampQuick     = computed(function(){ return quickOf('SEAL', ['用印申请']); });
+
+  /* 筛选项必须与「比对口径」同源，否则是摆设：
+     · 单据类型筛选比对的是 documentType(d) 的**合成名**（付款/报销/用印 三种申请单），
+       而原先写死的选项里有「日常申请单」——它永远匹配不到任何单据；
+     · 业务类型筛选比对的是 d.type（真实类型名，如「日常付款申请」），
+       而原先写死的「日常付款」「业务付款」同样永远匹配不到。
+     现改为从 documentTypes 推导：选项与口径同源，且每个选项都保证可达。 */
+  const uniqText = function(arr){
+    return arr.filter(function(v,i,a){ return !!v && a.indexOf(v) === i; });
+  };
+  const bizTypeOptions = computed(function(){
+    return uniqText(documentTypes.value.map(function(t){ return BIZ_CATEGORY_TEXT[t.category]; }));
+  });
+  const docTypeOptions = computed(function(){
+    return uniqText(documentTypes.value.map(function(t){ return documentType({type:t.name}); }));
+  });
+
+  /* ---------- 统计（真实计算） ---------- */
+  const stats = computed(function(){
+    const doneCnt = documents.value.filter(function(d){ return d.statusCode === 3 || d.statusCode === 6; }).length;
+    const rejCnt  = documents.value.filter(function(d){ return d.statusCode === 4; }).length;
+    return [
+      {key:'rejected', name:'已驳回', value:rejCnt, target:rejCnt,
+       note: rejCnt ? '可编辑后重新提交' : '暂无驳回单据', icon:'驳', color:'red'},
+      {key:'approve',  name:'待我审批', value:todos.value.length, target:todos.value.length,
+       note: todos.value.length ? '点击查看待办' : '当前无待办', icon:'审', color:'orange'},
+      {key:'done',     name:'已办结', value:doneCnt, target:doneCnt,
+       note:'共 ' + totalDocs.value + ' 张单据', icon:'结', color:'green'}
+    ];
+  });
+  const boardStats = computed(function(){
+    const all = documents.value;
+    const doing = all.filter(function(d){ return d.statusCode === 1 || d.statusCode === 2; }).length;
+    const done  = all.filter(function(d){ return d.statusCode === 3 || d.statusCode === 6; }).length;
+    let sum = 0, n = 0;
+    all.filter(function(d){ return d.statusCode === 3 || d.statusCode === 6; }).forEach(function(d){
+      const a = toDate(d.submittedAt), b = toDate(d.closedAt || d.updatedAt);
+      if (a && b && b > a){ sum += (b - a)/3600000; n++; }
+    });
+    const avgH = n ? (sum/n) : 0;
+    const rate = all.length ? Math.round(done*100/all.length) : 0;
+    return [
+      {name:'申请总量', value:totalDocs.value, note:'后端返回的 total'},
+      {name:'审批中', value:doing, note:'占比 ' + (all.length ? Math.round(doing*100/all.length) : 0) + '%'},
+      {name:'已办结', value:done, note:'办结率 ' + rate + '%'},
+      {name:'平均审批时长', value: avgH ? avgH.toFixed(1) + 'h' : '—', note:'按提交至办结实测'}
+    ];
+  });
+  const efficiency = computed(function(){
+    const byNode = {};
+    documents.value.forEach(function(d){
+      (d.nodes || []).forEach(function(nd){
+        if (nd.state !== 'done') return;
+        byNode[nd.name] = (byNode[nd.name] || 0) + 1;
+      });
+    });
+    const entries = Object.entries(byNode).sort(function(a,b){ return b[1]-a[1]; }).slice(0,4);
+    const colors = ['#5b63e8','#35b6a4','#eca84a','#6d80d8'];
+    if (!entries.length) return [{name:'暂无流转数据', p:0, time:'—', color:'#c8d5e2'}];
+    return entries.map(function(e, i){
+      return {name:e[0], p:Math.min(100, e[1]*25), time:e[1]+' 次', color:colors[i%4]};
+    });
+  });
+
+  /* 办结率：真实计算，替换原型写死的 96% */
+  const completionRate = computed(function(){
+    const total = documents.value.length;
+    if (!total) return 0;
+    const done = documents.value.filter(function(d){ return d.statusCode === 3 || d.statusCode === 6; }).length;
+    return Math.round(done * 100 / total);
+  });
+  /* 近7天发起量：优先后端统计（stats.dailyCounts）——
+     它是数据库聚合、且与圆环同一道行级范围，不受列表 500 条上限影响；
+     接口不可用时降级为「按已加载列表统计」：可能不全，但不会凭空编数字。 */
+  const weekBars = computed(function(){
+    const names = ['周日','周一','周二','周三','周四','周五','周六'];
+    const withHeights = function(rows){
+      const max = Math.max(1, rows.reduce(function(a,b){ return Math.max(a, b.count); }, 0));
+      return rows.map(function(r){
+        return {label:r.label, day:r.day, count:r.count, height:Math.round(r.count*100/max)};
+      });
+    };
+    const s = docStats.value;
+    if (s && s.dailyCounts && s.dailyCounts.length){
+      return withHeights(s.dailyCounts.map(function(x){
+        const parts = String(x.date).split('-');
+        const d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+        return {label:names[d.getDay()], day:Number(parts[1]) + '/' + Number(parts[2]),
+                count:Number(x.count || 0)};
+      }));
+    }
+    const now = new Date(), rows = [];
+    for (let i = 6; i >= 0; i--){
+      const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
+      const key = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+      const cnt = documents.value.filter(function(x){ return String(x.submittedAt || '').slice(0,10) === key; }).length;
+      rows.push({label:names[d.getDay()], day:(d.getMonth()+1)+'/'+d.getDate(), count:cnt});
+    }
+    return withHeights(rows);
+  });
+  const weekTotal = computed(function(){
+    const s = docStats.value;
+    if (s && typeof s.weekTotal === 'number') return s.weekTotal;
+    return weekBars.value.reduce(function(a,b){ return a + b.count; }, 0);
+  });
+  /* 状态分布：优先用后端统计 —— 它不受列表分页/条数上限影响，且已按行级数据范围收敛。
+     接口不可用时降级为「按已加载列表现算」：可能不全，但绝不会是写死的假数字。 */
+  const statusDist = computed(function(){
+    const s = docStats.value;
+    if (s) return {total:s.total, done:s.approved, doing:s.running, back:s.rejected};
+    const total = documents.value.length;
+    const done  = documents.value.filter(function(d){ return d.statusCode === 3 || d.statusCode === 6; }).length;
+    const doing = documents.value.filter(function(d){ return d.statusCode === 1 || d.statusCode === 2; }).length;
+    const back  = documents.value.filter(function(d){ return d.statusCode === 4; }).length;
+    return {total:total, done:done, doing:doing, back:back};
+  });
+  /* 工作看板的状态分布卡片（原模板里写死 27 / 154 / 5，与库里真实数据完全不沾边） */
+  const statusBoard = computed(function(){
+    const d = statusDist.value;
+    return [['审批中', d.doing], ['已通过', d.done], ['已驳回', d.back]];
+  });
+
+  /* ---------- 列表过滤（行级范围由后端负责，前端只做展示条件） ---------- */
+  const currentUserId = computed(function(){ return me.value ? me.value.userId : 0; });
+  /* 「待我审批」的数据源 = 后端待办接口，而不是前端猜节点名 */
+  const myTodoDocIds = computed(function(){
+    const s = {};
+    todos.value.forEach(function(t){ s[t.documentId] = 1; });
+    return s;
+  });
+  /* 「待我审批」的数据源直接取待办投影（TodoVO），
+     不再与单据列表取交集：审批人的行级数据范围往往覆盖不到申请人所在部门，
+     用 documents 过滤会出现「后端有待办、列表却空白」的矛盾。 */
+  const todoRows = computed(function(){
+    return todos.value.map(function(t){
+      return {
+        id: t.docNo, docId: t.documentId, title: t.title || '',
+        type: t.docTypeName || '', bizCategory: BIZ_CATEGORY_TEXT[t.businessCategory] || '',
+        applicant: t.applicantName || '', applicantId: null,
+        department: t.deptName || '', amount: t.amount || 0,
+        status: '审批中', statusCode: 2,
+        current: t.nodeName || '', updated: fmtDateTime(t.submittedAt),
+        taskId: t.taskId, nodeKey: t.nodeKey,
+        reason: '', invoiceSummary: '', company: '', nodes: []
+      };
+    });
+  });
+  const filteredDocs = computed(function(){
+    const kw = (keyword.value || '').toLowerCase();
+    if (page.value === 'approve'){
+      return todoRows.value.filter(function(d){
+        if (businessTypeFilter.value && d.bizCategory !== businessTypeFilter.value
+            && d.type !== businessTypeFilter.value) return false;
+        if (docTypeFilter.value && documentType(d) !== docTypeFilter.value) return false;
+        if (applicantFilter.value && d.applicant !== applicantFilter.value) return false;
+        if (kw && (d.id + d.title + d.applicant).toLowerCase().indexOf(kw) < 0) return false;
+        return true;
+      });
+    }
+    return documents.value.filter(function(d){
+      if (statusFilter.value !== '全部' && d.status !== statusFilter.value) return false;
+      if (listMode.value === 'warning'  && d.amount < 20000) return false;
+      if (listMode.value === 'rejected' && d.statusCode !== 4) return false;
+      if (listMode.value === 'done' && d.statusCode !== 3 && d.statusCode !== 6) return false;
+      if (listMode.value === 'approve' && d.statusCode !== 1 && d.statusCode !== 2) return false;
+      if (kw && (d.id + d.title + d.applicant).toLowerCase().indexOf(kw) < 0) return false;
+      return true;
+    });
+  });
+  const myDocuments = computed(function(){
+    const kw = keyword.value || '';
+    return documents.value.filter(function(d){
+      return d.applicantId === currentUserId.value && (d.id + d.title).indexOf(kw) >= 0;
+    });
+  });
+  /* 台账时间范围：按「归档时间」(updatedAt) 筛 —— 与列表那一列、以及后端导出同一口径。
+     此前 archiveDate 绑了 v-model 却从没参与过滤，日期选择器是个死控件，
+     而页面文案写着「支持多条件组合查询」。 */
+  const inArchiveRange = function(d){
+    const range = archiveDate.value;
+    if (!Array.isArray(range) || range.length !== 2 || !range[0] || !range[1]) return true;
+    const t = toDate(d.updatedAt);
+    if (!t) return false;
+    const from = new Date(range[0]); from.setHours(0, 0, 0, 0);
+    const to = new Date(range[1]); to.setHours(23, 59, 59, 999);
+    return t >= from && t <= to;
+  };
+  const archiveDocs = computed(function(){
+    return documents.value.filter(function(d){
+      return (d.statusCode === 3 || d.statusCode === 6)
+        && (!archiveApplicant.value || d.applicant.indexOf(archiveApplicant.value) >= 0)
+        && (!archiveDepartment.value || d.department === archiveDepartment.value)
+        && (!archiveCode.value || d.id.indexOf(archiveCode.value) >= 0)
+        && inArchiveRange(d);
+    });
+  });
+  const applicantOptions = computed(function(){
+    const s = {};
+    documents.value.forEach(function(d){ s[d.applicant] = 1; });
+    return Object.keys(s);
+  });
+  const filteredLinks = computed(function(){
+    const kw = (linkKeyword.value || '').toLowerCase();
+    return linkCandidates.value.filter(function(d){
+      return (d.code + d.name + d.applicant + d.department).toLowerCase().indexOf(kw) >= 0;
+    });
+  });
+  const roleTreeData = computed(function(){
+    const groups = {};
+    roleConfigs.value.forEach(function(r){ (groups[r.department] = groups[r.department] || []).push(r); });
+    return Object.keys(groups).map(function(dept){
+      return {label:dept, type:'department',
+              children: groups[dept].map(function(r){ return {label:r.name, type:'role', role:r}; })};
+    });
+  });
+  /* ---------- 附件 ---------- */
+  /* 提交弹窗里的 el-upload 是 :auto-upload="false"，此处只负责把用户选中的文件收集起来。
+     真正的上传发生在点「提交审批」之后 —— 那时才有单据 ID。
+     顺序不能反：attachment.document_id 要指向一张真实存在的单据。 */
+  const applyFiles = ref({});
+  const onApplyFileChange = function(i, file, fileList){
+    const last = (fileList && fileList.length) ? fileList[fileList.length - 1] : file;
+    applyFiles.value = Object.assign({}, applyFiles.value, {[i]: (last && last.raw) || last});
+  };
+  const onApplyFileRemove = function(i){
+    const next = Object.assign({}, applyFiles.value);
+    delete next[i];
+    applyFiles.value = next;
+  };
+
+  /* 审批动作区的凭证 */
+  const approvalFiles = ref([]);
+  const onVoucherChange = function(file, fileList){
+    approvalFiles.value = (fileList || []).map(function(f){ return (f && f.raw) || f; });
+  };
+
+  /* 按节点名推断凭证的业务类型：出纳付款要回单、用印办理要盖章件、其余算普通审批凭证 */
+  const voucherBizType = function(nodeName){
+    const n = nodeName || '';
+    if (n.indexOf('出纳') >= 0 || n.indexOf('付款') >= 0 || n.indexOf('回单') >= 0) return 'receipt';
+    if (n.indexOf('用印') >= 0 || n.indexOf('章') >= 0) return 'seal';
+    return 'approve';
+  };
+
+  const saveBlob = function(blob, fileName){
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = fileName || 'attachment';
+    document.body.appendChild(a); a.click(); a.remove();
+    /* objectURL 不主动 revoke 会让 blob 常驻内存 */
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 4000);
+  };
+
+  const findFile = function(id){
+    return ((selected.value && selected.value.attachments) || []).find(function(x){ return x.id === id; }) || null;
+  };
+
+  const downloadAttachment = async function(id){
+    try {
+      const blob = await httpBlob('/api/attachments/' + id + '/download');
+      const f = findFile(id);
+      saveBlob(blob, f ? f.fileName : 'attachment');
+    } catch(e){ ElementPlus.ElMessage.error('下载失败：' + e.message); }
+  };
+
+  const previewAttachment = async function(id){
+    try {
+      const blob = await httpBlob('/api/attachments/' + id + '/preview');
+      const url = URL.createObjectURL(blob);
+      window.open(url, '_blank');
+      setTimeout(function(){ URL.revokeObjectURL(url); }, 60000);
+    } catch(e){ ElementPlus.ElMessage.error('预览失败：' + e.message); }
+  };
+
+  const removeAttachment = async function(id){
+    try {
+      await api.deleteAttachment(id);
+      ElementPlus.ElMessage.success('附件已删除');
+      if (selected.value) await openDetail(selected.value);
+    } catch(e){ ElementPlus.ElMessage.error('删除失败：' + e.message); }
+  };
+
+  /* 只有本人上传、且单据还没进入流程时才给删除入口（与后端规则一致） */
+  const canDeleteFile = function(f){
+    const s = selected.value;
+    if (!s || !me.value) return false;
+    const editable = s.statusCode === 0 || s.statusCode === 4 || s.statusCode === 5;
+    return editable && f.uploaderId === me.value.userId;
+  };
+
+  /* 附件 tab 的数据源改为后端返回的真实附件。
+     此前是从流转节点里的字符串文件名聚出来的，只能看、点不了、没有 ID。 */
+  const allFiles = computed(function(){
+    const list = (selected.value && selected.value.attachments) || [];
+    return list.map(function(a){
+      return {
+        id: a.id,
+        name: a.fileName,
+        node: a.bizTypeName || a.bizType || '',
+        uploader: a.uploaderName || '',
+        uploaderId: a.uploaderId,
+        time: fmtDateTime(a.createdAt),
+        sizeText: a.sizeText || '',
+        previewable: !!a.previewable
+      };
+    });
+  });
+  const canApprove  = computed(function(){ return !!selected.value && (selected.value.availableActions||[]).indexOf('approve') >= 0; });
+  const canReject   = computed(function(){ return !!selected.value && (selected.value.availableActions||[]).indexOf('reject') >= 0; });
+  const canWithdraw = computed(function(){ return !!selected.value && (selected.value.availableActions||[]).indexOf('withdraw') >= 0; });
+
+  /* ---------- 发起单据 ---------- */
+  const makeCode = function(){ return '提交后由后端按「前缀+日期+序号」生成正式编号'; };
+  const attachmentList = function(title, type){
+    if ((type||'').indexOf('报销') >= 0) return ['关联前置单据','发票及费用明细','付款截图或行程凭证'];
+    if ((type||'').indexOf('用印') >= 0) return ['用印文件附件'];
+    return ['关联前置单据','业务证明资料','发票','收款信息'];
+  };
+  /* 容忍「日常付款 / 日常付款申请」这类展示名与配置名的差异 */
+  /* 原型工作台的区块名与后端 document_type.name 不完全一致，这里做一层别名映射 */
+  const DOC_TYPE_ALIAS = {'日常付款':'日常付款申请', '业务付款':'日常付款申请', '报销':'员工报销',
+                          '用印':'用印申请', '盖章申请':'用印申请', '盖章':'用印申请',
+                          '员工报销':'员工报销', '用印申请':'用印申请'};
+  const resolveDocType = function(name){
+    if (!name) return null;
+    const target = DOC_TYPE_ALIAS[name] || name;
+    const list = documentTypes.value;
+    let t = list.find(function(x){ return x.name === target; });
+    if (t) return t;
+    t = list.find(function(x){ return x.name.indexOf(target) >= 0 || target.indexOf(x.name) >= 0; });
+    return t || null;
+  };
+  const openSubmit = function(type, data){
+    data = data || {};
+    const t = resolveDocType(type);
+    const realName = t ? t.name : type;
+    submitForm.draftId = null; submitForm.draftNo = null; applyFiles.value = {};
+    Object.assign(submitForm, {
+      code: makeCode(), type: realName, typeId: t ? t.id : null,
+      applicant: me.value ? me.value.realName : '', company:'海峡金',
+      department: me.value ? me.value.deptName : (data.department || ''),
+      title: data.title || '', amount: data.amount || 0,
+      invoiceSummary: data.invoiceSummary || '', reason: data.reason || '',
+      needPostMaterial: false,
+      payType:'OTHER', payeeName:'', payeeAccount:'', payeeBank:'',
+      expenseType:'OTHER', occurDate:'',
+      sealProject: (realName||'').indexOf('用印') >= 0 ? (data.title || '') : '',
+      sealReason:'', sealDepartment: me.value ? me.value.deptName : '', sealTime:'',
+      fileName:'', copies:1, isCarryOut:'N',
+      sealType: (sealOptions.value[0] || {}).dictCode || 'OFFICIAL'
+    });
+    linkedDocument.value = null;
+    attachmentRules.value = attachmentList(submitForm.title, realName);
+    previewNodes.value = null;
+    if (!t) ElementPlus.ElMessage.warning('后端未配置「' + type + '」这一单据类型，请先在单据类型表中配置');
+    const fc = flowConfigList.value.find(function(f){ return f.docTypeId === submitForm.typeId; });
+    if (fc) api.flowPreview(fc.id, {bizCategory: fc.category, amount: submitForm.amount})
+      .then(function(pv){ previewNodes.value = pv; }).catch(function(){});
+    submitVisible.value = true;
+  };
+  const quickSubmit = function(title, type){ openSubmit(type, {title:title, reason:'申请提交' + title + '，相关资料将按制度要求上传。'}); };
+  const repeatSubmit = function(d){
+    openSubmit(d.type, {title:d.title, amount:d.amount, invoiceSummary:d.invoiceSummary, reason:d.reason});
+    ElementPlus.ElMessage.info('已复制历史单据信息，请核对后提交');
+  };
+  const currentFlowText = function(){
+    const fc = flowConfigList.value.find(function(f){ return f.docTypeId === submitForm.typeId; });
+    const nodes = fc ? (serverFlowNodes[fc.id] || []) : [];
+    return nodes.length ? nodes.join(' → ') : '（该单据类型尚未配置流程节点）';
+  };
+  const serverPreviewText = computed(function(){
+    const pv = previewNodes.value;
+    if (!pv || !pv.nodes) return '';
+    return pv.nodes.map(function(nd){
+      return (nd.nodeName || nd.nodeKey) + ' → ' + ((nd.assignees && nd.assignees.length) ? nd.assignees.join('、') : '待解析');
+    }).join('　|　');
+  });
+  /* 提交过程中若附件上传失败会中止，而此时草稿已经建好了。
+     记住它，用户重试时直接复用，否则每点一次「提交审批」就会多出一张草稿单。 */
+  const ensureDraft = async function(build){
+    if (submitForm.draftId){
+      return {id: submitForm.draftId, docNo: submitForm.draftNo};
+    }
+    const created = await build();
+    submitForm.draftId = created.id;
+    submitForm.draftNo = created.docNo;
+    return created;
+  };
+
+  const submitRequest = async function(){
+    const isSeal = (submitForm.type || '').indexOf('用印') >= 0;
+    if (!submitForm.typeId){ ElementPlus.ElMessage.warning('未找到该单据类型的后端配置'); return; }
+    if (isSeal && (!submitForm.sealProject || !submitForm.sealReason || !submitForm.fileName)){
+      ElementPlus.ElMessage.warning('请完整填写用印项目、用印原因和文件名称'); return;
+    }
+    if (!isSeal && (!submitForm.title || !submitForm.amount)){
+      ElementPlus.ElMessage.warning('请填写申请事项和金额'); return;
+    }
+    const formData = isSeal
+      ? {title: submitForm.sealProject, sealProject: submitForm.sealProject,
+         /* 网关条件用 doc.sealType=='OFFICIAL'/'CONTRACT' 判分支，必须提交字典 code 而非中文标签 */
+         sealType: dictCodeOf('seal_type', submitForm.sealType),
+         fileName: submitForm.fileName, reason: submitForm.sealReason, sealReason: submitForm.sealReason,
+         sealTime: submitForm.sealTime, sealDepartment: submitForm.sealDepartment,
+         copies: Number(submitForm.copies || 1), isCarryOut: submitForm.isCarryOut || 'N'}
+      : {title: submitForm.title, amount: Number(submitForm.amount || 0), reason: submitForm.reason,
+         invoiceSummary: submitForm.invoiceSummary,
+         payType: dictCodeOf('pay_type', submitForm.payType),
+         payeeName: submitForm.payeeName, payeeAccount: submitForm.payeeAccount, payeeBank: submitForm.payeeBank,
+         expenseType: dictCodeOf('expense_type', submitForm.expenseType),
+         occurDate: submitForm.occurDate || null};
+    loading.value = true;
+    try {
+      const created = await ensureDraft(function(){ return api.createDoc({
+        docTypeId: submitForm.typeId,
+        formData: formData,
+        title: isSeal ? submitForm.sealProject : submitForm.title,
+        amount: isSeal ? 0 : Number(submitForm.amount || 0),
+        reason: isSeal ? submitForm.sealReason : submitForm.reason,
+        invoiceSummary: submitForm.invoiceSummary || null,
+        linkedDocIds: (linkedDocument.value && linkedDocument.value.docId) ? [linkedDocument.value.docId] : null,
+        needPostMaterial: submitForm.needPostMaterial ? 1 : 0,
+        priority: 0
+      }); });
+      /* 附件必须在 submit 之前挂上去：attachment.document_id 指向真实单据，
+         而单据一旦进入流程就属于审批留痕，后端不再允许增删附件。
+         任一附件失败就中止提交（草稿已被 ensureDraft 记住，重试不会重复建单）。 */
+      const failed = [];
+      const pendingIdx = Object.keys(applyFiles.value).sort(function(a,b){ return Number(a)-Number(b); });
+      for (let pi = 0; pi < pendingIdx.length; pi++){
+        const fi = pendingIdx[pi];
+        try {
+          await api.uploadAttachment(applyFiles.value[fi], {documentId: created.id, bizType: 'apply'});
+        } catch(ue){
+          failed.push((attachmentRules.value[fi] || ('附件' + (Number(fi)+1))) + '：' + ue.message);
+        }
+      }
+      if (failed.length){
+        throw new Error('附件上传失败，单据未提交（草稿已保存，修正后可再次提交）—— ' + failed.join('；'));
+      }
+      await api.submitDoc(created.id);
+      applyFiles.value = {};
+      submitForm.draftId = null;
+      submitVisible.value = false;
+      ElementPlus.ElMessage.success('单据 ' + created.docNo + ' 已提交审批');
+      await Promise.all([refreshDocs(), refreshTodos()]);
+    } catch(e){
+      ElementPlus.ElMessage.error('提交失败：' + e.message);
+    } finally { loading.value = false; }
+  };
+
+  /* ---------- 详情 ---------- */
+  const openDetail = async function(d){
+    let target = d;
+    if (target && !target.docId && target.documentId){
+      target = documents.value.find(function(x){ return x.docId === target.documentId; }) || null;
+    }
+    if (!target || !target.docId){ ElementPlus.ElMessage.warning('未找到该单据'); return; }
+    detailVisible.value = true; detailLoading.value = true; detailTab.value = 'flow';
+    approvalComment.value = '';
+    try {
+      const dto = await api.docDetail(target.docId);
+      const base = toDoc(dto.document);
+      base.docTypeName   = dto.docTypeName;
+      base.flowName      = dto.flowName;
+      base.flowVersion   = dto.flowVersion;
+      base.viewingNodeKey= dto.viewingNodeKey;
+      /* 必须搬过来：模板的「（必填）」与 approve() 的本地预检都读它。
+         漏了这一行，后端算得再对，界面上也不会提示（这一版就是漏了）。 */
+      base.requireAttachment = !!dto.requireAttachment;
+      base.formSchema    = dto.formSchema;
+      base.attachments   = dto.attachments || [];
+      base.links         = dto.links || [];
+      base.availableActions = dto.availableActions || [];
+      base.pendingTaskId = dto.pendingTaskId || null;
+      base.nodes = (dto.flowHistory || []).map(toNode);
+      if (!base.nodes.length && dto.document && dto.document.status === 0){
+        base.nodes = [{name:'尚未提交', state:'current', person:'', time:'', comment:'', files:[]}];
+      }
+      selected.value = base;
+    } catch(e){
+      ElementPlus.ElMessage.error('加载详情失败：' + e.message);
+    } finally { detailLoading.value = false; }
+  };
+
+  /* ---------- 审批动作 ---------- */
+  const needTask = function(){
+    if (!selected.value || !selected.value.pendingTaskId){
+      ElementPlus.ElMessage.warning('当前单据没有等待你处理的任务'); return false;
+    }
+    return true;
+  };
+  const approve = async function(){
+    if (!needTask()) return;
+    /* 界面上这句「(必填)」是提示，真正拦住的是后端；这里做本地预检只是为了少一次失败往返 */
+    const alreadyOnNode = ((selected.value.attachments) || []).some(function(a){
+      return a.nodeKey && a.nodeKey === selected.value.viewingNodeKey;
+    });
+    if (selected.value.requireAttachment && !approvalFiles.value.length && !alreadyOnNode){
+      ElementPlus.ElMessage.warning('「' + (selected.value.current || '当前节点') + '」需要上传办理凭证后才能通过');
+      return;
+    }
+    loading.value = true;
+    try {
+      /* 凭证必须先落库再审批：后端在通过动作里按「单据 + 节点」查附件，查不到会直接拒绝 */
+      for (let vi = 0; vi < approvalFiles.value.length; vi++){
+        await api.uploadAttachment(approvalFiles.value[vi], {
+          documentId: selected.value.docId,
+          nodeKey: selected.value.viewingNodeKey,
+          bizType: voucherBizType(selected.value.current)
+        });
+      }
+      approvalFiles.value = [];
+      await api.approve({taskId:selected.value.pendingTaskId, action:'approve', comment:approvalComment.value || '同意'});
+      ElementPlus.ElMessage.success('审批已通过');
+      detailVisible.value = false;
+      await Promise.all([refreshDocs(), refreshTodos()]);
+    } catch(e){ ElementPlus.ElMessage.error('审批失败：' + e.message); }
+    finally { loading.value = false; }
+  };
+  const confirmReject = async function(){
+    if (!rejectForm.reason){ ElementPlus.ElMessage.warning('请填写驳回原因'); return; }
+    if (!needTask()) return;
+    const target = (REJECT_TARGETS.find(function(t){ return t.label === rejectForm.level; }) || {}).value || 'START';
+    loading.value = true;
+    try {
+      await api.approve({taskId:selected.value.pendingTaskId, action:'reject',
+                         comment:rejectForm.reason, rejectTo:target, materials:rejectForm.materials || null});
+      rejectVisible.value = false; detailVisible.value = false;
+      ElementPlus.ElMessage.success('已驳回至' + rejectForm.level);
+      await Promise.all([refreshDocs(), refreshTodos()]);
+    } catch(e){ ElementPlus.ElMessage.error('驳回失败：' + e.message); }
+    finally { loading.value = false; }
+  };
+  const confirmSupplement = async function(){
+    if (!supplementForm.materials){ ElementPlus.ElMessage.warning('请填写需补充材料'); return; }
+    if (!needTask()) return;
+    loading.value = true;
+    try {
+      await api.approve({taskId:selected.value.pendingTaskId, action:'reject',
+                         comment:'通过，但需补材料：' + supplementForm.materials,
+                         rejectTo:'START', materials:supplementForm.materials});
+      supplementVisible.value = false; detailVisible.value = false;
+      ElementPlus.ElMessage.success('已要求' + supplementForm.role + '补充材料');
+      await Promise.all([refreshDocs(), refreshTodos()]);
+    } catch(e){ ElementPlus.ElMessage.error('操作失败：' + e.message); }
+    finally { loading.value = false; }
+  };
+  const confirmSign = async function(){
+    if (!signForm.person){ ElementPlus.ElMessage.warning('请选择加签人员'); return; }
+    if (!needTask()) return;
+    const u = allUsers.value.find(function(x){ return x.realName === signForm.person; });
+    if (!u){ ElementPlus.ElMessage.warning('未找到该人员'); return; }
+    loading.value = true;
+    try {
+      await api.countersign({taskId:selected.value.pendingTaskId, userId:u.id});
+      signVisible.value = false;
+      ElementPlus.ElMessage.success('已邀请' + signForm.person + '参与加签审核');
+      await refreshTodos();
+    } catch(e){ ElementPlus.ElMessage.error('加签失败：' + e.message); }
+    finally { loading.value = false; }
+  };
+  const withdrawDoc = async function(d){
+    const target = d || selected.value;
+    if (!target || !target.docId){ ElementPlus.ElMessage.warning('请选择要撤回的单据'); return; }
+    loading.value = true;
+    try {
+      await api.withdrawDoc(target.docId);
+      ElementPlus.ElMessage.success('已撤回');
+      detailVisible.value = false;
+      await Promise.all([refreshDocs(), refreshTodos()]);
+    } catch(e){ ElementPlus.ElMessage.error('撤回失败：' + e.message); }
+    finally { loading.value = false; }
+  };
+
+  /* ---------- 关联前置单据（用真实已办结单据做候选） ---------- */
+  const openLink = async function(){
+    linkMode.value = (submitForm.type || '').indexOf('报销') >= 0 ? 'daily' : 'business';
+    linkKeyword.value = '';
+    linkVisible.value = true;
+    try {
+      const res = await api.docs({pageNum:1, pageSize:100});
+      linkCandidates.value = (res.records || [])
+        .filter(function(r){ return r.status === 3 || r.status === 6; })
+        .map(function(r){ return {docId:r.id, code:r.docNo, contract:r.docNo, name:r.title,
+                                  applicant:r.applicantName, department:r.deptName}; });
+    } catch(e){ linkCandidates.value = []; }
+  };
+  const chooseLink = function(row){
+    linkedDocument.value = row; linkVisible.value = false;
+    ElementPlus.ElMessage.success('已关联：' + row.code);
+  };
+
+  /* ---------- 查询 / 跳转 ---------- */
+  const runQuery = async function(){
+    try {
+      await refreshDocs();
+      ElementPlus.ElMessage.success('查询完成，当前可见 ' + documents.value.length + ' 条（后端 total=' + totalDocs.value + '）');
+    } catch(e){ ElementPlus.ElMessage.error('查询失败：' + e.message); }
+  };
+  const openStat = function(key){
+    listMode.value = key; keyword.value = '';
+    page.value = key === 'approve' ? 'approve' : 'forms';
+    statusFilter.value = key === 'done' ? '已通过' : key === 'rejected' ? '已驳回' : '全部';
+  };
+
+  /* ---------- 管理端写操作：已接入真实后端 ---------- */
+
+  /** 统一包装：后端返回的 400/403 文案原样透出，前端不自己编错误信息 */
+  const adminCall = async function(fn, okMsg){
+    personSaving.value = true;
+    try {
+      const r = await fn();
+      if (okMsg) ElementPlus.ElMessage.success(okMsg);
+      return r;
+    } catch (e){
+      ElementPlus.ElMessage.error(e.message || '操作失败');
+      throw e;
+    } finally {
+      personSaving.value = false;
+    }
+  };
+
+  const resetPerson = function(){
+    editingPerson.value = null;
+    newPerson.name=''; newPerson.jobNo=''; newPerson.account=''; newPerson.password='';
+    newPerson.deptId=null; newPerson.post=''; newPerson.roleCode='';
+  };
+  const editPerson = function(row){
+    editingPerson.value = row;
+    newPerson.name=row.name; newPerson.jobNo=row.jobNo; newPerson.account=row.account;
+    newPerson.password=''; newPerson.deptId=row.deptId||null;
+    newPerson.post=row.post||'';
+    newPerson.roleCode=(row.roleCodes && row.roleCodes[0]) || '';
+    personVisible.value = true;
+  };
+  const closePerson = function(){ personVisible.value=false; resetPerson(); };
+
+  const addPerson = async function(){
+    if (!newPerson.name || !newPerson.jobNo || !newPerson.account){
+      ElementPlus.ElMessage.warning('姓名、工号、登录账号均为必填'); return;
+    }
+    if (!editingPerson.value && !newPerson.password){
+      ElementPlus.ElMessage.warning('新建员工必须设置初始密码'); return;
+    }
+    if (!newPerson.deptId){ ElementPlus.ElMessage.warning('请选择所属部门'); return; }
+    const body = {
+      realName:newPerson.name, jobNo:newPerson.jobNo, account:newPerson.account,
+      deptId:newPerson.deptId, postName:newPerson.post || null,
+      roleCodes:newPerson.roleCode ? [newPerson.roleCode] : []
+    };
+    if (newPerson.password) body.password = newPerson.password;
+    try {
+      if (editingPerson.value){
+        await adminCall(function(){ return api.updateUser(editingPerson.value.id, body); }, '员工信息已更新');
+      } else {
+        await adminCall(function(){ return api.createUser(body); }, '员工已创建，可用该账号登录');
+      }
+      personVisible.value = false; resetPerson();
+      await loadBase();
+    } catch(e){ /* 已在 adminCall 提示 */ }
+  };
+
+  const deletePerson = async function(row){
+    try {
+      await ElementPlus.ElMessageBox.confirm(
+        '确认删除员工「' + row.name + '（' + row.account + '）」？删除后该账号将无法登录。',
+        '删除员工', {type:'warning', confirmButtonText:'确认删除', cancelButtonText:'取消'});
+    } catch(e){ return; }
+    try {
+      await adminCall(function(){ return api.deleteUser(row.id); }, '员工已删除');
+      await loadBase();
+    } catch(e){}
+  };
+
+  const adjustRole = function(row){
+    roleAssignTarget.value = row;
+    roleAssignCodes.value = (row.roleCodes || []).slice();
+    roleAssignVisible.value = true;
+  };
+  const confirmAssignRoles = async function(){
+    try {
+      await adminCall(function(){ return api.setUserRoles(roleAssignTarget.value.id, roleAssignCodes.value); }, '角色已调整');
+      roleAssignVisible.value = false;
+      await loadBase();
+    } catch(e){}
+  };
+
+  const saveRole = async function(){
+    const r = editingRole.value;
+    if (!r.name){ ElementPlus.ElMessage.warning('角色名称不能为空'); return; }
+    try {
+      if (r.isNew){
+        await adminCall(function(){
+          return api.createRole({name:r.name, deptId:r.deptId||null, postName:r.post||null,
+                                 scopeType:r.scopeType||'self', permCodes:r.permCodes||[]});
+        }, '角色已创建');
+      } else {
+        await adminCall(function(){
+          return api.updateRole(r.id, {name:r.name, deptId:r.deptId||null, postName:r.post||null});
+        }, null);
+        await adminCall(function(){ return api.setRolePerms(r.id, r.permCodes||[]); }, null);
+        await adminCall(function(){ return api.setRoleScope(r.id, r.scopeType||'self', r.scopeDeptIds||[]); },
+          '已保存。该角色下已登录的成员需重新登录后权限才会生效');
+      }
+      roleVisible.value = false;
+      await loadBase();
+    } catch(e){}
+  };
+
+  const removeRole = async function(){
+    const r = editingRole.value;
+    try {
+      await ElementPlus.ElMessageBox.confirm('确认删除角色「' + r.name + '」？', '删除角色',
+        {type:'warning', confirmButtonText:'确认删除', cancelButtonText:'取消'});
+    } catch(e){ return; }
+    try {
+      await adminCall(function(){ return api.deleteRole(r.id); }, '角色已删除');
+      roleVisible.value = false;
+      await loadBase();
+    } catch(e){}
+  };
+
+  const saveFlow = async function(){
+    const f = editingFlow.value;
+    if (!f.type){ ElementPlus.ElMessage.warning('流程名称不能为空'); return; }
+    if (!f.docTypeId){ ElementPlus.ElMessage.warning('请选择该流程关联的单据类型'); return; }
+    if (!f.nodes || f.nodes.length < 2){
+      ElementPlus.ElMessage.warning('审批节点至少两个（含发起节点）'); return;
+    }
+    const body = {name:f.type, docTypeId:f.docTypeId, nodes:f.nodes};
+    try {
+      if (f.isNew){
+        await adminCall(function(){ return api.createFlow(body); }, '流程已创建并部署');
+      } else {
+        await adminCall(function(){ return api.updateFlow(f.id, body); }, '流程已保存为新版本并部署');
+      }
+      flowVisible.value = false;
+      await loadBase();
+    } catch(e){}
+  };
+
+  const removeFlow = async function(){
+    const f = editingFlow.value;
+    try {
+      await ElementPlus.ElMessageBox.confirm(
+        '确认废弃流程「' + f.type + '」？若仍有单据在审批中，系统会拒绝该操作。', '废弃流程',
+        {type:'warning', confirmButtonText:'确认废弃', cancelButtonText:'取消'});
+    } catch(e){ return; }
+    try {
+      await adminCall(function(){ return api.retireFlow(f.id); }, '流程已废弃');
+      flowVisible.value = false;
+      await loadBase();
+    } catch(e){}
+  };
+
+  const editFlow = function(flow){
+    editingFlow.value = Object.assign({}, flow, {
+      nodes:(flow.nodes||[]).slice(),
+      docTypeId: flow.docTypeId || (documentTypes.value[0]||{}).id,
+      isNew:false
+    });
+    flowVisible.value = true;
+  };
+  const newFlow  = function(){
+    editingFlow.value = {type:'', nodes:['发起人'], docTypeId:(documentTypes.value[0]||{}).id, isNew:true};
+    flowVisible.value = true;
+  };
+  const editRole = function(item){
+    editingRole.value = Object.assign({}, item, {
+      permCodes:(item.permCodes||[]).slice(),
+      scopeDeptIds:(item.scopeDeptIds||[]).slice(),
+      isNew:false
+    });
+    roleVisible.value = true;
+  };
+  const newRole  = function(){
+    editingRole.value = {name:'', code:'', deptId:null, post:'', scopeType:'self',
+                         permCodes:[], scopeDeptIds:[], isNew:true};
+    roleVisible.value = true;
+  };
+
+  /* ---------- 模板兼容占位 ---------- */
+  const roles = computed(function(){ return (me.value && me.value.roleCodes) ? me.value.roleCodes : []; });
+
+  /* ---------- 生命周期 ---------- */
+  onMounted(async function(){
+    if (getToken()){
+      try {
+        me.value = await api.me();
+        if (me.value && me.value.account){ currentAccount.value = me.value.account; loginForm.account = me.value.account; }
+        await afterLogin();
+      } catch(e){
+        setToken(''); me.value = null;
+        loginError.value = '会话已失效，请重新登录';
+      }
+    }
+    ping();
+  });
+
+  watch(page, async function(v){
+    await nextTick();
+    const main = document.querySelector('.el-main');
+    if (main) main.classList.toggle('approval-page', v === 'approve');
+    if (v === 'approve' || v === 'forms' || v === 'archive' || v === 'board' || v === 'home'){
+      refreshDocs().catch(function(){});
+    }
+    if (v === 'home' || v === 'board' || v === 'approve'){
+      refreshTodos().catch(function(){});
+      refreshStats().catch(function(){});
+      refreshUnread().catch(function(){});
+      /* 首页那句「N 项风险预警需要关注」用的是这份数据，必须一起刷 */
+      refreshRisks().catch(function(){});
+    }
+    if (v === 'risk'){
+      refreshRisks().catch(function(){});
+    }
+  });
+
+  return {
+    apiBase, me, logging, loginError, loginForm, currentAccount, demoAccounts,
+    doLogin, fillLogin, switchAccount, logout, pingOk, pingText, ping, corsBlocked, altUrl,
+    greeting, todayText, roleText, scopeText, todoCount, rejectTargets,
+    page, role, keyword, statusFilter, businessTypeFilter, docTypeFilter, applicantFilter, listMode,
+    submitVisible, detailVisible, selected, detailTab, approvalComment, boardDate, archiveApplicant,
+    archiveDepartment, archiveCode, archiveDate, personVisible, linkVisible, linkMode, linkKeyword,
+    linkedDocument, permissionTab, flowVisible, editingFlow, roleVisible, editingRole,
+    rejectVisible, supplementVisible, signVisible, dailyExpanded, businessExpanded,
+    rejectForm, supplementForm, signForm, pageNames, roles, departments,
+    documents, stats, boardStats, efficiency, dailyQuick, businessQuick, stampQuick, reimburseQuick,
+    submitForm, attachmentRules, isLinkRule, people, newPerson, roleConfigs, flowConfigs,
+    allPermissions, nodeTemplateList, deptOptions, scopeOptions,
+    editingPerson, personSaving, roleAssignVisible, roleAssignTarget, roleAssignCodes,
+    editPerson, closePerson, adjustPerson:addPerson, addPerson, adjustRole, confirmAssignRoles,
+    deletePerson, removeRole, removeFlow,
+    documentTypes, allUsers, allRoles, dictMap, sealOptions, payOptions, expenseOptions, dictCodeOf,
+    applicantOptions, filteredDocs, myDocuments, archiveDocs, linkCandidates, filteredLinks,
+    roleTreeData, allFiles, canApprove, canReject, canWithdraw, loading, detailLoading, totalDocs,
+    applyFiles, approvalFiles, onApplyFileChange, onApplyFileRemove, onVoucherChange,
+    downloadAttachment, previewAttachment, removeAttachment, canDeleteFile,
+    todos, doneList, serverPreviewText, previewNodes, currentFlowText,
+    completionRate, weekBars, weekTotal, statusDist, statusBoard, docStats, unreadCount,
+    notifyVisible, notifyList, notifyTotal, notifyLoading, openNotify, markNotifyRead,
+    markAllNotifyRead, changeNotifyPage,
+    bizTypeOptions, docTypeOptions, sealTypeChoices,
+    riskOverview, riskStats, riskRows, refreshRisks, can, exporting, exportLedger,
+    money, tagType, documentType, docTitle, docSubtitle, runQuery, openSubmit, quickSubmit, repeatSubmit,
+    openStat, addPerson, openLink, chooseLink, editFlow, newFlow, saveFlow, editRole, newRole, saveRole,
+    submitRequest, openDetail, approve, confirmReject, confirmSupplement, confirmSign, withdrawDoc,
+    fmtDateTime, deptNameById
+  };
+}}).use(ElementPlus,{locale:ElementPlusLocaleZhCn}).mount('#app');
+
+/* 启动看门狗：若 Vue 未能完成编译，给出可见提示而不是白屏 */
+setTimeout(function(){
+  var app = document.querySelector('#app');
+  var mounted = !!document.querySelector('.login-gate .el-form, .shell .topbar');
+  if (app && !mounted){
+    var tip = document.createElement('div');
+    tip.style.cssText = 'position:fixed;left:0;right:0;bottom:0;z-index:9999;background:#fdeeee;color:#a32d2d;'
+      + 'padding:10px 16px;font:13px/1.6 system-ui,-apple-system,sans-serif;border-top:1px solid #f7c1c1';
+    tip.textContent = '前端初始化失败：Vue 未完成挂载。请打开浏览器控制台查看错误（常见原因：后端未启动，或接口返回了非 0 的 code）。';
+    document.body.appendChild(tip);
+  }
+}, 3000);
+</script></body></html>

@@ -1,0 +1,119 @@
+server:
+  port: 8080
+  servlet:
+    encoding:
+      charset: UTF-8
+      force: true
+  tomcat:
+    # 上传大附件时避免 Tomcat 在连接层面先掐断
+    max-swallow-size: -1
+
+spring:
+  application:
+    name: haixiajin-oa
+
+  servlet:
+    multipart:
+      enabled: true
+      # 单文件 20MB / 单次请求 60MB（一次提交可能带多个附件）
+      # 与 oa.storage.max-file-size 必须对齐，否则会被 Tomcat 层先拒掉，报错还看不出是配置问题
+      max-file-size: 20MB
+      max-request-size: 60MB
+      file-size-threshold: 1MB
+
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://127.0.0.1:3306/haixiajin_oa?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true&rewriteBatchedStatements=true
+    username: ${MYSQL_USER:root}
+    password: ${MYSQL_PASSWORD:}
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      pool-name: OaHikariPool
+
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: Asia/Shanghai
+    default-property-inclusion: non_null
+    serialization:
+      write-dates-as-timestamps: false
+      fail-on-empty-beans: false
+
+  mvc:
+    throw-exception-if-no-handler-found: true
+
+  web:
+    resources:
+      add-mappings: false
+
+# ---------------------------------------------------------------------------
+# MyBatis-Plus
+# ---------------------------------------------------------------------------
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+    cache-enabled: false
+    # 开发期想看 SQL 可改为 org.apache.ibatis.logging.stdout.StdOutImpl
+    log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
+  global-config:
+    banner: false
+    db-config:
+      id-type: auto
+      logic-delete-field: deleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+
+# ---------------------------------------------------------------------------
+# Flowable 流程引擎
+#   database-schema-update=true 首次启动会自动创建 ACT_* 表（约 60 张）
+#   生产环境建议改为 false，改用官方 SQL 脚本手工执行
+# ---------------------------------------------------------------------------
+flowable:
+  database-schema-update: true
+  async-executor-activate: false
+  history-level: full
+  check-process-definitions: false
+  process:
+    definition-cache-limit: 128
+
+# ---------------------------------------------------------------------------
+# 业务配置
+# ---------------------------------------------------------------------------
+oa:
+  jwt:
+    # 生产环境务必通过环境变量 OA_JWT_SECRET 注入，长度 >= 32 字节
+    secret: ${OA_JWT_SECRET:haixiajin-oa-default-secret-please-change-in-production}
+    expire-minutes: 720
+
+  # ---------------------------------------------------------------------------
+  # 附件存储
+  #   type=local   → LocalStorageService（本机磁盘，零外部依赖）
+  #   type=oss/cos → 新增一个 StorageService 实现类即可，业务代码零改动
+  #   attachment.file_key 里存的是实现自定的键，切存储时旧数据需要做一次搬迁
+  # ---------------------------------------------------------------------------
+  storage:
+    type: ${OA_STORAGE_TYPE:local}
+    local:
+      root: ${OA_STORAGE_ROOT:./data/attachments}
+    # 单文件上限（字节），需与 spring.servlet.multipart.max-file-size 保持一致
+    max-file-size: 20971520
+    allowed-ext: jpg,jpeg,png,gif,bmp,webp,pdf,doc,docx,xls,xlsx,ppt,pptx,txt,csv,zip,rar,7z
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: method
+
+logging:
+  level:
+    root: INFO
+    com.hxj.oa: DEBUG
+    org.flowable: WARN
+    org.springframework.jdbc: INFO
+  pattern:
+    console: "%d{HH:mm:ss.SSS} %-5level [%thread] %logger{36} - %msg%n"

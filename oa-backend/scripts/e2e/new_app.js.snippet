@@ -1,0 +1,1118 @@
+const {createApp,ref,reactive,computed,onMounted,watch,nextTick}=Vue;
+
+/* =========================================================================
+   海峡金 OA —— 前端联调版（真实后端驱动）
+   后端：Spring Boot 3 + Flowable 7，默认 http://127.0.0.1:8080
+   本文件替换原型的 mock 逻辑层；模板与样式保持原样。
+   ========================================================================= */
+/* 后端地址：
+   ① 优先 window.HXJ_API_BASE（换环境时在页面顶部覆盖即可）；
+   ② 若页面本身由后端提供（同源 8080），直接用同源地址 —— 此时请求不受 CORS 约束，
+      可绕开「CORS 类浏览器扩展改写响应头」导致的跨域拦截；
+   ③ 否则（file:// 直开）回落到 http://127.0.0.1:8080。 */
+const API_BASE = (window.HXJ_API_BASE
+  || (location.protocol.indexOf('http') === 0 && location.port === '8080' ? location.origin : 'http://127.0.0.1:8080')
+).replace(/\/$/, '');
+const TOKEN_KEY = 'hxj_oa_token';
+
+const STATUS_TEXT = {0:'草稿',1:'待审批',2:'审批中',3:'已通过',4:'已驳回',5:'已撤回',6:'已归档'};
+const REJECT_TARGETS = [
+  {label:'提交人',        value:'START'},
+  {label:'直属部门负责人', value:'n2'},
+  {label:'核算会计',      value:'n3'},
+  {label:'内控合规',      value:'n3'},
+  {label:'出纳',          value:'n5'}
+];
+const DEMO_ACCOUNTS = [
+  {account:'admin',     name:'系统管理员', title:'全部权限'},
+  {account:'huangxm',   name:'黄小明',    title:'普通员工 · 发起人'},
+  {account:'linjl',     name:'林经理',    title:'部门负责人'},
+  {account:'wangkj',    name:'王会计',    title:'核算会计'},
+  {account:'zhangzong', name:'张总',      title:'公司领导 · 大额'},
+  {account:'zhaocs',    name:'赵出纳',    title:'出纳'},
+  {account:'chennk',    name:'陈内控',    title:'内控合规'},
+  /* 以下两个审批人此前缺失，导致「用印申请」和「大额报销」两条链路在界面上无法走完 */
+  {account:'zhouzh',    name:'周综合',    title:'部门负责人 · 综合管理部 · 用印办理'},
+  {account:'lifinance', name:'李财务',    title:'财务总监 · 报销大额'}
+];
+const DEMO_PASSWORD = '123456';
+
+/* ================= HTTP 封装 ================= */
+function getToken(){ return localStorage.getItem(TOKEN_KEY) || ''; }
+function setToken(t){ t ? localStorage.setItem(TOKEN_KEY, t) : localStorage.removeItem(TOKEN_KEY); }
+
+let onUnauthorized = null;
+
+/* ---------- 故障判定：真离线 vs 被浏览器拦截跨域 ----------
+   两者在 fetch 里都表现为 TypeError，但成因与解法完全不同：
+   · 真离线      → 服务没起，启动后端会自动重连。
+   · 跨域被拦    → 服务活着，但响应头被改写（典型是 CORS 类浏览器扩展 / 抓包代理），
+                   此时改用同源地址打开页面即可彻底绕开，不需要动后端。 */
+const OFFLINE_HINT = '连不上后端 ' + API_BASE + '（服务未启动或已停止）。启动后端后会自动重连，也可点下方「重试连接」。';
+const CORS_HINT = '后端其实在运行，但这次请求被浏览器拦截了跨域（多见于 CORS 类浏览器扩展改写了响应头）。'
+  + '请改用同源地址打开本页面，即可彻底绕开：' + API_BASE + '/oa.html';
+/** no-cors 模式不受 CORS 约束：只要服务活着就能拿到 opaque 响应 → 说明是跨域被拦而非离线 */
+async function probeReachable(){
+  try {
+    const ctl = new AbortController();
+    const timer = setTimeout(function(){ ctl.abort(); }, 2500);
+    await fetch(API_BASE + '/v3/api-docs', {mode:'no-cors', cache:'no-store', signal: ctl.signal});
+    clearTimeout(timer);
+    return true;
+  } catch (e) { return false; }
+}
+
+async function http(path, opts){
+  opts = opts || {};
+  let url = API_BASE + path;
+  if (opts.params){
+    const q = new URLSearchParams();
+    Object.entries(opts.params).forEach(function(kv){
+      if (kv[1] !== '' && kv[1] !== null && kv[1] !== undefined) q.append(kv[0], kv[1]);
+    });
+    const qs = q.toString();
+    if (qs) url += (url.indexOf('?') >= 0 ? '&' : '?') + qs;
+  }
+  const headers = {'Content-Type':'application/json'};
+  const tk = getToken();
+  if (tk) headers['Authorization'] = 'Bearer ' + tk;
+
+  let res;
+  try {
+    res = await fetch(url, {
+      method: opts.method || 'GET',
+      headers: headers,
+      body: opts.body === undefined ? undefined : JSON.stringify(opts.body)
+    });
+  } catch (e) {
+    const reachable = await probeReachable();
+    const err = new Error(reachable ? CORS_HINT : OFFLINE_HINT);
+    err.network = true;
+    err.cors = reachable;
+    throw err;
+  }
+  if (res.status === 401){ if (onUnauthorized) onUnauthorized(); throw new Error('未登录或登录已过期'); }
+  let json;
+  try { json = await res.json(); }
+  catch (e) { throw new Error('响应解析失败（HTTP ' + res.status + '）'); }
+  if (json.code !== 0){
+    const err = new Error(json.msg || ('请求失败 HTTP ' + res.status));
+    err.code = json.code;
+    err.data = json.data;
+    throw err;
+  }
+  return json.data;
+}
+
+const api = {
+  login:        function(a,p){ return http('/api/auth/login', {method:'POST', body:{account:a, password:p}}); },
+  me:           function(){ return http('/api/auth/me'); },
+  docTypes:     function(){ return http('/api/documents/types'); },
+  docs:         function(params){ return http('/api/documents', {params:params}); },
+  docDetail:    function(id){ return http('/api/documents/' + id); },
+  createDoc:    function(body){ return http('/api/documents', {method:'POST', body:body}); },
+  submitDoc:    function(id){ return http('/api/documents/' + id + '/submit', {method:'POST'}); },
+  withdrawDoc:  function(id){ return http('/api/documents/' + id + '/withdraw', {method:'POST'}); },
+  todos:        function(){ return http('/api/todos', {params:{limit:200}}); },
+  doneTodos:    function(){ return http('/api/todos/done'); },
+  approve:      function(body){ return http('/api/todos/approve', {method:'POST', body:body}); },
+  countersign:  function(body){ return http('/api/todos/countersign', {method:'POST', body:body}); },
+  flowConfigs:  function(){ return http('/api/flows/configs'); },
+  flowDetail:   function(id){ return http('/api/flows/configs/' + id); },
+  flowPreview:  function(id, body){ return http('/api/flows/configs/' + id + '/preview', {method:'POST', body:body||{}}); },
+  deptTree:     function(){ return http('/api/depts/tree'); },
+  users:        function(){ return http('/api/users'); },
+  roles:        function(){ return http('/api/roles'); },
+  dicts:        function(){ return http('/api/dicts'); },
+  permissions:  function(){ return http('/api/auth/permissions'); }
+};
+
+/* ================= 登录门禁样式 ================= */
+document.head.insertAdjacentHTML('beforeend', `<style>
+.login-gate{position:fixed;inset:0;z-index:3000;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#eef7ff 0,#e4f2fe 45%,#f7fbff 100%);overflow:auto;padding:32px 16px}
+.lg-card{width:480px;max-width:100%;background:#fff;border:1px solid #dcebf6;border-radius:16px;padding:28px 30px 24px;box-shadow:0 18px 46px rgba(58,149,218,.12)}
+.lg-logo{display:flex;align-items:center;gap:11px;margin-bottom:18px}
+.lg-logo i{width:40px;height:40px;border-radius:11px;background:linear-gradient(145deg,#71c2f5,#469fe2);color:#fff;display:grid;place-items:center;font-style:normal;font-weight:500;font-size:17px}
+.lg-logo b{display:block;font-size:16px;color:#17334d}
+.lg-logo span{display:block;font-size:12px;color:#7892a8}
+.lg-card h2{font-size:19px;font-weight:500;color:#17334d;margin:0 0 4px}
+.lg-tip{font-size:13px;color:#7892a8;margin:0 0 16px;line-height:1.6}
+.lg-accounts{margin-top:18px;border-top:1px solid #eaf3fa;padding-top:14px}
+.lg-accounts>b{font-size:12px;font-weight:500;color:#7892a8;display:block;margin-bottom:9px}
+.lg-chips{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.lg-chips button{display:flex;flex-direction:column;gap:2px;align-items:flex-start;padding:9px 11px;border:1px solid #dcebf6;border-radius:10px;background:#f9fcff;cursor:pointer;text-align:left;transition:.15s}
+.lg-chips button:hover{border-color:#77bdf0;background:#eef7ff}
+.lg-chips button b{font-size:13px;font-weight:500;color:#26364d}
+.lg-chips button span{font-size:11px;color:#8a98aa}
+.lg-backend{margin:16px 0 0;font-size:11px;color:#8a98aa;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.lg-backend code{background:#f2f7fb;border-radius:4px;padding:1px 5px;color:#52728d}
+.dot{width:7px;height:7px;border-radius:50%;display:inline-block}
+.dot.ok{background:#35b6a4}.dot.bad{background:#e2564f}
+.mode-tag{margin-left:8px;font-size:11px;padding:1px 7px;border-radius:9px;background:#eaf6ff;color:#3188ce;border:1px solid #cfe8fb;vertical-align:middle}
+.lg-retry{cursor:pointer;color:#3188ce;text-decoration:underline;font-size:11px;margin-left:2px}
+.lg-retry:hover{color:#1869a8}
+.lg-alt{margin:10px 0 0;font-size:11px;line-height:1.7;color:#a8632f;background:#fff8ee;border:1px solid #f6dfc2;border-radius:6px;padding:8px 10px}
+.lg-alt a{color:#1869a8;word-break:break-all}
+</style>`);
+
+/* ================= 登录门禁 DOM（须在 mount 之前插入） ================= */
+document.querySelector('#app').insertAdjacentHTML('beforeend', `<div class="login-gate" v-if="!me">
+  <div class="lg-card">
+    <div class="lg-logo"><i>峡</i><div><b>海峡金</b><span>OA 内控审批中心 · 联调版</span></div></div>
+    <h2>登录</h2>
+    <p class="lg-tip">使用真实账号登录，全部数据来自后端接口。</p>
+    <el-form label-position="top" @submit.prevent>
+      <el-form-item label="登录账号">
+        <el-input v-model="loginForm.account" placeholder="请输入登录账号" @keyup.enter="doLogin"></el-input>
+      </el-form-item>
+      <el-form-item label="登录密码">
+        <el-input v-model="loginForm.password" type="password" show-password placeholder="请输入登录密码" @keyup.enter="doLogin"></el-input>
+      </el-form-item>
+    </el-form>
+    <el-button type="primary" style="width:100%" :loading="logging" @click="doLogin">{{logging?'登录中…':'登 录'}}</el-button>
+    <el-alert v-if="loginError" :title="loginError" type="error" :closable="false" show-icon style="margin-top:12px"></el-alert>
+    <div class="lg-accounts">
+      <b>演示账号（密码统一 123456，点选即切换身份体验完整审批链）</b>
+      <div class="lg-chips">
+        <button v-for="a in demoAccounts" :key="a.account" @click="fillLogin(a)">
+          <b>{{a.name}}</b><span>{{a.title}}</span>
+        </button>
+      </div>
+    </div>
+    <p class="lg-backend">
+      后端 <code>{{apiBase}}</code>
+      <span class="dot" :class="pingOk?'ok':'bad'"></span>{{pingText}}
+      <span v-if="!pingOk" class="lg-retry" @click="ping()">重试连接</span>
+      <span v-else class="lg-retry" @click="ping()">刷新</span>
+    </p>
+    <p class="lg-alt" v-if="corsBlocked">
+      检测到后端在跑，但请求被浏览器拦截了跨域（CORS 类扩展常见）。
+      点这里用<b>同源地址</b>打开，可彻底绕开：
+      <a :href="altUrl" target="_blank" rel="noopener">{{altUrl}}</a>
+    </p>
+  </div>
+</div>`);
+document.querySelector('.shell').setAttribute('v-if','me');
+
+/* ================= 顶栏与工作台改造（须在 mount 之前执行） ================= */
+(function patchShell(){
+  /* 挂载前有两点必须注意：
+     ① 自定义标签还没有 class（要用标签选择器）；
+     ② <template> 里的内容不在实时 DOM 中，普通 querySelector 不会进入，
+        必须递归进 .content 查找。 */
+  function roots(){
+    const found = [];
+    (function walk(node){
+      if (!node || !node.querySelectorAll) return;
+      found.push(node);
+      node.querySelectorAll('template').forEach(function(t){ if (t.content) walk(t.content); });
+    })(document);
+    return found;
+  }
+  function qAll(sel){
+    const out = [];
+    roots().forEach(function(r){
+      r.querySelectorAll(sel).forEach(function(el){ if (out.indexOf(el) < 0) out.push(el); });
+    });
+    return out;
+  }
+  function qOne(sel){ return qAll(sel)[0] || null; }
+  /* 元素→后代 的深度查询：会穿透元素内部的 <template> */
+  function deepQuery(el, sel){
+    if (!el) return null;
+    const direct = el.querySelector(sel);
+    if (direct) return direct;
+    const ts = el.querySelectorAll('template');
+    for (let i = 0; i < ts.length; i++){
+      if (!ts[i].content) continue;
+      const hit = deepQuery(ts[i].content, sel);
+      if (hit) return hit;
+    }
+    return null;
+  }
+  function setHtml(el, html){ if (el) el.innerHTML = html; }
+
+  /* ---- 顶栏：真实用户 + 账号切换 ---- */
+  setHtml(qOne('.topbar el-avatar'), '{{ (me && me.realName) ? me.realName.slice(0,1) : "?" }}');
+  setHtml(qOne('.topbar .who'), '<b>{{me?me.realName:""}}</b><span>{{roleText}}</span>');
+  const acctSel = qOne('.top-actions > el-select');
+  if (acctSel){
+    acctSel.setAttribute('v-model','currentAccount');
+    acctSel.setAttribute('@change','switchAccount');
+    acctSel.setAttribute('placeholder','切换登录身份');
+    acctSel.setAttribute('style','width:196px');
+    setHtml(acctSel, '<el-option v-for="a in demoAccounts" :key="a.account" :label="a.name + \' · \' + a.title" :value="a.account"></el-option>');
+  }
+  const bell = qOne('.top-actions el-badge');
+  if (bell){ bell.setAttribute(':value','todoCount'); bell.setAttribute('v-if','todoCount'); }
+  setHtml(qOne('.logo span'), 'OA 内控审批中心 · 联调版');
+
+  /* ---- 侧栏菜单：待办数字只挂在「待我审批」上，流程管理替换风险预警 ---- */
+  qAll('el-menu-item').forEach(function(item){
+    const idx = item.getAttribute('index');
+    item.querySelectorAll('el-badge').forEach(function(b){
+      if (idx === 'approve'){ b.setAttribute(':value','todoCount'); b.setAttribute('v-if','todoCount'); }
+      else { b.setAttribute('v-if','false'); }
+    });
+    const rename = function(from, to){
+      item.childNodes.forEach(function(n){
+        if (n.nodeType === 3 && n.textContent.indexOf(from) >= 0) n.textContent = to;
+      });
+    };
+    if (idx === 'approve') rename('审批中心','待我审批');
+    if (idx === 'risk'){ item.setAttribute('index','flow'); rename('风险预警','流程管理'); }
+  });
+
+  /* ---- 首页：问候语、日期、合规率、发起按钮 ---- */
+  setHtml(qOne('.hero h2'), '{{greeting}}，{{me?me.realName:""}}');
+  setHtml(qOne('.hero span'), '{{todayText}} —— 数据来自后端实时接口<span class="mode-tag">联调版</span>');
+  const rate = qOne('.hero .el-progress');
+  if (rate) rate.setAttribute(':percentage','completionRate');
+  setHtml(qOne('.hero .percent'), '{{completionRate}}%');
+  const rateLabel = qOne('.hero .el-progress small');
+  if (rateLabel) rateLabel.textContent = '办结率';
+  qAll('.hero .el-button').forEach(function(btn){
+    const t = btn.textContent || '';
+    if (t.indexOf('报销') >= 0) btn.setAttribute('@click',"openSubmit('员工报销')");
+    else if (t.indexOf('付款') >= 0) btn.setAttribute('@click',"openSubmit('日常付款')");
+  });
+
+  /* ---- 首页右下：近7天发起量与状态分布，改为真实统计 ---- */
+  const analytics = qOne('.home-analytics');
+  if (analytics){
+    setHtml(analytics, '<el-card shadow="never" class="weekly-chart"><template #header><div class="card-title"><div><b>近7天发起量</b><span>按提交时间真实统计</span></div><el-tag>共 {{weekTotal}} 单</el-tag></div></template>'
+      + '<div class="mini-bars"><div v-for="d in weekBars" :key="d.day"><i :style="{height:d.height+\'%\'}"></i><b>{{d.count}}</b><span>{{d.label}}</span></div></div></el-card>'
+      + '<el-card shadow="never" class="flow-donut-card"><template #header><div class="card-title"><div><b>流程状态</b><span>当前可见单据的状态分布</span></div></div></template>'
+      + '<div class="home-donut-wrap"><div class="home-donut"><b>{{statusDist.total}}</b><span>全部单据</span></div>'
+      + '<div class="home-legend"><p><i class="done"></i>已办结 <b>{{statusDist.done}}</b></p>'
+      + '<p><i class="doing"></i>审批中 <b>{{statusDist.doing}}</b></p>'
+      + '<p><i class="back"></i>已驳回 <b>{{statusDist.back}}</b></p></div></div></el-card>');
+  }
+  const homeTodoTitle = qAll('.card-title b').find(function(b){ return b.textContent.indexOf('待办审批') >= 0; });
+  if (homeTodoTitle) homeTodoTitle.textContent = '我的待办';
+
+  /* ---- 工作台三区对齐到后端真实存在的 3 种单据类型 ---- */
+  /* 按钮文案也一并按类型重写：原型里「员工报销」区沿用旧文案「新建业务付款」，
+     容易误以为创建的是付款单（实际绑定的是 openSubmit('员工报销')）。 */
+  const dayZone = qOne('.work-zones .zone.daily');
+  if (dayZone){
+    setHtml(deepQuery(dayZone, '.zone-title b'), '日常付款');
+    setHtml(deepQuery(dayZone, '.zone-title span'), '无紧急时效要求的部门日常申请');
+    const dBtn = deepQuery(dayZone, '.zone-title el-button');
+    if (dBtn){ dBtn.setAttribute('@click',"openSubmit('日常付款')"); dBtn.textContent = '新建日常付款'; }
+  }
+  const bizZone = qOne('.work-zones .zone.business');
+  if (bizZone){
+    setHtml(deepQuery(bizZone, '.zone-title b'), '员工报销');
+    setHtml(deepQuery(bizZone, '.zone-title span'), '与对外付款区分的独立员工申请类型');
+    const bBtn = deepQuery(bizZone, '.zone-title el-button');
+    if (bBtn){ bBtn.setAttribute('@click',"openSubmit('员工报销')"); bBtn.textContent = '新建员工报销'; }
+  }
+  const stampZone = qOne('.work-zones .zone.stamp');
+  if (stampZone){
+    setHtml(deepQuery(stampZone, '.zone-title b'), '用印申请');
+    setHtml(deepQuery(stampZone, '.zone-title span'), '公章、合同章、法人章等');
+    const sBtn = deepQuery(stampZone, '.zone-title el-button');
+    if (sBtn){ sBtn.setAttribute('@click',"openSubmit('用印申请')"); sBtn.textContent = '新建用印申请'; }
+  }
+
+  /* ---- 详情抽屉：去掉无后端支撑的上传，按可执行动作渲染按钮 ---- */
+  qAll('.approval-action').forEach(function(block){
+    const up = block.querySelector('el-upload');
+    if (up && up.parentNode) up.parentNode.removeChild(up);
+    block.setAttribute('v-if','canApprove||canReject||canWithdraw||loading');
+    const row = block.querySelector('div');
+    if (row && !row.querySelector('[data-withdraw]')){
+      row.insertAdjacentHTML('beforeend','<el-button data-withdraw v-if="canWithdraw" @click="withdrawDoc(null)">撤 回</el-button>');
+    }
+  });
+})();
+
+/* ================= 应用 ================= */
+createApp({setup(){
+  const apiBase = API_BASE;
+  /* 同源访问入口：把本页面由后端自己提供（静态资源），彻底规避跨域被拦截 */
+  const altUrl = API_BASE + '/oa.html';
+
+  const me = ref(null), logging = ref(false), loginError = ref(''), pingOk = ref(false), pingText = ref('检测中…'), corsBlocked = ref(false);
+  const loginForm = reactive({account:'admin', password:DEMO_PASSWORD});
+  const currentAccount = ref('admin');
+  const demoAccounts = DEMO_ACCOUNTS;
+  const rejectTargets = REJECT_TARGETS;
+
+  const page = ref('home'), role = ref(''), keyword = ref(''), statusFilter = ref('全部');
+  const businessTypeFilter = ref(''), docTypeFilter = ref(''), applicantFilter = ref('');
+  const listMode = ref('all'), submitVisible = ref(false), detailVisible = ref(false);
+  const selected = ref(null), detailTab = ref('flow'), approvalComment = ref('');
+  const boardDate = ref(''), archiveApplicant = ref(''), archiveDepartment = ref('');
+  const archiveCode = ref(''), archiveDate = ref('');
+  const personVisible = ref(false), linkVisible = ref(false), linkMode = ref('daily'), linkKeyword = ref('');
+  const linkedDocument = ref(null), permissionTab = ref('people'), flowVisible = ref(false);
+  const editingFlow = ref(null), roleVisible = ref(false), editingRole = ref(null);
+  const rejectVisible = ref(false), supplementVisible = ref(false), signVisible = ref(false);
+  const dailyExpanded = ref(false), businessExpanded = ref(false);
+  const loading = ref(false), detailLoading = ref(false);
+
+  const pageNames = {home:'首页', work:'工作台', board:'工作看板', forms:'全部表单', approve:'待我审批',
+                     archive:'台账档案', permission:'权限管理', risk:'流程管理', flow:'流程管理'};
+
+  const documentTypes = ref([]), allUsers = ref([]), allRoles = ref([]), deptFlat = ref([]);
+  const flowConfigList = ref([]), dictMap = reactive({});
+  const documents = ref([]), todos = ref([]), doneList = ref([]);
+  const totalDocs = ref(0), serverFlowNodes = reactive({});
+  const departments = ref([]), people = ref([]), roleConfigs = ref([]), flowConfigs = ref([]);
+  const linkCandidates = ref([]), attachmentRules = ref([]), previewNodes = ref(null);
+
+  const submitForm = reactive({code:'', type:'', typeId:null, applicant:'', company:'海峡金', department:'',
+    title:'', amount:0, invoiceSummary:'', reason:'', needPostMaterial:false,
+    /* 后端「日常付款申请」表单模板必填：payType/payeeName/payeeAccount/payeeBank */
+    payType:'OTHER', payeeName:'', payeeAccount:'', payeeBank:'',
+    /* 后端「员工报销」表单模板必填：expenseType/occurDate */
+    expenseType:'OTHER', occurDate:'',
+    /* 后端「用印申请」表单模板必填：sealType(字典 code)/copies/isCarryOut */
+    sealProject:'', sealReason:'', sealDepartment:'', sealTime:'', fileName:'',
+    sealType:'OFFICIAL', copies:1, isCarryOut:'N'});
+  const rejectForm = reactive({level:'提交人', target:'START', reason:'', materials:''});
+  const supplementForm = reactive({mode:'付款前', role:'提交人', materials:''});
+  const signForm = reactive({person:'', reason:''});
+  const newPerson = reactive({name:'', jobNo:'', account:'', password:'', department:'', post:'', position:'普通员工', permissions:[]});
+
+  /* ---------- 工具 ---------- */
+  const toDate = function(v){
+    if (!v) return null;
+    const d = new Date(String(v).replace('T',' ').replace(/-/g,'/'));
+    return isNaN(d.getTime()) ? null : d;
+  };
+  const fmtDateTime = function(v){
+    const d = toDate(v);
+    if (!d) return v ? String(v) : '';
+    const p = function(n){ return String(n).padStart(2,'0'); };
+    return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+' '+p(d.getHours())+':'+p(d.getMinutes());
+  };
+  const relTime = function(v){
+    const d = toDate(v);
+    if (!d) return v ? String(v) : '';
+    const diff = Date.now() - d.getTime();
+    if (diff < 60000) return '刚刚';
+    if (diff < 3600000) return Math.floor(diff/60000) + '分钟前';
+    if (diff < 86400000) return Math.floor(diff/3600000) + '小时前';
+    if (diff < 86400000*7) return Math.floor(diff/86400000) + '天前';
+    return fmtDateTime(v);
+  };
+  const money = function(v){ return '¥ ' + Number(v||0).toLocaleString('zh-CN',{minimumFractionDigits:2}); };
+  const tagType = function(s){ return s==='已通过'?'success':s==='已驳回'?'danger':s==='审批中'?'warning':s==='待审批'?'warning':'info'; };
+  const docTypeById = function(id){ return documentTypes.value.find(function(t){ return t.id === id; }); };
+  const docTypeName = function(id){ const t = docTypeById(id); return t ? t.name : ('类型' + id); };
+  const deptNameById = function(id){ const d = deptFlat.value.find(function(x){ return x.id === id; }); return d ? d.name : ''; };
+  /* 字典：/api/dicts 返回 { dictType: [{dictCode, dictLabel, ...}] } */
+  const dictList = function(type){ const v = dictMap[type]; return Array.isArray(v) ? v : []; };
+  const sealOptions = computed(function(){ return dictList('seal_type'); });
+  const payOptions = computed(function(){ return dictList('pay_type'); });
+  const expenseOptions = computed(function(){ return dictList('expense_type'); });
+  /** 表单里可能存的是中文标签，而流程网关条件用的是字典 code（如 doc.sealType=='OFFICIAL'），提交前统一转成 code */
+  const dictCodeOf = function(type, value){
+    if (!value) return value;
+    const hit = dictList(type).find(function(d){ return d.dictCode === value || d.dictLabel === value; });
+    return hit ? hit.dictCode : value;
+  };
+  const documentType = function(d){
+    const t = (d.type || '');
+    if (t.indexOf('用印') >= 0) return '用印申请单';
+    if (t.indexOf('报销') >= 0) return '报销申请单';
+    return '付款申请单';
+  };
+  const docTitle = function(q){ return String(q||'').replace(/[（(].*?[）)]/g,'').trim(); };
+  const docSubtitle = function(q){ const m = String(q||'').match(/[（(](.*?)[）)]/); return m ? m[1] : ''; };
+
+  const greeting = computed(function(){
+    const h = new Date().getHours();
+    if (h < 6) return '凌晨好'; if (h < 12) return '早上好';
+    if (h < 14) return '中午好'; if (h < 19) return '下午好'; return '晚上好';
+  });
+  const todayText = computed(function(){
+    const d = new Date(), w = ['星期日','星期一','星期二','星期三','星期四','星期五','星期六'];
+    return d.getFullYear()+'年'+(d.getMonth()+1)+'月'+d.getDate()+'日 · '+w[d.getDay()];
+  });
+  const roleText = computed(function(){
+    if (!me.value) return '';
+    const codes = me.value.roleCodes || [];
+    const names = codes.map(function(c){ const r = allRoles.value.find(function(x){ return x.code === c; }); return r ? r.name : c; });
+    return (names.length ? names.join(' / ') : '无角色') + (me.value.deptName ? ' · ' + me.value.deptName : '');
+  });
+  const scopeText = computed(function(){
+    const m = {SELF:'仅本人', DEPT:'本部门及下级', CENTER:'本中心', CUSTOM_DEPT:'指定部门', COMPANY:'全公司'};
+    return me.value ? (m[me.value.dataScope] || me.value.dataScope || '') : '';
+  });
+  const todoCount = computed(function(){ return todos.value.length; });
+
+  /* ---------- 后端记录 → 原型视图模型 ---------- */
+  const toDoc = function(r){
+    return {
+      id: r.docNo, docId: r.id, docNo: r.docNo,
+      title: r.title || '', type: docTypeName(r.docTypeId), docTypeId: r.docTypeId,
+      applicant: r.applicantName || '', applicantId: r.applicantId,
+      company: '海峡金', department: r.deptName || '',
+      amount: Number(r.amount || 0), invoiceSummary: r.invoiceSummary || '',
+      current: r.currentNodeName || (r.status === 0 ? '未提交' : ''),
+      status: STATUS_TEXT[r.status] !== undefined ? STATUS_TEXT[r.status] : '未知',
+      statusCode: r.status, reason: r.reason || '',
+      needPostMaterial: r.needPostMaterial === 1, postMaterialStatus: r.postMaterialStatus,
+      submittedAt: r.submittedAt, updatedAt: r.updatedAt, closedAt: r.closedAt,
+      updated: relTime(r.updatedAt || r.createdAt),
+      availableActions: [], nodes: []
+    };
+  };
+  const toNode = function(n){
+    const st = Number(n.status);
+    return {
+      name: n.nodeName || n.nodeKey,
+      state: st >= 2 ? 'done' : ((st === 1 || st === 0) ? 'current' : 'wait'),
+      person: n.assigneeName || '', time: fmtDateTime(n.actionAt),
+      comment: n.commentText || '', action: n.action || '', files: []
+    };
+  };
+  const toUser = function(u){
+    return {id:u.id, name:u.realName, jobNo:u.jobNo, account:u.account,
+            department:deptNameById(u.deptId), deptId:u.deptId, postId:u.postId,
+            post:'', position:'', permissions:[], status:u.status, lastLoginAt:u.lastLoginAt};
+  };
+  const flattenDept = function(list, out){
+    out = out || [];
+    (list || []).forEach(function(d){
+      out.push({id:d.id, name:d.name, parentId:d.parentId, leaderName:d.leaderName, level:d.level});
+      if (d.children && d.children.length) flattenDept(d.children, out);
+    });
+    return out;
+  };
+
+  /* ---------- 加载 ---------- */
+  const refreshDocs = async function(){
+    const res = await api.docs({pageNum:1, pageSize:500});
+    documents.value = (res.records || []).map(toDoc);
+    totalDocs.value = res.total || documents.value.length;
+  };
+  const refreshTodos = async function(){
+    todos.value = (await api.todos()) || [];
+  };
+  const loadBase = async function(){
+    const results = await Promise.all([
+      api.docTypes().catch(function(){ return []; }),
+      api.users().catch(function(){ return []; }),
+      api.roles().catch(function(){ return []; }),
+      api.deptTree().catch(function(){ return []; }),
+      api.dicts().catch(function(){ return {}; })
+    ]);
+    documentTypes.value = results[0] || [];
+    allUsers.value = results[1] || [];
+    allRoles.value = results[2] || [];
+    deptFlat.value = flattenDept(results[3] || []);
+    Object.assign(dictMap, results[4] || {});
+    departments.value = deptFlat.value.map(function(d){ return d.name; });
+    people.value = allUsers.value.map(toUser);
+    roleConfigs.value = allRoles.value.map(function(r){
+      return {code:r.code, name:r.name, department:deptNameById(r.deptId) || '全公司',
+              post:r.postName || '', scope:r.remark || '（后端未下发行级范围字段）',
+              members:[], permissions:[], isBuiltin:r.isBuiltin === 1};
+    });
+    flowConfigList.value = (await api.flowConfigs().catch(function(){ return []; })) || [];
+    await loadFlowNodes();
+  };
+  const loadFlowNodes = async function(){
+    await Promise.all(flowConfigList.value.map(async function(f){
+      try {
+        const d = await api.flowDetail(f.id);
+        const nodes = ((d && d.nodes) || []).slice().sort(function(a,b){ return (a.seqNo||0)-(b.seqNo||0); });
+        serverFlowNodes[f.id] = nodes.map(function(n){ return n.nodeName || n.nodeKey; });
+      } catch(e){ serverFlowNodes[f.id] = []; }
+    }));
+    flowConfigs.value = flowConfigList.value.map(function(f){
+      return {id:f.id, type:f.name,
+              category: f.category === 'SEAL' ? '用章' : (f.category === 'DAILY' ? '日常' : '业务'),
+              nodes: serverFlowNodes[f.id] || [], version:f.version, procDefKey:f.procDefKey,
+              deployStatus:f.deployStatus, engineType:f.engineType, docTypeId:f.docTypeId};
+    });
+  };
+
+  /* ---------- 登录 / 切换 / 登出 ---------- */
+  /* 连通性探测：未连接时每 3s 自动重试，连上后降频到 30s。
+     这样后端晚于页面启动也不会一直卡在「未连接」。 */
+  let pingTimer = null, pingBusy = false;
+  const ping = async function(){
+    if (pingBusy) return;
+    pingBusy = true;
+    const wasOk = pingOk.value;
+    try {
+      const r = await fetch(API_BASE + '/v3/api-docs', {method:'GET'});
+      pingOk.value = r.ok; pingText.value = r.ok ? '已连接' : ('HTTP ' + r.status);
+      corsBlocked.value = false;
+    } catch(e){
+      pingOk.value = false;
+      const alive = await probeReachable();
+      corsBlocked.value = alive;
+      pingText.value = alive ? '被跨域拦截' : '未连接';
+    } finally { pingBusy = false; }
+    /* 后端恢复：清掉过期的「连不上后端」报错，避免用户以为还不能用 */
+    if (!wasOk && pingOk.value){
+      if (loginError.value && loginError.value.indexOf('连不上后端') >= 0) loginError.value = '';
+      ElementPlus.ElMessage.success('后端已连接，可以登录了');
+    }
+    schedulePing();
+  };
+  const schedulePing = function(){
+    if (pingTimer) clearTimeout(pingTimer);
+    pingTimer = setTimeout(ping, pingOk.value ? 30000 : 3000);
+  };
+  const afterLogin = async function(){
+    await loadBase();
+    await Promise.all([refreshDocs(), refreshTodos()]);
+    api.doneTodos().then(function(d){ doneList.value = d || []; }).catch(function(){});
+  };
+  const doLogin = async function(){
+    if (!loginForm.account || !loginForm.password){ loginError.value = '请输入账号和密码'; return; }
+    logging.value = true; loginError.value = '';
+    try {
+      const r = await api.login(loginForm.account, loginForm.password);
+      setToken(r.token);
+      me.value = r.user;
+      currentAccount.value = loginForm.account;
+      await afterLogin();
+      ElementPlus.ElMessage.success('欢迎回来，' + (me.value.realName || ''));
+    } catch(e){
+      loginError.value = e.message;
+    } finally { logging.value = false; }
+  };
+  const fillLogin = function(a){ loginForm.account = a.account; loginForm.password = DEMO_PASSWORD; doLogin(); };
+  const switchAccount = async function(account){
+    if (!account) return;
+    logging.value = true;
+    try {
+      const r = await api.login(account, DEMO_PASSWORD);
+      setToken(r.token); me.value = r.user; currentAccount.value = account;
+      await afterLogin();
+      page.value = 'home'; detailVisible.value = false; keyword.value = '';
+      ElementPlus.ElMessage.success('已切换为 ' + me.value.realName + '（' + (me.value.roleCodes||[]).join('/') + '）');
+    } catch(e){
+      ElementPlus.ElMessage.error('切换失败：' + e.message);
+      currentAccount.value = me.value ? me.value.account : 'admin';
+    } finally { logging.value = false; }
+  };
+  const logout = function(){
+    setToken(''); me.value = null; documents.value = []; todos.value = [];
+    loginError.value = ''; detailVisible.value = false;
+  };
+  onUnauthorized = function(){ logout(); ElementPlus.ElMessage.warning('登录已过期，请重新登录'); };
+
+  /* ---------- 单据类型快捷清单（来自后端 /api/documents/types） ---------- */
+  const quickOf = function(category, fallback){
+    const t = documentTypes.value.filter(function(x){ return x.category === category; }).map(function(x){ return x.name; });
+    return t.length ? t : fallback;
+  };
+  const dailyQuick     = computed(function(){ return quickOf('DAILY', ['日常付款申请']); });
+  const businessQuick  = computed(function(){ return quickOf('REIMBURSE', ['员工报销']); });
+  const reimburseQuick = computed(function(){ return quickOf('REIMBURSE', ['员工报销']); });
+  const stampQuick     = computed(function(){ return quickOf('SEAL', ['用印申请']); });
+
+  /* ---------- 统计（真实计算） ---------- */
+  const stats = computed(function(){
+    const doneCnt = documents.value.filter(function(d){ return d.statusCode === 3 || d.statusCode === 6; }).length;
+    const rejCnt  = documents.value.filter(function(d){ return d.statusCode === 4; }).length;
+    return [
+      {key:'rejected', name:'已驳回', value:rejCnt, target:rejCnt,
+       note: rejCnt ? '可编辑后重新提交' : '暂无驳回单据', icon:'驳', color:'red'},
+      {key:'approve',  name:'待我审批', value:todos.value.length, target:todos.value.length,
+       note: todos.value.length ? '点击查看待办' : '当前无待办', icon:'审', color:'orange'},
+      {key:'done',     name:'已办结', value:doneCnt, target:doneCnt,
+       note:'共 ' + totalDocs.value + ' 张单据', icon:'结', color:'green'}
+    ];
+  });
+  const boardStats = computed(function(){
+    const all = documents.value;
+    const doing = all.filter(function(d){ return d.statusCode === 1 || d.statusCode === 2; }).length;
+    const done  = all.filter(function(d){ return d.statusCode === 3 || d.statusCode === 6; }).length;
+    let sum = 0, n = 0;
+    all.filter(function(d){ return d.statusCode === 3 || d.statusCode === 6; }).forEach(function(d){
+      const a = toDate(d.submittedAt), b = toDate(d.closedAt || d.updatedAt);
+      if (a && b && b > a){ sum += (b - a)/3600000; n++; }
+    });
+    const avgH = n ? (sum/n) : 0;
+    const rate = all.length ? Math.round(done*100/all.length) : 0;
+    return [
+      {name:'申请总量', value:totalDocs.value, note:'后端返回的 total'},
+      {name:'审批中', value:doing, note:'占比 ' + (all.length ? Math.round(doing*100/all.length) : 0) + '%'},
+      {name:'已办结', value:done, note:'办结率 ' + rate + '%'},
+      {name:'平均审批时长', value: avgH ? avgH.toFixed(1) + 'h' : '—', note:'按提交至办结实测'}
+    ];
+  });
+  const efficiency = computed(function(){
+    const byNode = {};
+    documents.value.forEach(function(d){
+      (d.nodes || []).forEach(function(nd){
+        if (nd.state !== 'done') return;
+        byNode[nd.name] = (byNode[nd.name] || 0) + 1;
+      });
+    });
+    const entries = Object.entries(byNode).sort(function(a,b){ return b[1]-a[1]; }).slice(0,4);
+    const colors = ['#5b63e8','#35b6a4','#eca84a','#6d80d8'];
+    if (!entries.length) return [{name:'暂无流转数据', p:0, time:'—', color:'#c8d5e2'}];
+    return entries.map(function(e, i){
+      return {name:e[0], p:Math.min(100, e[1]*25), time:e[1]+' 次', color:colors[i%4]};
+    });
+  });
+
+  /* 办结率：真实计算，替换原型写死的 96% */
+  const completionRate = computed(function(){
+    const total = documents.value.length;
+    if (!total) return 0;
+    const done = documents.value.filter(function(d){ return d.statusCode === 3 || d.statusCode === 6; }).length;
+    return Math.round(done * 100 / total);
+  });
+  /* 近7天发起量：按 submittedAt 真实统计 */
+  const weekBars = computed(function(){
+    const names = ['周日','周一','周二','周三','周四','周五','周六'];
+    const now = new Date(), rows = [];
+    for (let i = 6; i >= 0; i--){
+      const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
+      const key = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+      const cnt = documents.value.filter(function(x){ return String(x.submittedAt || '').slice(0,10) === key; }).length;
+      rows.push({label:names[d.getDay()], day:(d.getMonth()+1)+'/'+d.getDate(), count:cnt});
+    }
+    const max = Math.max(1, rows.reduce(function(a,b){ return Math.max(a, b.count); }, 0));
+    return rows.map(function(r){ return {label:r.label, day:r.day, count:r.count, height:Math.round(r.count*100/max)}; });
+  });
+  const weekTotal = computed(function(){
+    return weekBars.value.reduce(function(a,b){ return a + b.count; }, 0);
+  });
+  const statusDist = computed(function(){
+    const total = documents.value.length;
+    const done  = documents.value.filter(function(d){ return d.statusCode === 3 || d.statusCode === 6; }).length;
+    const doing = documents.value.filter(function(d){ return d.statusCode === 1 || d.statusCode === 2; }).length;
+    const back  = documents.value.filter(function(d){ return d.statusCode === 4; }).length;
+    return {total:total, done:done, doing:doing, back:back};
+  });
+
+  /* ---------- 列表过滤（行级范围由后端负责，前端只做展示条件） ---------- */
+  const currentUserId = computed(function(){ return me.value ? me.value.userId : 0; });
+  /* 「待我审批」的数据源 = 后端待办接口，而不是前端猜节点名 */
+  const myTodoDocIds = computed(function(){
+    const s = {};
+    todos.value.forEach(function(t){ s[t.documentId] = 1; });
+    return s;
+  });
+  /* 「待我审批」的数据源直接取待办投影（TodoVO），
+     不再与单据列表取交集：审批人的行级数据范围往往覆盖不到申请人所在部门，
+     用 documents 过滤会出现「后端有待办、列表却空白」的矛盾。 */
+  const todoRows = computed(function(){
+    return todos.value.map(function(t){
+      return {
+        id: t.docNo, docId: t.documentId, title: t.title || '',
+        type: t.docTypeName || '', bizCategory: t.businessCategory,
+        applicant: t.applicantName || '', applicantId: null,
+        department: t.deptName || '', amount: t.amount || 0,
+        status: '审批中', statusCode: 2,
+        current: t.nodeName || '', updated: fmtDateTime(t.submittedAt),
+        taskId: t.taskId, nodeKey: t.nodeKey,
+        reason: '', invoiceSummary: '', company: '', nodes: []
+      };
+    });
+  });
+  const filteredDocs = computed(function(){
+    const kw = (keyword.value || '').toLowerCase();
+    if (page.value === 'approve'){
+      return todoRows.value.filter(function(d){
+        if (businessTypeFilter.value && d.bizCategory !== businessTypeFilter.value
+            && d.type !== businessTypeFilter.value) return false;
+        if (docTypeFilter.value && documentType(d) !== docTypeFilter.value) return false;
+        if (applicantFilter.value && d.applicant !== applicantFilter.value) return false;
+        if (kw && (d.id + d.title + d.applicant).toLowerCase().indexOf(kw) < 0) return false;
+        return true;
+      });
+    }
+    return documents.value.filter(function(d){
+      if (statusFilter.value !== '全部' && d.status !== statusFilter.value) return false;
+      if (listMode.value === 'warning'  && d.amount < 20000) return false;
+      if (listMode.value === 'rejected' && d.statusCode !== 4) return false;
+      if (listMode.value === 'done' && d.statusCode !== 3 && d.statusCode !== 6) return false;
+      if (listMode.value === 'approve' && d.statusCode !== 1 && d.statusCode !== 2) return false;
+      if (kw && (d.id + d.title + d.applicant).toLowerCase().indexOf(kw) < 0) return false;
+      return true;
+    });
+  });
+  const myDocuments = computed(function(){
+    const kw = keyword.value || '';
+    return documents.value.filter(function(d){
+      return d.applicantId === currentUserId.value && (d.id + d.title).indexOf(kw) >= 0;
+    });
+  });
+  const archiveDocs = computed(function(){
+    return documents.value.filter(function(d){
+      return (d.statusCode === 3 || d.statusCode === 6)
+        && (!archiveApplicant.value || d.applicant.indexOf(archiveApplicant.value) >= 0)
+        && (!archiveDepartment.value || d.department === archiveDepartment.value)
+        && (!archiveCode.value || d.id.indexOf(archiveCode.value) >= 0);
+    });
+  });
+  const applicantOptions = computed(function(){
+    const s = {};
+    documents.value.forEach(function(d){ s[d.applicant] = 1; });
+    return Object.keys(s);
+  });
+  const filteredLinks = computed(function(){
+    const kw = (linkKeyword.value || '').toLowerCase();
+    return linkCandidates.value.filter(function(d){
+      return (d.code + d.name + d.applicant + d.department).toLowerCase().indexOf(kw) >= 0;
+    });
+  });
+  const roleTreeData = computed(function(){
+    const groups = {};
+    roleConfigs.value.forEach(function(r){ (groups[r.department] = groups[r.department] || []).push(r); });
+    return Object.keys(groups).map(function(dept){
+      return {label:dept, type:'department',
+              children: groups[dept].map(function(r){ return {label:r.name, type:'role', role:r}; })};
+    });
+  });
+  const allFiles = computed(function(){
+    const s = selected.value;
+    if (!s || !s.nodes) return [];
+    return s.nodes.reduce(function(acc, nd){
+      (nd.files || []).forEach(function(name){
+        acc.push({name:name, node:nd.name, uploader:nd.person || s.applicant, time:nd.time || '待上传'});
+      });
+      return acc;
+    }, []);
+  });
+  const canApprove  = computed(function(){ return !!selected.value && (selected.value.availableActions||[]).indexOf('approve') >= 0; });
+  const canReject   = computed(function(){ return !!selected.value && (selected.value.availableActions||[]).indexOf('reject') >= 0; });
+  const canWithdraw = computed(function(){ return !!selected.value && (selected.value.availableActions||[]).indexOf('withdraw') >= 0; });
+
+  /* ---------- 发起单据 ---------- */
+  const makeCode = function(){ return '提交后由后端按「前缀+日期+序号」生成正式编号'; };
+  const attachmentList = function(title, type){
+    if ((type||'').indexOf('报销') >= 0) return ['关联前置单据','发票及费用明细','付款截图或行程凭证'];
+    if ((type||'').indexOf('用印') >= 0) return ['用印文件附件'];
+    return ['关联前置单据','业务证明资料','发票','收款信息'];
+  };
+  /* 容忍「日常付款 / 日常付款申请」这类展示名与配置名的差异 */
+  /* 原型工作台的区块名与后端 document_type.name 不完全一致，这里做一层别名映射 */
+  const DOC_TYPE_ALIAS = {'日常付款':'日常付款申请', '业务付款':'日常付款申请', '报销':'员工报销',
+                          '用印':'用印申请', '盖章申请':'用印申请', '盖章':'用印申请',
+                          '员工报销':'员工报销', '用印申请':'用印申请'};
+  const resolveDocType = function(name){
+    if (!name) return null;
+    const target = DOC_TYPE_ALIAS[name] || name;
+    const list = documentTypes.value;
+    let t = list.find(function(x){ return x.name === target; });
+    if (t) return t;
+    t = list.find(function(x){ return x.name.indexOf(target) >= 0 || target.indexOf(x.name) >= 0; });
+    return t || null;
+  };
+  const openSubmit = function(type, data){
+    data = data || {};
+    const t = resolveDocType(type);
+    const realName = t ? t.name : type;
+    Object.assign(submitForm, {
+      code: makeCode(), type: realName, typeId: t ? t.id : null,
+      applicant: me.value ? me.value.realName : '', company:'海峡金',
+      department: me.value ? me.value.deptName : (data.department || ''),
+      title: data.title || '', amount: data.amount || 0,
+      invoiceSummary: data.invoiceSummary || '', reason: data.reason || '',
+      needPostMaterial: false,
+      payType:'OTHER', payeeName:'', payeeAccount:'', payeeBank:'',
+      expenseType:'OTHER', occurDate:'',
+      sealProject: (realName||'').indexOf('用印') >= 0 ? (data.title || '') : '',
+      sealReason:'', sealDepartment: me.value ? me.value.deptName : '', sealTime:'',
+      fileName:'', copies:1, isCarryOut:'N',
+      sealType: (sealOptions.value[0] || {}).dictCode || 'OFFICIAL'
+    });
+    linkedDocument.value = null;
+    attachmentRules.value = attachmentList(submitForm.title, realName);
+    previewNodes.value = null;
+    if (!t) ElementPlus.ElMessage.warning('后端未配置「' + type + '」这一单据类型，请先在单据类型表中配置');
+    const fc = flowConfigList.value.find(function(f){ return f.docTypeId === submitForm.typeId; });
+    if (fc) api.flowPreview(fc.id, {bizCategory: fc.category, amount: submitForm.amount})
+      .then(function(pv){ previewNodes.value = pv; }).catch(function(){});
+    submitVisible.value = true;
+  };
+  const quickSubmit = function(title, type){ openSubmit(type, {title:title, reason:'申请提交' + title + '，相关资料将按制度要求上传。'}); };
+  const repeatSubmit = function(d){
+    openSubmit(d.type, {title:d.title, amount:d.amount, invoiceSummary:d.invoiceSummary, reason:d.reason});
+    ElementPlus.ElMessage.info('已复制历史单据信息，请核对后提交');
+  };
+  const currentFlowText = function(){
+    const fc = flowConfigList.value.find(function(f){ return f.docTypeId === submitForm.typeId; });
+    const nodes = fc ? (serverFlowNodes[fc.id] || []) : [];
+    return nodes.length ? nodes.join(' → ') : '（该单据类型尚未配置流程节点）';
+  };
+  const serverPreviewText = computed(function(){
+    const pv = previewNodes.value;
+    if (!pv || !pv.nodes) return '';
+    return pv.nodes.map(function(nd){
+      return (nd.nodeName || nd.nodeKey) + ' → ' + ((nd.assignees && nd.assignees.length) ? nd.assignees.join('、') : '待解析');
+    }).join('　|　');
+  });
+  const submitRequest = async function(){
+    const isSeal = (submitForm.type || '').indexOf('用印') >= 0;
+    if (!submitForm.typeId){ ElementPlus.ElMessage.warning('未找到该单据类型的后端配置'); return; }
+    if (isSeal && (!submitForm.sealProject || !submitForm.sealReason || !submitForm.fileName)){
+      ElementPlus.ElMessage.warning('请完整填写用印项目、用印原因和文件名称'); return;
+    }
+    if (!isSeal && (!submitForm.title || !submitForm.amount)){
+      ElementPlus.ElMessage.warning('请填写申请事项和金额'); return;
+    }
+    const formData = isSeal
+      ? {title: submitForm.sealProject, sealProject: submitForm.sealProject,
+         /* 网关条件用 doc.sealType=='OFFICIAL'/'CONTRACT' 判分支，必须提交字典 code 而非中文标签 */
+         sealType: dictCodeOf('seal_type', submitForm.sealType),
+         fileName: submitForm.fileName, reason: submitForm.sealReason, sealReason: submitForm.sealReason,
+         sealTime: submitForm.sealTime, sealDepartment: submitForm.sealDepartment,
+         copies: Number(submitForm.copies || 1), isCarryOut: submitForm.isCarryOut || 'N'}
+      : {title: submitForm.title, amount: Number(submitForm.amount || 0), reason: submitForm.reason,
+         invoiceSummary: submitForm.invoiceSummary,
+         payType: dictCodeOf('pay_type', submitForm.payType),
+         payeeName: submitForm.payeeName, payeeAccount: submitForm.payeeAccount, payeeBank: submitForm.payeeBank,
+         expenseType: dictCodeOf('expense_type', submitForm.expenseType),
+         occurDate: submitForm.occurDate || null};
+    loading.value = true;
+    try {
+      const created = await api.createDoc({
+        docTypeId: submitForm.typeId,
+        formData: formData,
+        title: isSeal ? submitForm.sealProject : submitForm.title,
+        amount: isSeal ? 0 : Number(submitForm.amount || 0),
+        reason: isSeal ? submitForm.sealReason : submitForm.reason,
+        invoiceSummary: submitForm.invoiceSummary || null,
+        linkedDocIds: (linkedDocument.value && linkedDocument.value.docId) ? [linkedDocument.value.docId] : null,
+        needPostMaterial: submitForm.needPostMaterial ? 1 : 0,
+        priority: 0
+      });
+      await api.submitDoc(created.id);
+      submitVisible.value = false;
+      ElementPlus.ElMessage.success('单据 ' + created.docNo + ' 已提交审批');
+      await Promise.all([refreshDocs(), refreshTodos()]);
+    } catch(e){
+      ElementPlus.ElMessage.error('提交失败：' + e.message);
+    } finally { loading.value = false; }
+  };
+
+  /* ---------- 详情 ---------- */
+  const openDetail = async function(d){
+    let target = d;
+    if (target && !target.docId && target.documentId){
+      target = documents.value.find(function(x){ return x.docId === target.documentId; }) || null;
+    }
+    if (!target || !target.docId){ ElementPlus.ElMessage.warning('未找到该单据'); return; }
+    detailVisible.value = true; detailLoading.value = true; detailTab.value = 'flow';
+    approvalComment.value = '';
+    try {
+      const dto = await api.docDetail(target.docId);
+      const base = toDoc(dto.document);
+      base.docTypeName   = dto.docTypeName;
+      base.flowName      = dto.flowName;
+      base.flowVersion   = dto.flowVersion;
+      base.viewingNodeKey= dto.viewingNodeKey;
+      base.formSchema    = dto.formSchema;
+      base.attachments   = dto.attachments || [];
+      base.links         = dto.links || [];
+      base.availableActions = dto.availableActions || [];
+      base.pendingTaskId = dto.pendingTaskId || null;
+      base.nodes = (dto.flowHistory || []).map(toNode);
+      if (!base.nodes.length && dto.document && dto.document.status === 0){
+        base.nodes = [{name:'尚未提交', state:'current', person:'', time:'', comment:'', files:[]}];
+      }
+      selected.value = base;
+    } catch(e){
+      ElementPlus.ElMessage.error('加载详情失败：' + e.message);
+    } finally { detailLoading.value = false; }
+  };
+
+  /* ---------- 审批动作 ---------- */
+  const needTask = function(){
+    if (!selected.value || !selected.value.pendingTaskId){
+      ElementPlus.ElMessage.warning('当前单据没有等待你处理的任务'); return false;
+    }
+    return true;
+  };
+  const approve = async function(){
+    if (!needTask()) return;
+    loading.value = true;
+    try {
+      await api.approve({taskId:selected.value.pendingTaskId, action:'approve', comment:approvalComment.value || '同意'});
+      ElementPlus.ElMessage.success('审批已通过');
+      detailVisible.value = false;
+      await Promise.all([refreshDocs(), refreshTodos()]);
+    } catch(e){ ElementPlus.ElMessage.error('审批失败：' + e.message); }
+    finally { loading.value = false; }
+  };
+  const confirmReject = async function(){
+    if (!rejectForm.reason){ ElementPlus.ElMessage.warning('请填写驳回原因'); return; }
+    if (!needTask()) return;
+    const target = (REJECT_TARGETS.find(function(t){ return t.label === rejectForm.level; }) || {}).value || 'START';
+    loading.value = true;
+    try {
+      await api.approve({taskId:selected.value.pendingTaskId, action:'reject',
+                         comment:rejectForm.reason, rejectTo:target, materials:rejectForm.materials || null});
+      rejectVisible.value = false; detailVisible.value = false;
+      ElementPlus.ElMessage.success('已驳回至' + rejectForm.level);
+      await Promise.all([refreshDocs(), refreshTodos()]);
+    } catch(e){ ElementPlus.ElMessage.error('驳回失败：' + e.message); }
+    finally { loading.value = false; }
+  };
+  const confirmSupplement = async function(){
+    if (!supplementForm.materials){ ElementPlus.ElMessage.warning('请填写需补充材料'); return; }
+    if (!needTask()) return;
+    loading.value = true;
+    try {
+      await api.approve({taskId:selected.value.pendingTaskId, action:'reject',
+                         comment:'通过，但需补材料：' + supplementForm.materials,
+                         rejectTo:'START', materials:supplementForm.materials});
+      supplementVisible.value = false; detailVisible.value = false;
+      ElementPlus.ElMessage.success('已要求' + supplementForm.role + '补充材料');
+      await Promise.all([refreshDocs(), refreshTodos()]);
+    } catch(e){ ElementPlus.ElMessage.error('操作失败：' + e.message); }
+    finally { loading.value = false; }
+  };
+  const confirmSign = async function(){
+    if (!signForm.person){ ElementPlus.ElMessage.warning('请选择加签人员'); return; }
+    if (!needTask()) return;
+    const u = allUsers.value.find(function(x){ return x.realName === signForm.person; });
+    if (!u){ ElementPlus.ElMessage.warning('未找到该人员'); return; }
+    loading.value = true;
+    try {
+      await api.countersign({taskId:selected.value.pendingTaskId, userId:u.id});
+      signVisible.value = false;
+      ElementPlus.ElMessage.success('已邀请' + signForm.person + '参与加签审核');
+      await refreshTodos();
+    } catch(e){ ElementPlus.ElMessage.error('加签失败：' + e.message); }
+    finally { loading.value = false; }
+  };
+  const withdrawDoc = async function(d){
+    const target = d || selected.value;
+    if (!target || !target.docId){ ElementPlus.ElMessage.warning('请选择要撤回的单据'); return; }
+    loading.value = true;
+    try {
+      await api.withdrawDoc(target.docId);
+      ElementPlus.ElMessage.success('已撤回');
+      detailVisible.value = false;
+      await Promise.all([refreshDocs(), refreshTodos()]);
+    } catch(e){ ElementPlus.ElMessage.error('撤回失败：' + e.message); }
+    finally { loading.value = false; }
+  };
+
+  /* ---------- 关联前置单据（用真实已办结单据做候选） ---------- */
+  const openLink = async function(){
+    linkMode.value = (submitForm.type || '').indexOf('报销') >= 0 ? 'daily' : 'business';
+    linkKeyword.value = '';
+    linkVisible.value = true;
+    try {
+      const res = await api.docs({pageNum:1, pageSize:100});
+      linkCandidates.value = (res.records || [])
+        .filter(function(r){ return r.status === 3 || r.status === 6; })
+        .map(function(r){ return {docId:r.id, code:r.docNo, contract:r.docNo, name:r.title,
+                                  applicant:r.applicantName, department:r.deptName}; });
+    } catch(e){ linkCandidates.value = []; }
+  };
+  const chooseLink = function(row){
+    linkedDocument.value = row; linkVisible.value = false;
+    ElementPlus.ElMessage.success('已关联：' + row.code);
+  };
+
+  /* ---------- 查询 / 跳转 ---------- */
+  const runQuery = async function(){
+    try {
+      await refreshDocs();
+      ElementPlus.ElMessage.success('查询完成，当前可见 ' + documents.value.length + ' 条（后端 total=' + totalDocs.value + '）');
+    } catch(e){ ElementPlus.ElMessage.error('查询失败：' + e.message); }
+  };
+  const openStat = function(key){
+    listMode.value = key; keyword.value = '';
+    page.value = key === 'approve' ? 'approve' : 'forms';
+    statusFilter.value = key === 'done' ? '已通过' : key === 'rejected' ? '已驳回' : '全部';
+  };
+
+  /* ---------- 后端尚未提供的写接口：明确告知，不做本地伪造 ---------- */
+  const notImplemented = function(what, apiHint){
+    ElementPlus.ElMessageBox.alert(
+      '后端暂未提供该接口，前端不做本地伪造。\n\n缺失能力：' + what + '\n建议新增：' + apiHint,
+      '接口缺口', {confirmButtonText:'知道了', type:'warning'}
+    ).catch(function(){});
+  };
+  const addPerson = function(){ notImplemented('新建员工（含账号、密码、岗位与角色分配）', 'POST /api/users（密码加密 + 角色绑定）'); };
+  const saveFlow  = function(){ notImplemented('新增/修改流程配置并重新部署 BPMN', 'POST /api/flows/configs、PUT /api/flows/configs/{id}、POST /api/flows/configs/{id}/deploy'); };
+  const saveRole  = function(){ notImplemented('新增角色、配置角色权限与数据范围', 'POST /api/roles、PUT /api/roles/{id}/permissions、PUT /api/roles/{id}/data-scope'); };
+
+  const editFlow = function(flow){ editingFlow.value = Object.assign({}, flow, {nodes:(flow.nodes||[]).slice(), isNew:false}); flowVisible.value = true; };
+  const newFlow  = function(){ editingFlow.value = {type:'', category:'日常审批', nodes:['发起人'], isNew:true}; flowVisible.value = true; };
+  const editRole = function(item){
+    editingRole.value = Object.assign({}, item, {permissions:(item.permissions||[]).slice(), isNew:false});
+    roleVisible.value = true;
+  };
+  const newRole  = function(){
+    editingRole.value = {name:'', department:'', post:'', scope:'', permissions:[], isNew:true};
+    roleVisible.value = true;
+  };
+
+  /* ---------- 模板兼容占位 ---------- */
+  const roles = computed(function(){ return (me.value && me.value.roleCodes) ? me.value.roleCodes : []; });
+
+  /* ---------- 生命周期 ---------- */
+  onMounted(async function(){
+    if (getToken()){
+      try {
+        me.value = await api.me();
+        if (me.value && me.value.account){ currentAccount.value = me.value.account; loginForm.account = me.value.account; }
+        await afterLogin();
+      } catch(e){
+        setToken(''); me.value = null;
+        loginError.value = '会话已失效，请重新登录';
+      }
+    }
+    ping();
+  });
+
+  watch(page, async function(v){
+    await nextTick();
+    const main = document.querySelector('.el-main');
+    if (main) main.classList.toggle('approval-page', v === 'approve');
+    if (v === 'approve' || v === 'forms' || v === 'archive' || v === 'board' || v === 'home'){
+      refreshDocs().catch(function(){});
+    }
+    if (v === 'home' || v === 'board' || v === 'approve'){
+      refreshTodos().catch(function(){});
+    }
+  });
+
+  return {
+    apiBase, me, logging, loginError, loginForm, currentAccount, demoAccounts,
+    doLogin, fillLogin, switchAccount, logout, pingOk, pingText, ping, corsBlocked, altUrl,
+    greeting, todayText, roleText, scopeText, todoCount, rejectTargets,
+    page, role, keyword, statusFilter, businessTypeFilter, docTypeFilter, applicantFilter, listMode,
+    submitVisible, detailVisible, selected, detailTab, approvalComment, boardDate, archiveApplicant,
+    archiveDepartment, archiveCode, archiveDate, personVisible, linkVisible, linkMode, linkKeyword,
+    linkedDocument, permissionTab, flowVisible, editingFlow, roleVisible, editingRole,
+    rejectVisible, supplementVisible, signVisible, dailyExpanded, businessExpanded,
+    rejectForm, supplementForm, signForm, pageNames, roles, departments,
+    documents, stats, boardStats, efficiency, dailyQuick, businessQuick, stampQuick, reimburseQuick,
+    submitForm, attachmentRules, people, newPerson, roleConfigs, flowConfigs,
+    documentTypes, allUsers, allRoles, dictMap, sealOptions, payOptions, expenseOptions, dictCodeOf,
+    applicantOptions, filteredDocs, myDocuments, archiveDocs, linkCandidates, filteredLinks,
+    roleTreeData, allFiles, canApprove, canReject, canWithdraw, loading, detailLoading, totalDocs,
+    todos, doneList, serverPreviewText, previewNodes, currentFlowText,
+    completionRate, weekBars, weekTotal, statusDist,
+    money, tagType, documentType, docTitle, docSubtitle, runQuery, openSubmit, quickSubmit, repeatSubmit,
+    openStat, addPerson, openLink, chooseLink, editFlow, newFlow, saveFlow, editRole, newRole, saveRole,
+    submitRequest, openDetail, approve, confirmReject, confirmSupplement, confirmSign, withdrawDoc,
+    fmtDateTime, deptNameById
+  };
+}}).use(ElementPlus,{locale:ElementPlusLocaleZhCn}).mount('#app');
+
+/* 启动看门狗：若 Vue 未能完成编译，给出可见提示而不是白屏 */
+setTimeout(function(){
+  var app = document.querySelector('#app');
+  var mounted = !!document.querySelector('.login-gate .el-form, .shell .topbar');
+  if (app && !mounted){
+    var tip = document.createElement('div');
+    tip.style.cssText = 'position:fixed;left:0;right:0;bottom:0;z-index:9999;background:#fdeeee;color:#a32d2d;'
+      + 'padding:10px 16px;font:13px/1.6 system-ui,-apple-system,sans-serif;border-top:1px solid #f7c1c1';
+    tip.textContent = '前端初始化失败：Vue 未完成挂载。请打开浏览器控制台查看错误（常见原因：后端未启动，或接口返回了非 0 的 code）。';
+    document.body.appendChild(tip);
+  }
+}, 3000);
