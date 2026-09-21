@@ -1,16 +1,36 @@
 # ===========================================================================
-#  海峡金 OA · nginx 站点配置（一次性安装，之后由 run.sh 自动改端口）
+#  海峡金 OA · nginx 站点配置
 #
-#  【安装位置】/opt/docker/nginx/conf/include/oa.conf
-#  【安装方式】填入下面两处 @@ 占位符后，在 nginx 容器的 conf 主文件里 include 它，
-#              然后 `docker exec nginx nginx -t && docker exec nginx nginx -s reload`。
+#  【安装位置】/opt/docker/nginx/conf/include/hxj-oa-test.wgit123.com.conf
+#  （该目录在宿主机上，被 nginx 容器挂载到 /opt/include，由 nginx.conf 末尾的
+#    `include /opt/include/*.conf;` 加载。放这里而不是放进容器：
+#    容器重建不丢配置，也不用 exec 进容器里改文件。）
 #
-#  ┌───────────────────────────────────────────────────────────────────────┐
-#  │  @@UPSTREAM_HOST@@ 请不要猜 —— 直接抄同服务器上现有可用的配置：        │
-#  │      grep -n "proxy_pass\|server .*:80" /opt/docker/nginx/conf/include/rlzx-wms.conf │
-#  │  把那里的上游 IP 原样搬过来。它在这台机器上已被验证可达，              │
-#  │  而我们无法从代码侧推断出这个地址（可能是宿主 IP、也可能是内网 IP）。  │
-#  └───────────────────────────────────────────────────────────────────────┘
+#  【装完必须做】
+#      docker exec nginx nginx -t && docker exec nginx nginx -s reload
+#    nginx -t 失败时**不要** reload —— 一个写坏的 include 文件会让 reload 失败，
+#    更糟的是如果直接重启 nginx，整个 nginx 起不来，同服务器上
+#    trace-web / trace-mng / trace-api / rlzx-wms 四个站点会一起挂掉。
+#    （run.sh 里已经实现了"先 nginx -t 校验，失败立刻回滚配置"的闸门。）
+#
+#  ┌─────────────────────────────────────────────────────────────────────────┐
+#  │ @@UPSTREAM_HOST@@ 该怎么填：                                            │
+#  │   本机实测值 = 172.23.148.199（宿主 eth0 的 IP）。                       │
+#  │   依据是同服务器上已验证可用的 rlzx-wms.conf 与 trace-*.conf，           │
+#  │   它们都写成 `proxy_pass http://172.23.148.199:8091/` —— 即               │
+#  │   「宿主 IP + 容器发布端口」，而不是容器名。                             │
+#  │                                                                         │
+#  │ 【为什么不用容器名（比如 http://oa:8080）】                              │
+#  │   nginx 与 OA 确实同在 docker-compose_wg-network 上，用容器名技术上可行， │
+#  │   而且能省掉端口发布。但 upstream 里的域名是**在 nginx 启动时解析**的：   │
+#  │   若某次开机 nginx 先于 oa 容器启动，解析失败会让 **nginx 整个起不来**，  │
+#  │   代价是上面四个别人的站点一起 502。用固定 IP 则是"即使 OA 没起来，      │
+#  │   nginx 照常启动，只有 OA 这一个站点 502"，爆炸半径小得多。              │
+#  │                                                                         │
+#  │ 【已知脆弱点】eth0 是 DHCP 拿的地址（ip addr 显示 dynamic）。若哪天地址   │
+#  │   变了，这里以及 wms/trace 的配置会一起失效。这是本机**既有**的脆弱点，   │
+#  │   不是本次引入的；要根治得给宿主配静态内网 IP。                          │
+#  └─────────────────────────────────────────────────────────────────────────┘
 # ===========================================================================
 
 upstream oa_backend {
@@ -19,9 +39,31 @@ upstream oa_backend {
     keepalive 32;
 }
 
+# ---------------------------------------------------------------------------
+# 80：无条件跳转到 HTTPS。
+# OA 的登录请求携带账号口令，之后所有请求携带 JWT —— 明文 HTTP 上这些
+# 都是可以被中间人直接读走的。所以这里不做"80 与 443 同时服务"，
+# 而是强制升级，避免有人图省事用 http:// 登录后长期沿用。
+# ---------------------------------------------------------------------------
 server {
     listen       80;
     server_name  @@SERVER_NAME@@;
+
+    # 用 301 而不是 302：浏览器会记住，后续请求直接走 HTTPS，不再来回跳一次
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen       443 ssl;
+    server_name  @@SERVER_NAME@@;
+
+    # 证书是泛域名 *.wgit123.com，天然覆盖本站点，无需为新域名单独申请。
+    # 【注意有效期】当前这张证书 notAfter = 2026-10-13，**距今只剩三周**。
+    # 到期后浏览器会拦截，且因为 80 是 301 强制跳转，症状会是"整个站点打不开"
+    # 而不是"提示证书错误" —— 续期后覆盖同名文件再 reload nginx 即可。
+    ssl_certificate      /opt/https/wgit123.com.pem;
+    ssl_certificate_key  /opt/https/wgit123.com.key;
+    ssl_protocols        TLSv1.2 TLSv1.3;
 
     charset utf-8;
 

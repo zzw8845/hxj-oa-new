@@ -1,17 +1,29 @@
 # ===========================================================================
 #  海峡金 OA 后端镜像
 #
-#  【为什么显式写 --platform=linux/amd64】
-#  构建机是 Apple Silicon(arm64)，服务器是 x86_64。不指定平台时 docker 会产出 arm64
-#  镜像，push 到仓库后服务器拉下来直接报 "exec format error" ——
-#  这个错误在容器启动瞬间才出现，排查时又很像"jar 坏了"，是典型的浪费半天。
+#  【本镜像在**服务器上**构建，不在开发机构建】
+#  最初的设计是"开发机 buildx --platform linux/amd64 构建 → push 到 SWR → 服务器 pull"。
+#  实际部署时放弃这条路线，原因是**开发机的 Docker 坏了**：
+#      docker pull 报
+#      write /var/lib/desktop-containerd/daemon/io.containerd.metadata.v1.bolt/meta.db:
+#      input/output error
+#  Docker Desktop 的 containerd 元数据库损坏，任何 pull/build 都会失败，
+#  而这台机器上没有第二条构建路径可走。
 #
-#  【基础镜像只影响构建机，不影响服务器】
-#  服务器拉的是我们 push 上去的成品镜像，基础镜像从哪来它并不关心。
-#  因此这里用公开的 eclipse-temurin:17-jre-jammy（与本地开发用的 JDK 17 对齐）。
-#  若 Docker Hub 拉取过慢，换成内网/云厂商的 JDK17 基础镜像即可，其余不用动。
+#  改用"服务器本地构建"后反而更简单：少一次 600MB 的镜像 push/pull，
+#  也没有"开发机架构 ≠ 服务器架构"的坑（在 x86_64 上构建，天然就是 amd64）。
+#
+#  【基础镜像为什么不用 eclipse-temurin:17-jre-jammy】
+#  实测服务器**拉不到 Docker Hub**：
+#      Get "https://registry-1.docker.io/v2/": ... Client.Timeout exceeded while awaiting headers
+#  daemon.json 里配了阿里云加速器（docker info 确认已生效、curl 该加速器返回 200），
+#  但阿里云免费加速器已不再代理 `eclipse-temurin` 这类镜像，拉取时会回落到 Docker Hub 然后超时。
+#  实测可用的是华为云公共镜像源（这台服务器本身已登录 SWR 华为云，网络可达）：
+#      swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/eclipse-temurin:17-jre-jammy
+#  因此把它作为 ARG 的默认值。换环境时用 --build-arg BASE_IMAGE=... 覆盖即可。
 # ===========================================================================
-FROM --platform=linux/amd64 eclipse-temurin:17-jre-jammy
+ARG BASE_IMAGE=swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/eclipse-temurin:17-jre-jammy
+FROM ${BASE_IMAGE}
 
 LABEL org.opencontainers.image.title="haixiajin-oa" \
       org.opencontainers.image.description="海峡金 OA 审批系统后端"
@@ -51,9 +63,10 @@ RUN mkdir -p /logs
 EXPOSE 8080
 
 # 健康检查打 /api/ping：它是免登录白名单里的轻量端点，只回 pong。
-# start-period 给 90s：Flowable 首次启动要校验/建表，比普通 Web 应用慢得多，
-# 这个值太小会让刚启动的容器被判成不健康，进而触发蓝绿切换的误判。
-HEALTHCHECK --interval=10s --timeout=3s --start-period=90s --retries=6 \
+# start-period 给 120s：Flowable 首次启动要校验/建表，比普通 Web 应用慢得多，
+# 而且这台服务器内存紧（可能触发 swap），启动比开发机慢。这个值太小会让刚启动的
+# 容器被判成不健康，进而触发蓝绿切换的误判。
+HEALTHCHECK --interval=10s --timeout=3s --start-period=120s --retries=8 \
     CMD curl -sf http://127.0.0.1:8080/api/ping || exit 1
 
 # 用 sh -c 才能展开 $JAVA_OPTS（给运维留一个不改镜像就能调堆大小/GC 的口子）；

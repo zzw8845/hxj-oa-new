@@ -3,39 +3,55 @@
 #
 #  【version 字段为什么留着】
 #  Compose v2 会提示 "the attribute `version` is obsolete"，但只是提示。
-#  保留它是因为服务器上装的可能是老版 docker-compose(v1)，而 v1 读到没有 version
-#  的文件会按最早的 v1 格式解析，直接报 "Unsupported config option for services"。
-#  留一行字换 v1/v2 都能跑，值得。（run.sh 里也自动识别 `docker compose` / `docker-compose`。）
+#  服务器上实测装了两套：`docker compose` v2.27.0 与 `docker-compose` v1.24.1。
+#  v1 读到没有 version 的文件会按最早的 v1 格式解析，直接报
+#  "Unsupported config option for services"。留一行字换两套都能跑，值得。
+#  （run.sh 里也自动识别用哪一个。）
 #
 #  【蓝绿怎么工作】
-#  两个实例 oa / oa-1 同时在线，映射到宿主机不同端口，nginx 只指向其中一个。
-#  发版时先把新镜像起在"当前没在服务"的那一个上，等它真的能应答再切 nginx，最后停旧的。
-#  好处是切换瞬间不丢请求。代价是两个实例同时连同一个库、同一个 Redis ——
-#  这正是登录限速与权限快照必须放进 Redis 的原因：进程内计数在双实例下
-#  可以被"轮流打两个实例"绕过，等于限速失效。
+#  两个实例 oa / oa-1，映射到宿主机不同端口，nginx 只指向其中一个。
+#  发版时先把新镜像起在"当前没在服务"的那一个上，等它真的能应答再切 nginx，
+#  最后停旧的（见 run.sh）。好处是切换瞬间不丢请求。代价是两个实例同时连
+#  同一个库、同一个 Redis —— 这正是登录限速与权限快照必须放进 Redis 的原因：
+#  进程内计数在双实例下可以被"轮流打两个实例"绕过，等于限速失效。
+#
+#  【稳态只跑一个实例，这一点是有意的】
+#  只有发版过程中才会两个实例并存。手工 `docker compose stop oa-1` 之后，
+#  重启宿主机不会把它再拉起来 —— 前提是 restart 用 `unless-stopped` 而不是 `always`。
+#  `always` 的语义是"无条件拉起"，包括你刚刚手工停掉的那个，结果就是重启后
+#  两个实例同时占用内存，而内存预算只按"一个实例"算过（见下方 mem_limit）。
 #
 #  【端口】宿主机 8010=蓝 / 9010=绿；容器内固定 8080。
-#  刻意避开 8081/9081 —— 那是同服务器上 wms-mng 的端口，不能抢。
+#  刻意避开 8081/8091 —— 那是同服务器上 wms-mng / trace-mng 的端口，不能抢。
 #
 #  【凭据】全部经 env_file 从 .env 注入。.env 不入库（模板见 .env.example）。
 # ===========================================================================
 version: "3.8"
 
 x-oa-common: &oa-common
-  # 镜像 tag 做成可覆盖：每次部署都会 push 一个时间戳 tag，
-  # 万一新版本有问题，可以直接回滚到某个历史版本而不用重新构建：
-  #     OA_IMAGE=swr.cn-north-4.myhuaweicloud.com/zzw8845/oa:20260921143000 docker compose up -d oa
-  # （正常发版不带这个变量，用 :latest 即可）
-  image: ${OA_IMAGE:-swr.cn-north-4.myhuaweicloud.com/zzw8845/oa:latest}
-  restart: always
+  # 【在服务器本地构建】镜像不由开发机推送，而是本目录下 `docker build -t oa:latest .` 得到。
+  # 原因见 Dockerfile 顶部（开发机 Docker 的 containerd 元数据库损坏 + 服务器拉不到 Docker Hub）。
+  image: ${OA_IMAGE:-oa:latest}
+  restart: unless-stopped
   env_file: .env
   volumes:
     - ./logs:/logs:rw
   networks:
-    - oa-network
-  # 1G 上限：这台服务器上还跑着别的项目，不能让 OA 的 JVM 按宿主机内存去自动膨胀。
-  # 配合下面的 MaxRAMPercentage，堆最多约 700M，留出元空间与线程栈的余量。
-  mem_limit: 1g
+    - wg-network
+
+  # ---------------------------------------------------------------------------
+  # 【700MB 是怎么算出来的 —— 改这个值前请先重算】
+  # 服务器实测：总内存 3.48GB，其中 mysql 910MB / trace-mng 692MB / rabbitmq 138MB
+  # / nginx 8MB / redis 7MB ≈ 1.76GB，加上宿主机自身开销约 0.44GB。
+  # 删掉 wms-mng（750MB）之后，可用约 1.37GB。
+  # 蓝绿发布期间两个实例并存 ⇒ 每个实例最多 700MB，合计 1.4GB，余量只有几十 MB。
+  # 为了不让这几十 MB 变成生产事故，宿主机另加了 2GB swap 兜底（见项目交接说明）。
+  #
+  # 【为什么不用 MaxRAMPercentage】
+  # 按百分比算堆大小会把"容器上限"当成"可用内存"，而这里上限本身是被硬压过的，
+  # 于是堆会随上限变化而漂移，多实例部署下非常难预测。显式写 -Xmx 才能算得准。
+  # ---------------------------------------------------------------------------
+  mem_limit: 700m
   logging:
     # 容器 stdout 也要兜底轮转：docker 默认的 json-file 日志不限制大小，
     # 长期运行能把磁盘写满（本项目的应用日志另有 logback 轮转，这是第二条保险）
@@ -50,18 +66,48 @@ services:
     container_name: oa
     ports:
       - "8010:8080"
-    environment:
-      # 【必须】Dockerfile 里没有写死 profile。缺了它，应用会退回默认配置去连
-      # 127.0.0.1:3306，而 Hikari 是懒连接 —— 服务能起来、每个查询都失败，
-      # 正是本项目已经踩过一次的"假活"形态（端口能连、HTTP 永远超时）。
+    environment: &oa-env
+      # 【必须】Dockerfile 里也写了默认值，两处都写是有意的：少一处漏配，
+      # 应用会退回默认配置去连 127.0.0.1:3306，而 Hikari 是懒连接 ——
+      # 服务能起来、每个查询都失败，正是本项目踩过的"假活"形态。
       SPRING_PROFILES_ACTIVE: test
       # 容器里日志必须落到挂载出来的 /logs。
-      # .env 中的 OA_LOG_DIR=./logs 是给本地开发用的，这里显式覆盖 ——
+      # .env 中的 OA_LOG_DIR=/logs 是给本地开发用的，这里显式覆盖 ——
       # environment 优先级高于 env_file，所以这一行确实生效。
       OA_LOG_DIR: /logs
       TZ: Asia/Shanghai
-      # Java 17 能感知 cgroup 限制，显式按比例设堆；想调就在 .env 里加 JAVA_OPTS
-      JAVA_OPTS: ${JAVA_OPTS:--XX:MaxRAMPercentage=70.0 -XX:InitialRAMPercentage=25.0}
+
+      # 【Redis 走容器名，不走 .env 里的公网地址】
+      # .env 里 REDIS_HOST=47.107.79.42 是**本机的公网 IP**，那是给本地开发机用的。
+      # 容器里若照抄，访问就会绕一圈：容器 → 宿主机 → 公网 → 回到宿主机 → 容器，
+      # 白白多走一段公网，还被安全组规则牵着走。
+      # redis 容器与 OA 同在 docker-compose_wg-network 上，直接用容器名解析即可。
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+
+      # 【显式锁死堆与各界外内存】
+      # -Xmx288m：堆。测试环境流程实例与单据量都很小，288MB 足够；
+      #   给大了会挤掉下面这些"看不见但不能少"的部分。
+      # -XX:MaxMetaspaceSize=176m：Spring Boot + Flowable + MyBatis 的类元空间实测在 120-160MB，
+      #   不设上限时它只受本机内存约束、能一路涨；设上限才能保证容器不被它顶爆。
+      # -XX:ReservedCodeCacheSize=48m：JIT 代码缓存。默认 240MB 只是**保留**，
+      #   但预留太多会挤压其他部分的可预测性，48MB 对测试环境足够。
+      # -XX:MaxDirectMemorySize=96m：直接缓冲区。附件上传/下载与 OSS 客户端走这里，
+      #   太小会让 60MB 的附件上传直接 OutOfMemoryError；96MB 留了余量。
+      # -Xss512k：线程栈。Linux 惰性提交，这个值主要影响地址空间占用。
+      # -XX:+UseSerialGC：小堆场景下比 G1 少一堆并发线程与辅助结构，省内存也少停顿源。
+      # -XX:+ExitOnOutOfMemoryError：OOM 时**主动退出**而不是苟着。
+      #   苟着的 JVM 会持续返回 500，看起来"服务在跑"，实际全错；
+      #   退出后 restart: unless-stopped 会把它拉起来，至少状态是自愈的。
+      JAVA_OPTS: >-
+        -Xms160m -Xmx288m
+        -XX:MaxMetaspaceSize=176m
+        -XX:ReservedCodeCacheSize=48m
+        -XX:MaxDirectMemorySize=96m
+        -Xss512k -XX:+UseSerialGC
+        -XX:+ExitOnOutOfMemoryError
+        -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/logs
+        -Dfile.encoding=UTF-8
 
   oa-1:
     <<: *oa-common
@@ -69,14 +115,15 @@ services:
     ports:
       - "9010:8080"
     environment:
-      SPRING_PROFILES_ACTIVE: test
-      OA_LOG_DIR: /logs
-      TZ: Asia/Shanghai
-      JAVA_OPTS: ${JAVA_OPTS:--XX:MaxRAMPercentage=70.0 -XX:InitialRAMPercentage=25.0}
+      <<: *oa-env
 
 networks:
-  # 独立网络，不与 wms 的 wg-network 混用：nginx 是通过"宿主机 IP:发布端口"回源访问的
-  # （见 nginx 配置模板里的 upstream），不需要容器间互相解析，
-  # 因此没必要把自己的生命周期绑到别的项目的网络上。
-  oa-network:
-    driver: bridge
+  # 【必须接入这个网络，不能自建】
+  # redis 容器就挂在这里（docker inspect redis 可证），OA 要用容器名连它，
+  # 就必须和它同网。网络由别的项目创建，所以是 external —— 我们不能也不该
+  # 让 compose 去管理它的生命周期：一旦 compose 认为"这个网络是我建的"，
+  # down 的时候可能把它删掉，连带把别人的容器网络一起掀了。
+  wg-network:
+    external: true
+    # 网络的实际名字带 compose 项目前缀，不是 "wg-network"
+    name: docker-compose_wg-network
