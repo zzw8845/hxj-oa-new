@@ -17,16 +17,139 @@
 
 const { execFileSync } = require('child_process');
 
-const DB = 'haixiajin_oa';
+/* ============================================================================
+ * 前置自检（preflight）—— 为什么要在 require 时就做
+ * ----------------------------------------------------------------------------
+ * 这一天内被两个"环境问题"各坑了一次，而两次的表现都不是"环境报错"，
+ * 而是**一堆看不懂的用例失败**，排查方向完全跑偏：
+ *
+ *  ① 「假活」：服务正在从某个 fat jar 跑时那个 jar 被重新构建覆盖了。
+ *     症状是 /api/** 全部毫秒级正常，唯独**静态资源 0 字节响应、curl 挂到超时**。
+ *     套件报的是 `fetch failed`，看着像网络问题，实际要先看应用日志里的
+ *     NoClassDefFoundError: ch/qos/logback/classic/spi/ThrowableProxy。
+ *
+ *  ② 「盯错库」：本机后端用 --spring.profiles.active=test 起（连远端 hxj-oa），
+ *     而本文件原先写死本机 haixiajin_oa。两个库不是同一个 ⇒ 快照"前后一致"
+ *     恒成立、不变量恒成立，**污染一条也检测不出来，输出却是全绿**。
+ *
+ * 所以这两条都必须在**开跑前**判掉、并且判据要写人话（直接给出修法），
+ * 而不是让它们伪装成用例失败。用 OA_E2E_SKIP_PREFLIGHT=1 可跳过。
+ * ==========================================================================*/
+
+/* ------------------------------------------------------------ 监控库目标
+ * 顺序：OA_E2E_MYSQL_* → MYSQL_*（与后端同源，最理想）→ 本机默认。
+ * 目标每次都会打印 —— 让"盯错库"变成看得见的事，而不是靠人记得。
+ */
+function resolveTarget() {
+  const e = process.env;
+  return {
+    host: e.OA_E2E_MYSQL_HOST || e.MYSQL_HOST || '127.0.0.1',
+    port: String(e.OA_E2E_MYSQL_PORT || e.MYSQL_PORT || '3306'),
+    database: e.OA_E2E_MYSQL_DATABASE || e.MYSQL_DATABASE || 'haixiajin_oa',
+    user: e.OA_E2E_MYSQL_USER || e.MYSQL_USER || 'root',
+    password: e.OA_E2E_MYSQL_PASSWORD || e.MYSQL_PASSWORD || '',
+    explicit: !!(e.OA_E2E_MYSQL_HOST || e.MYSQL_HOST),
+  };
+}
+const TARGET = resolveTarget();
+const DB = TARGET.database;
+const BASE = process.env.OA_E2E_BASE || 'http://127.0.0.1:8080';
+
+function mysqlEnv() {
+  // 用 MYSQL_PWD 而不是 -p<口令>：后者会在 stderr 打"命令行里有口令不安全"的告警，
+  // 混进测试输出里很干扰；而且口令会出现在进程列表里。
+  return TARGET.password ? Object.assign({}, process.env, { MYSQL_PWD: TARGET.password }) : process.env;
+}
+
+function mysqlArgs(stmt) {
+  return ['-h', TARGET.host, '-P', TARGET.port, '-u', TARGET.user, DB, '-N', '-B', '-e', stmt];
+}
 
 /** 执行 SQL，失败抛错。 */
 function sql(stmt) {
-  return execFileSync('mysql', ['-uroot', DB, '-N', '-B', '-e', stmt], { encoding: 'utf8' }).trim();
+  return execFileSync('mysql', mysqlArgs(stmt), { encoding: 'utf8', env: mysqlEnv() }).trim();
 }
 
 /** 执行 SQL，失败时把错误当字符串返回（用于快照，避免一次失败打断整个用例）。 */
 function sqlSafe(stmt) {
   try { return sql(stmt); } catch (e) { return '(sql-error: ' + e.message.split('\n')[0] + ')'; }
+}
+
+/** 用 curl 探一个地址，返回 {code, size}；网络层失败（超时/拒绝）抛错。 */
+function probe(url, timeoutSec) {
+  const out = execFileSync('curl', [
+    '-s', '-o', '/dev/null', '-m', String(timeoutSec), '--noproxy', '*',
+    '-w', '%{http_code} %{size_download}', url,
+  ], { encoding: 'utf8' });
+  const [code, size] = out.trim().split(/\s+/);
+  return { code: code, size: Number(size) };
+}
+
+function preflight() {
+  console.log('');
+  console.log('  [前置自检] 被测地址 ' + BASE);
+  console.log('  [前置自检] 监控库  ' + TARGET.host + ':' + TARGET.port + '/' + DB
+    + (TARGET.explicit ? '（来自 MYSQL_* 环境变量）' : '（未设置 MYSQL_*，用本机默认）'));
+  console.log('  [前置自检] 上述库必须是**被测后端实际写入**的那个库，否则卫生断言恒等于"没变化"。');
+
+  // ① 监控库要连得上
+  try {
+    sql('SELECT 1');
+  } catch (e) {
+    console.error('\n✗ 连不上监控库 ' + TARGET.host + ':' + TARGET.port + '/' + DB);
+    console.error('  卫生断言会全部失去意义，所以直接停在这里而不是继续跑出一堆假结果。');
+    console.error('  ' + e.message.split('\n')[0]);
+    console.error('  若本机后端是用 MYSQL_* 环境变量（docker-test/.env）起的，'
+      + '请把这些变量也导出给本脚本，或用 OA_E2E_MYSQL_* 指定。');
+    process.exit(2);
+  }
+
+  // ② 后端要既答 API、又能开页面 —— 这一条专门用来拆穿"假活"
+  //    必须把三种情形分开报，因为它们修法完全不同：
+  //      · 两个都不通 → 后端没起来（最常见，也最好修）
+  //      · API 通、页面不通 → **假活**（jar 被覆盖），报错最难懂的那种
+  //      · 页面通、API 不通 → 说明静态资源在、接口链坏了，另一类问题
+  const ping = probeQuiet(BASE + '/api/ping', 5);
+  const page = probeQuiet(BASE + '/oa.html', 8);
+  const pingOk = !!ping && ping.code === '200';
+  const pageOk = !!page && page.code === '200' && page.size > 100000;
+
+  if (pageOk && pingOk) {
+    console.log('  [前置自检] ✓ API 与页面均可访问（/oa.html ' + page.size + ' 字节）');
+    console.log('');
+    return;
+  }
+
+  console.error('');
+  if (!pingOk && !pageOk) {
+    console.error('✗ 后端没有起来：' + BASE + '（/api/ping 与 /oa.html 都不通）');
+    console.error('  最常见的原因就是没启动。启动：cd 项目根 && NO_OPEN=1 bash 启动联调版.command');
+    console.error('  注意："/api/ping 通了"才叫起来，光看端口有人监听不算（端口可能被别的进程占着）。');
+  } else if (pingOk && !pageOk) {
+    console.error('✗ 后端在应答 API，但**没有提供页面**'
+      + (page ? '（/oa.html HTTP ' + page.code + '，' + page.size + ' 字节）' : '（/oa.html 请求无响应/超时）'));
+    console.error('  判据：/api/ping 正常，而 /oa.html 不通 —— 这是典型的「假活」。');
+    console.error('  原因：**服务正在运行时，它依赖的那个 fat jar 被重新构建覆盖了**。');
+    console.error('  此时 JVM 惰性加载类会失败，日志里是 '
+      + 'NoClassDefFoundError: ch/qos/logback/classic/spi/ThrowableProxy；');
+    console.error('  表现就是"TCP 连得上、API 秒回、静态资源永久挂住（0 字节响应）"。');
+    console.error('  修法：停掉并重启本机后端，没有任何热修办法。日志：oa-backend/logs/app-test.log');
+  } else {
+    console.error('✗ 页面能打开，但 /api/ping 不通'
+      + (ping ? '（HTTP ' + ping.code + '）' : '（无响应）'));
+    console.error('  静态页在、接口链不通 —— 看后端日志里的启动异常与应用上下文是否完整。');
+    console.error('  日志：oa-backend/logs/app-test.log');
+  }
+  process.exit(2);
+}
+
+/** 探测但不抛错：失败返回 null，交给调用方按情形分派提示。 */
+function probeQuiet(url, timeoutSec) {
+  try { return probe(url, timeoutSec); } catch (e) { return null; }
+}
+
+if (process.env.OA_E2E_SKIP_PREFLIGHT !== '1') {
+  preflight();
 }
 
 function uidOf(account) {
@@ -113,7 +236,8 @@ function unreadOf(receiverId) {
 }
 
 module.exports = {
-  DB, sql, sqlSafe, uidOf,
+  DB, BASE, TARGET, preflight,
+  sql, sqlSafe, uidOf,
   snapshot, field, assertInvariants,
   grabReadIds, restoreReadState, unreadOf,
 };
