@@ -1,6 +1,6 @@
 #!/bin/bash
 # ===========================================================================
-#  海峡金 OA · 蓝绿发布（在**服务器** /opt/sh/oa/admin 下执行，一般由 deploy.sh 远程调用）
+#  海峡金 OA · 蓝绿发布（在**服务器** /opt/sh/oa 下执行，一般由 deploy.sh 远程调用）
 #
 #  与上一版的四处关键改动，每条都是拿真实故障换的：
 #
@@ -78,7 +78,7 @@ fi
 log "当前流量指向 ${FROM_PORT}，本次把新版本发到「${TARGET_SVC}」（${TARGET_PORT}）"
 
 # ---------------------------------------------------------------- 1 构建新镜像
-log "1/5 在服务器上构建新镜像（tag ${IMAGE}:latest）"
+log "1/6 在服务器上构建新镜像（tag ${IMAGE}:latest）"
 TAG="$(date +%Y%m%d%H%M%S)"
 docker build -t "${IMAGE}:${TAG}" -t "${IMAGE}:latest" . \
   || die "镜像构建失败。若卡在拉基础镜像，见 Dockerfile 顶部关于镜像源的说明。"
@@ -89,13 +89,13 @@ log "✓ 镜像已构建：${IMAGE}:${TAG}"
 NEW_IMAGE_ID="$(docker images -q "${IMAGE}:latest" | head -1)"
 
 # ---------------------------------------------------------------- 2 启动新实例
-log "2/5 启动 ${TARGET_SVC}（旧实例继续服务，线上不受影响）"
+log "2/6 启动 ${TARGET_SVC}（旧实例继续服务，线上不受影响）"
 # --no-deps：只动这一个实例，别把另一个也带起来 ——
 # 否则蓝绿就退化成"两个实例一起重启"，切换期间没有可服务的实例。
 "${DC[@]}" up -d --no-deps "$TARGET_SVC"
 
 # ---------------------------------------------------------------- 3 健康门禁
-log "3/5 等待 $TARGET_SVC 就绪（最多 ${HEALTH_TIMEOUT}s）"
+log "3/6 等待 $TARGET_SVC 就绪（最多 ${HEALTH_TIMEOUT}s）"
 ready=0
 for _ in $(seq 1 "$HEALTH_TIMEOUT"); do
   # 在容器**内部**打健康端点：不依赖宿主机装没装 curl，
@@ -117,7 +117,7 @@ fi
 log "✓ $TARGET_SVC 已就绪并通过健康检查"
 
 # ---------------------------------------------------------------- 4 切流量
-log "4/5 切换 nginx：$FROM_PORT → $TARGET_PORT"
+log "4/6 切换 nginx：$FROM_PORT → $TARGET_PORT"
 cp -a "$NGINX_CONF" "${NGINX_CONF}.bak"
 sed -i "s/:${FROM_PORT}/:${TARGET_PORT}/g" "$NGINX_CONF"
 
@@ -136,7 +136,7 @@ fi
 log "✓ 流量已切到 ${TARGET_SVC}（${TARGET_PORT}）"
 
 # ---------------------------------------------------------------- 5 停旧实例
-log "5/5 停掉旧实例 ${OLD_SVC}（**不删容器**，它同时占着端口和内存）"
+log "5/6 停掉旧实例 ${OLD_SVC}（**不删容器**，它同时占着端口和内存）"
 # 【为什么要停】不停的话两个 JVM 会一直各占 ~600MB。
 # 这台服务器删掉 wms 之后只剩约 1.37GB 可用，"两个实例常态并存"是撑不住的；
 # 蓝绿的本意就是"只有一个在服务"，旧实例留着只是为了秒级回滚。
@@ -150,6 +150,24 @@ fi
 # 它们就是回滚的凭据，删掉就只能重新构建。
 docker image prune -f >/dev/null 2>&1 || true
 
+# ---------------------------------------------------------------- 6 部署自证
+# 【为什么要挂在发布末尾而不是靠人记得跑】
+# 前 5 步只证明了"容器起来了"，证明不了"系统真的可用"：
+# 前端页面可能在 jar 里丢了、接口契约可能被某个开关打开、Redis 可能静默降级、
+# 硬盘可能已经写满到 mysql 都要挂。这些都属于"容器 healthy 但业务已经坏了"。
+# 把自证挂在这里，发版才算真正完成。
+log "6/6 部署自证（verify_deployed.sh）"
+VERIFY_RC=0
+if [ -f verify_deployed.sh ]; then
+  # 探测账号来自服务器本地的 probe.env（600，不入库）；缺失时脚本会显式 SKIP，
+  # 不会把"没验"当成"通过"。
+  if [ -f probe.env ]; then set -a; . ./probe.env; set +a; fi
+  bash verify_deployed.sh || VERIFY_RC=$?
+else
+  log "! 找不到 verify_deployed.sh —— 本次**没有**做可用性自证。"
+  VERIFY_RC=3
+fi
+
 printf '\n==================== 发布完成 ====================\n'
 log "当前服务实例：${TARGET_SVC}（宿主机端口 ${TARGET_PORT}，镜像 ${IMAGE}:${TAG}）"
 log "上一版本实例：${OLD_SVC}（已停止，容器还在；docker start $OLD_SVC 可立即恢复）"
@@ -159,3 +177,13 @@ printf '    2) sed -i "s/:%s/:%s/g" %s\n' "$TARGET_PORT" "$FROM_PORT" "$NGINX_CO
 printf '    3) docker exec %s nginx -t && docker exec %s nginx -s reload\n' \
        "$NGINX_CONTAINER" "$NGINX_CONTAINER"
 printf '\n本次镜像 ID：%s\n' "$NEW_IMAGE_ID"
+
+case "$VERIFY_RC" in
+  0) log "✓ 部署自证通过（nginx 已切到新实例且各项检查全绿）" ;;
+  2) log "✗ 部署自证**没有跑完**（有检查被登记却没执行 ⇒ 脚本自身缺陷）。"
+     log "  流量已切到 ${TARGET_SVC}，但这个结果不能当成通过，请人工确认后再决定是否回滚。" ;;
+  3) log "! 未做自证（缺 verify_deployed.sh）。流量已切到 ${TARGET_SVC}。" ;;
+  *) log "✗ 部署自证有失败项。**流量已经切到 ${TARGET_SVC} 了**，"
+     log "  如确认新版本有问题，请立刻按上面三步回滚。" ;;
+esac
+exit "$VERIFY_RC"
