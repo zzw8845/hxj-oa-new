@@ -1,6 +1,7 @@
 package com.hxj.oa.system.controller;
 
 import com.hxj.oa.common.annotation.Audit;
+import com.hxj.oa.common.api.PageResult;
 import com.hxj.oa.common.api.R;
 import com.hxj.oa.common.security.LoginUser;
 import com.hxj.oa.common.security.RequirePerm;
@@ -44,6 +45,24 @@ public class UserController {
         return R.ok(userAdminService.listWithDetail(companyId == null ? me.getCompanyId() : companyId));
     }
 
+    /**
+     * 人员管理表格的分页接口（过滤与分页都在 SQL 里完成）。
+     *
+     * <p>与 {@code GET /api/users} 刻意保留两份：后者给选人下拉用，**必须**全量
+     * （客户端要对全量做模糊搜索）；前者给表格用，必须服务端分页。合成一个接口会顾此失彼 ——
+     * 要么下拉搜不全人，要么表格一次把全公司拉下来。
+     */
+    @GetMapping("/page")
+    @RequirePerm("system:user")
+    public R<PageResult<UserVO>> page(@RequestParam(required = false) Integer pageNum,
+                                      @RequestParam(required = false) Integer pageSize,
+                                      @RequestParam(required = false) String keyword,
+                                      @RequestParam(required = false) Long companyId) {
+        LoginUser me = UserContext.require();
+        Long cid = companyId == null ? me.getCompanyId() : companyId;
+        return R.ok(userAdminService.pageWithDetail(cid, pageNum, pageSize, keyword));
+    }
+
     @GetMapping("/{id}")
     public R<UserVO> get(@PathVariable Long id) {
         return R.ok(userAdminService.detail(id));
@@ -55,7 +74,6 @@ public class UserController {
         return R.ok(userService.listRoles(companyId == null ? me.getCompanyId() : companyId));
     }
 
-    /* ------------------------------------------------------------------ 写 */
 
     @PostMapping
     @RequirePerm("system:user")

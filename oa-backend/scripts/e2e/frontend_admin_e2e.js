@@ -17,7 +17,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
    为什么要把这个数写死在代码里：本项目出过一次「假绿灯」—— 上游某条断言依赖的接口被回退后
    抛错中断，导致其后 16 条断言（含整条审计留痕链路）**从未执行**，而末行照样打印
    "85/85 通过"。有了这个数，任何"少跑了"都会立刻变成红灯，而不是无声无息。 */
-const EXPECTED_TOTAL = 38;
+const EXPECTED_TOTAL = 43;
 
 const results = [];
 function check(name, ok, extra) {
@@ -115,6 +115,14 @@ async function closeDialogs(page) {
   const page = await browser.newPage();
   await page.setViewport({ width: 1680, height: 1050 });
 
+  // 记录所有 /api 请求：用来证明人员表格走的是**服务端分页**接口，
+  // 而不是把全量拉下来在本地切片（那样搜索只能搜到已加载的那一批人）。
+  const apiCalls = [];
+  page.on('request', r => {
+    const u = r.url() || '';
+    if (u.indexOf('/api/') >= 0) apiCalls.push(u);
+  });
+
   const errs = [];
   page.on('console', m => { if (m.type() === 'error') errs.push('[console] ' + m.text().slice(0, 220)); });
   page.on('pageerror', e => errs.push('[pageerror] ' + e.message.slice(0, 220)));
@@ -145,6 +153,48 @@ async function closeDialogs(page) {
 
   const rows = await page.$$eval('.el-table__body tbody tr', els => els.length).catch(() => 0);
   check('人员表有真实数据行', rows >= 8, '行数=' + rows);
+
+  /* ---- 人员管理：服务端分页 + 服务端搜索 ----
+     判定不靠"看起来能翻页"，靠**请求**：
+      · 加载时打过 /api/users/page，说明表格数据源是分页接口而非全量；
+      · 输入关键字后又打了一次带 keyword 的 /api/users/page，说明搜索在后端做
+        —— 若只是前端过滤，这里不会有新请求，且只能搜到已加载的那一批人。 */
+  const pageCalls = apiCalls.filter(u => u.indexOf('/api/users/page') >= 0);
+  check('人员表格走的是服务端分页接口（加载时打过 /api/users/page）', pageCalls.length >= 1,
+    '命中 ' + pageCalls.length + ' 次' + (pageCalls[0] ? '，首条=' + pageCalls[0].slice(-80) : ''));
+
+  const kwBox = 'input[placeholder^="搜索姓名"]';
+  const hasKwBox = await page.$(kwBox);
+  check('人员表格带搜索框（按姓名/工号/账号搜）', !!hasKwBox);
+  if (hasKwBox){
+    const before = apiCalls.filter(u => u.indexOf('/api/users/page') >= 0 && u.indexOf('keyword=') >= 0).length;
+    await page.click(kwBox, { clickCount: 3 }).catch(function(){});
+    await page.type(kwBox, '黄小明', { delay: 60 }).catch(function(){});
+    await sleep(1400);
+    const after = apiCalls.filter(u => u.indexOf('/api/users/page') >= 0 && u.indexOf('keyword=') >= 0);
+    check('★ 搜索走后端：输入关键字后确实请求了带 keyword 的分页接口', after.length > before,
+      '带 keyword 的请求数 ' + before + ' → ' + after.length + (after.length ? '，末条=' + after[after.length-1].slice(-90) : ''));
+
+    const filteredRows = await page.$$eval('.el-table__body tbody tr', els => els.length).catch(() => -1);
+    check('★ 搜索后表格收敛到过滤结果（黄小明应为 1 行）', filteredRows === 1, '行数=' + filteredRows);
+
+    /* 必须清空并等它刷新：不清的话表格一直停在"只有 1 行"的过滤态，
+       后面那些「角色列/部门列/新建员工/删除员工」的断言就全在 1 行的表上跑 ——
+       一次新增断言把自己后面的旧断言全打挂，看着像大面积回归，其实只是没收尾。 */
+    /* 直接置空并派发 input：用"三击全选 + Backspace"不可靠（实测只删掉一个字符，
+       剩「黄小」仍然只匹配到 1 行，看起来就像清空失败）。Vue 的 v-model 靠 input
+       事件更新，所以手动派发一个最稳。 */
+    await page.$eval(kwBox, function(el){
+      el.value = '';
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+    }).catch(function(){});
+    await sleep(1400);
+    const restored = await page.$$eval('.el-table__body tbody tr', els => els.length).catch(() => -1);
+    check('清空关键字后表格恢复（否则后续断言都在过滤态上跑）', restored >= 8, '行数=' + restored);
+  } else {
+    check('（跳过）没有搜索框', false);
+    check('（跳过）没有搜索框，无法验证清空', false);
+  }
 
   const roleCells = await page.$$eval('.el-table__body tbody tr', trs =>
     trs.map(tr => (tr.querySelectorAll('td')[5] || {}).textContent || '').map(s => s.trim())
@@ -199,17 +249,27 @@ async function closeDialogs(page) {
   await clickButtonByText(page, '保存员工', '.el-dialog');
   await sleep(3200);
 
-  const afterRows = await page.$$eval('.el-table__body tbody tr', trs =>
-    trs.map(tr => tr.textContent)
-  ).catch(() => []);
-  check('新员工出现在列表中', afterRows.some(t => t.includes(uiAccount)),
-    '列表行数=' + afterRows.length);
-
   const toast = await page.evaluate(() => {
     const m = [...document.querySelectorAll('.el-message')].map(e => e.textContent.trim());
     return m.join(' | ');
   });
   check('保存后有成功提示', toast.includes('已创建') || toast.includes('成功'), toast.slice(0, 80));
+
+
+
+  /* 表格已是**服务端分页**：新员工不一定落在当前页。
+     所以按账号走服务端搜索来定位 —— 这同时也验证了「新建 → 搜索能搜到」这条闭环。 */
+  await page.$eval(kwBox, function(el, v){
+    el.value = v;
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+  }, uiAccount).catch(function(){});
+  await sleep(1400);
+  const afterRows = await page.$$eval('.el-table__body tbody tr', trs =>
+    trs.map(tr => tr.textContent)
+  ).catch(() => []);
+  check('新员工出现在列表中（按账号服务端搜索定位）',
+    afterRows.some(t => t.includes(uiAccount)) && afterRows.length <= 2,
+    '过滤后行数=' + afterRows.length);
 
   // 收尾：用 UI 删掉刚才新增的员工。
   // 一是顺带覆盖删除路径（含二次确认弹窗），二是别把测试数据留在演示库里。
@@ -235,6 +295,14 @@ async function closeDialogs(page) {
   check('删除刚建的员工（UI 闭环 + 不残留测试数据）',
     delClicked && delConfirmed && !rowsAfterDelete.some(t => t.includes(uiAccount)),
     '点删除=' + delClicked + ' 确认=' + delConfirmed + '，剩余行数=' + rowsAfterDelete.length);
+
+  /* 清空搜索框：删除是在"按账号过滤"的视图里做的，不清空的话
+     表格一直停留在空结果上，后面「角色管理」等断言又会被殃及。 */
+  await page.$eval(kwBox, function(el){
+    el.value = '';
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+  }).catch(function(){});
+  await sleep(1200);
 
   console.log('\n=== 4. 角色管理 ===');
   // 人员弹窗保存成功后会自动关闭；这里再兜一次底，避免残留弹窗挡住 tab 切换

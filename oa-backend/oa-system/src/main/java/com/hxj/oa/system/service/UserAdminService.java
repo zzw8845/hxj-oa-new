@@ -1,7 +1,10 @@
 package com.hxj.oa.system.service;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.hxj.oa.common.exception.BizException;
+import com.hxj.oa.common.api.PageResult;
 import com.hxj.oa.common.security.UserContext;
 import com.hxj.oa.system.dto.UserSaveReq;
 import com.hxj.oa.system.dto.UserVO;
@@ -51,6 +54,9 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class UserAdminService {
 
+    /** 分页大小上限：不卡住的话 pageSize 传个巨大值就能把整表捞出来，分页形同虚设 */
+    private static final int MAX_PAGE_SIZE = 100;
+
     private final SysUserMapper userMapper;
     private final SysRoleMapper roleMapper;
     private final UserRoleMapper userRoleMapper;
@@ -77,6 +83,34 @@ public class UserAdminService {
                 .orderByAsc(SysUser::getDeptId)
                 .orderByAsc(SysUser::getId));
         return assembleAll(users, companyId);
+    }
+
+    /**
+     * 人员管理表格用的**服务端**分页。
+     *
+     * <p>为什么必须有它：`GET /api/users` 是全量返回（选人下拉要在客户端对全量做模糊搜索，
+     * 分页反而做不了，那个接口刻意保留全量）。但人员管理表格若也用全量，随着公司人数增长，
+     * 一次请求会越来越大；更关键的是**搜索**：若把全量拉下来再在前端过滤，
+     * 那只是在"已加载的这批人"里搜 —— 搜不全，而且界面上没有任何提示，用户会以为真的没有这个人。
+     * 所以表格走这个接口：过滤与分页都在 SQL 里完成。
+     */
+    public PageResult<UserVO> pageWithDetail(Long companyId, Integer pageNum, Integer pageSize, String keyword) {
+        int pn = (pageNum == null || pageNum < 1) ? 1 : pageNum;
+        // 上限必须卡住：不限制的话 pageSize=Integer.MAX_VALUE 之类会把整表捞出来，
+        // 分页就形同虚设（单据列表那边的 pageSize:500 就是这个教训）
+        int ps = (pageSize == null || pageSize < 1) ? 20 : Math.min(pageSize, MAX_PAGE_SIZE);
+        LambdaQueryWrapper<SysUser> w = Wrappers.<SysUser>lambdaQuery()
+                .eq(companyId != null, SysUser::getCompanyId, companyId);
+        if (StringUtils.hasText(keyword)) {
+            String kw = keyword.trim();
+            w.and(x -> x.like(SysUser::getRealName, kw)
+                    .or().like(SysUser::getJobNo, kw)
+                    .or().like(SysUser::getAccount, kw));
+        }
+        w.orderByAsc(SysUser::getDeptId).orderByAsc(SysUser::getId);
+        Page<SysUser> result = userMapper.selectPage(new Page<>(pn, ps), w);
+        return PageResult.of(result.getTotal(), result.getCurrent(), result.getSize(),
+                assembleAll(result.getRecords(), companyId));
     }
 
     /** 组装公共部分：批量取部门名/岗位名/角色，映射为 VO */

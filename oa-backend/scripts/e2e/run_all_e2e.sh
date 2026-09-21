@@ -52,7 +52,7 @@ echo "使用 node：${NODE}（$("$NODE" --version)）"
 
 # 套件:预期断言数 —— 改动套件时这里必须同步改，否则下面的核对会失败（故意的）
 SUITES="
-frontend_admin_e2e:38
+frontend_admin_e2e:43
 frontend_attachment_e2e:56
 frontend_dashboard_e2e:44
 frontend_final_gaps_e2e:60
@@ -65,6 +65,18 @@ frontend_business_gaps_e2e:79
 # 所以不能指望"跑用例时顺带检查"。
 if [ "${OA_E2E_SKIP_PREFLIGHT:-0}" != "1" ]; then
   echo "==================== 前置自检 ===================="
+
+  # 脚本静态自检：`$VAR` 紧跟中文字符会被 bash 当成变量名的一部分，
+  # 运行时报 `<乱码>: unbound variable`。这个坑项目里反复踩过，
+  # 且 `bash -n` 查不出来，所以放在这里开跑前扫一遍。
+  PY_BIN="${OA_E2E_PYTHON:-python3}"
+  if command -v "$PY_BIN" >/dev/null 2>&1 && [ -f ../../../scripts/check_shell_var_i18n.py ]; then
+    if ! "$PY_BIN" ../../../scripts/check_shell_var_i18n.py; then
+      echo
+      echo "✗ 脚本自检未通过 —— 先修掉上面的写法再跑用例。"
+      exit 2
+    fi
+  fi
   if ! "$NODE" -e "require('./_hygiene.js')"; then
     echo
     echo "✗ 前置自检未通过 —— 这是**环境问题**，不是代码问题，用例没有必要跑。"
@@ -105,6 +117,34 @@ for item in $SUITES; do
 done
 
 echo
+# ---------------------------------------------------------------- 残渣清扫
+# 【为什么需要】套件各自都有清理段，但**清理段在用例中途抛错时就跑不到**，
+# 于是夹具留在演示库里。实测遇到过一次：`E2E草稿夹具（跑完即删）` 多出一张，
+# 而那张单据的标题本身就写着"跑完即删"。
+# 这类残渣的危险不在于占空间，而在于**会累积**：每失败一次多一条，
+# 最终把演示库基线撑到没人认得出原样。
+#
+# 刻意"报出来 + 清掉"，而不是静默清掉：静默的话，套件的清理缺陷永远不会被发现。
+if command -v mysql >/dev/null 2>&1; then
+  RESIDUE=$(mysql -uroot haixiajin_oa -N -B \
+    -e "SELECT id FROM document WHERE title LIKE 'E2E草稿夹具%'" 2>/dev/null | tr '\n' ' ')
+  if [ -n "${RESIDUE:-}" ]; then
+    COUNT=$(printf '%s' "$RESIDUE" | wc -w | tr -d ' ')
+    echo
+    echo "! 发现 ${COUNT} 张 E2E 残留夹具单据（ids: ${RESIDUE}）——已物理清理。"
+    echo "  频繁出现说明某个套件的清理段没跑到（用例中途抛错），值得去查那个套件，别只靠这道兜底。"
+    for rid in $RESIDUE; do
+      mysql -uroot haixiajin_oa -e "\
+        DELETE FROM attachment WHERE document_id=$rid; \
+        DELETE FROM document_link WHERE document_id=$rid; \
+        DELETE FROM flow_instance_node WHERE document_id=$rid; \
+        DELETE FROM flow_instance WHERE document_id=$rid; \
+        DELETE FROM notification WHERE biz_type='document' AND biz_id=$rid; \
+        DELETE FROM document WHERE id=$rid;" 2>/dev/null
+    done
+  fi
+fi
+
 echo "==================== 汇总 ===================="
 printf '套件：5 个，预期断言 %s 条，实跑通过 %s 条，异常套件 %s 个\n' \
   "$TOTAL_WANT" "$TOTAL_GOT" "$BAD"
