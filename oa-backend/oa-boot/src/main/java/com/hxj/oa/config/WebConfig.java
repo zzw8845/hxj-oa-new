@@ -37,8 +37,15 @@ public class WebConfig implements WebMvcConfigurer {
      *
      * <p>只列**真实存在**的端点。此前这里放着 {@code /actuator/health}、{@code /swagger-ui/**}、
      * {@code /doc.html} —— 这四处并未引入对应依赖，实测只会返回 500/302，属于"看起来收了口、
-     * 实际攻击面清单是错的"。而 {@code /v3/api-docs/**} 曾真实暴露完整 OpenAPI 契约（70KB），
-     * 现已随 springdoc 一起关闭（见 application.yml 的 springdoc 段）。
+     * 实际攻击面清单是错的"。而 {@code /v3/api-docs/**} 曾真实暴露完整 OpenAPI 契约（70KB）。
+     *
+     * <p><b>【关键认知】这份白名单不是唯一的豁免途径。</b>
+     * 下面的拦截器是 {@code addPathPatterns("/api/**")} —— 凡是**不在 {@code /api/} 前缀下**的路径
+     * （如 {@code /v3/api-docs}、{@code /swagger-ui/**}、{@code /actuator/**}），
+     * <em>根本不经过认证拦截器</em>，白名单里有没有它都一样是未认证可读。
+     * 因此"关掉接口文档"**只能靠 {@code springdoc.*.enabled=false}**，靠白名单删条目是无效动作。
+     * 本项目已因此栽过两次：一次是默认 profile，一次是 test profile 把默认值又写成 {@code true}。
+     * 新增任何**不挂在 /api 下**的端点时，必须单独确认它的鉴权来源是什么。
      */
     private static final List<String> WHITELIST = List.of(
             "/api/auth/login",

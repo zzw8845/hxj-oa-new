@@ -99,12 +99,18 @@ oa:
   log:
     dir: ${OA_LOG_DIR:/logs}
 
-# 测试环境开放接口文档（排查用）。想关掉就把 OA_OPENAPI_ENABLED 置为 false/不设。
+# 接口文档：**默认关闭**，需要排查时在 .env 里显式置 true 再重启。
+#
+# 【为什么默认必须是 false】`/v3/api-docs` 的输出是**完整接口契约**（实测 77KB，
+# 列出全部路径与参数），而它**不在 `/api/**` 前缀下**，因此 AuthInterceptor 的
+# `.addPathPatterns("/api/**")` 根本拦不到它 —— 也就是说它一旦被打开就是**未认证可读**，
+# 白名单里没有它也挡不住。此前默认值写成 `true`，等于把安全加固批刚关掉的暴露面又开回来。
+# 排查完请改回 false：契约暴露属于"平时没用、出事致命"的那类开关。
 springdoc:
   api-docs:
-    enabled: ${OA_OPENAPI_ENABLED:true}
+    enabled: ${OA_OPENAPI_ENABLED:false}
   swagger-ui:
-    enabled: ${OA_OPENAPI_ENABLED:true}
+    enabled: ${OA_OPENAPI_ENABLED:false}
 
 logging:
   level:
