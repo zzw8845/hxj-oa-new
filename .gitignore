@@ -14,6 +14,8 @@ oa-backend/logs/
 *.log
 # 上传的附件（运行时业务数据，不入库）
 oa-backend/data/attachments/
+# 演示库快照（含真实业务数据、用户记录与审计日志，绝不入库）
+oa-backend/sql/demo_snapshot_*.sql
 
 # ============================== IDE / 编辑器 ==============================
 .idea/
