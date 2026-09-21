@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ===========================================================================
+  日志配置（Spring Boot 专用版，支持 springProperty / springProfile）
+
+  【为什么要单独写这个文件】application.yml 的 logging.* 能配出"一个文件 + 滚动"，
+  但配不出"ERROR 单独一个文件"。测试服务器上排查故障时最需要的是
+  「一眼看到所有异常」，而不必在 INFO 洪流里翻找 —— 这是单独配 logback 的唯一理由。
+
+  【日志落在哪】
+    本地：./logs/            （已被 .gitignore 排除）
+    容器：/logs/             （docker-compose 把宿主机 ./logs 挂进来，容器销毁日志不丢）
+  改目录只需设环境变量 OA_LOG_DIR，不必改任何配置文件。
+
+  【滚动策略】按天 + 单文件 50MB 双条件滚动，历史保留 30 天、总量上限 5GB。
+  蓝绿切换时两个容器**同时**写同一份日志（它们共享挂载目录）：
+  这是刻意的 —— 出问题时需要看到切换前后的完整时间线，分成两份反而对不上时序。
+  ===========================================================================
+-->
+<configuration>
+    <!-- 继承 Spring Boot 的默认转换规则（彩色控制台、异常栈折叠等） -->
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+
+    <!-- 从 Spring 环境读配置，读不到就用默认值（保证脱离 Spring 也能启动） -->
+    <springProperty scope="context" name="LOG_DIR" source="oa.log.dir" defaultValue="./logs"/>
+    <springProperty scope="context" name="APP_NAME" source="spring.application.name" defaultValue="oa"/>
+
+    <property name="LOG_FILE" value="${LOG_DIR}/${APP_NAME}.log"/>
+    <property name="LOG_ERROR_FILE" value="${LOG_DIR}/${APP_NAME}-error.log"/>
+    <!-- 文件日志不带颜色转义符，否则用文本工具打开全是乱码 -->
+    <property name="FILE_PATTERN"
+              value="%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%thread] %logger{40} - %msg%n"/>
+
+    <!-- ===================== 控制台：docker logs 看的就是它 ===================== -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>${CONSOLE_LOG_PATTERN}</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+
+    <!-- ===================== 全量文件：按天 + 50MB 滚动，gz 归档 ===================== -->
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_FILE}</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_DIR}/${APP_NAME}-%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            <maxFileSize>50MB</maxFileSize>
+            <maxHistory>30</maxHistory>
+            <totalSizeCap>5GB</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>${FILE_PATTERN}</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+
+    <!-- ===================== 异常文件：只收 WARN 及以上 ===================== -->
+    <!--
+      用 ThresholdFilter(WARN) 而不是 LevelFilter(ERROR)：告警级别的 WARN
+      （如"附件文件删除失败""登录被限速""数据范围越界拦截"）同样需要单独看，但不够格中断服务。
+      WARN 及以上会**同时**进 FILE 和 ERROR_LOG，这是文件级别的重复，不是日志重复打印 ——
+      FILE 保留完整时间线，ERROR_LOG 用于快速定位，两者定位不同。
+    -->
+    <appender name="ERROR_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_ERROR_FILE}</file>
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>WARN</level>
+        </filter>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_DIR}/${APP_NAME}-error-%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            <maxFileSize>20MB</maxFileSize>
+            <maxHistory>60</maxHistory>
+            <totalSizeCap>1GB</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>${FILE_PATTERN}</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+
+    <!--
+      ===================== 异步包装：避免磁盘 IO 拖慢请求 =====================
+      两个关键参数都是刻意选的非默认值：
+        discardingThreshold=0 → 队列将满时**不丢日志**。默认值会在队列 80% 时丢弃
+          INFO 及以下日志，对一个有审批留痕要求的系统，静默丢日志比慢一点危险得多。
+        neverBlock=false      → 队列满时**阻塞**生产者而不是丢弃。综合效果是
+          "宁可让请求慢一点，也不让日志缺失"，这正是审计场景要的取舍。
+    -->
+    <appender name="ASYNC_FILE" class="ch.qos.logback.classic.AsyncAppender">
+        <appender-ref ref="FILE"/>
+        <queueSize>2048</queueSize>
+        <discardingThreshold>0</discardingThreshold>
+        <neverBlock>false</neverBlock>
+        <includeCallerData>false</includeCallerData>
+    </appender>
+
+    <appender name="ASYNC_ERROR_FILE" class="ch.qos.logback.classic.AsyncAppender">
+        <appender-ref ref="ERROR_FILE"/>
+        <queueSize>1024</queueSize>
+        <discardingThreshold>0</discardingThreshold>
+        <neverBlock>false</neverBlock>
+        <includeCallerData>false</includeCallerData>
+    </appender>
+
+    <!-- 详细级别由 application.yml 的 logging.level.* 控制（Spring Boot 会应用到 root 与具名 logger） -->
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="ASYNC_FILE"/>
+        <appender-ref ref="ASYNC_ERROR_FILE"/>
+    </root>
+
+    <!-- 单元测试跑在本地，不需要往磁盘写日志，免得污染工作区 -->
+    <springProfile name="test">
+        <!-- test 分支持续写文件（下面这条只用于覆盖，保持结构显式） -->
+    </springProfile>
+</configuration>

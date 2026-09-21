@@ -22,5 +22,21 @@
       <groupId>org.springframework.security</groupId>
       <artifactId>spring-security-crypto</artifactId>
     </dependency>
+    <!--
+      Redis：登录失败限速与权限缓存。
+      必要性不只是"加个缓存"：部署是**蓝绿双实例**（两个容器同时在线），
+      若限速用进程内计数，攻击者可以轮流打两个实例，把 10 次/5 分钟变成 20 次/5 分钟。
+      放进 Redis 才让计数真正跨实例生效。
+      版本由 spring-boot-starter-parent 管理（与 Boot 3.2.5 对齐，无需写版本号）。
+    -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-data-redis</artifactId>
+    </dependency>
+    <!-- Lettuce 连接池需要；不引则 spring.data.redis.lettuce.pool.* 配置静默失效 -->
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-pool2</artifactId>
+    </dependency>
   </dependencies>
 </project>

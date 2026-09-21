@@ -14,6 +14,7 @@ import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -85,18 +86,19 @@ public class WebConfig implements WebMvcConfigurer {
      *
      * <p>若仍需用 {@code file://} 直接打开页面联调（历史方式，已不推荐），
      * 启动前 {@code export OA_CORS_PERMISSIVE=true} 即可临时放行任意 origin。
+     *
+     * <p>部署到服务器后前端若另起域名，用 {@code OA_CORS_ALLOWED_ORIGINS} 传入逗号分隔的白名单，
+     * 避免"为了放行一个域名把开关打到 permissive"这种把口子开成全网的操作。
      */
     @Bean
-    public CorsFilter corsFilter(@Value("${oa.cors.permissive:false}") boolean permissive) {
+    public CorsFilter corsFilter(@Value("${oa.cors.permissive:false}") boolean permissive,
+                                @Value("${oa.cors.allowed-origins:}") String allowedOrigins) {
         CorsConfiguration config = new CorsConfiguration();
         if (permissive) {
             log.warn("CORS 处于放行模式（OA_CORS_PERMISSIVE=true）：允许任意 origin —— 仅限本地联调，切勿用于生产");
             config.setAllowedOriginPatterns(List.of("*"));
         } else {
-            config.setAllowedOriginPatterns(List.of(
-                    "http://127.0.0.1:[*]",
-                    "http://localhost:[*]",
-                    "http://[::1]:[*]"));
+            config.setAllowedOriginPatterns(originPatterns(allowedOrigins));
         }
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         config.setAllowedHeaders(List.of("*"));
@@ -108,5 +110,29 @@ public class WebConfig implements WebMvcConfigurer {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
         return new CorsFilter(source);
+    }
+
+    /**
+     * 本机地址 + 运维通过 {@code OA_CORS_ALLOWED_ORIGINS} 追加的白名单。
+     *
+     * <p>使用 {@code setAllowedOriginPatterns} 而非 {@code setAllowedOrigins}：前者支持
+     * {@code http://127.0.0.1:[*]} 这种端口通配，而本机联调的端口是随机的（8080/5173/…），
+     * 写死端口会导致"页面能打开、接口全跨域失败"这种极难自查的现象。
+     */
+    private List<String> originPatterns(String allowedOrigins) {
+        List<String> patterns = new ArrayList<>(List.of(
+                "http://127.0.0.1:[*]",
+                "http://localhost:[*]",
+                "http://[::1]:[*]"));
+        if (allowedOrigins != null && !allowedOrigins.isBlank()) {
+            for (String o : allowedOrigins.split(",")) {
+                String t = o.trim();
+                if (!t.isEmpty()) {
+                    patterns.add(t);
+                }
+            }
+            log.info("CORS 额外放行来源：{}", allowedOrigins.trim());
+        }
+        return patterns;
     }
 }

@@ -5,6 +5,7 @@ import com.hxj.oa.common.exception.BizException;
 import com.hxj.oa.common.security.UserContext;
 import com.hxj.oa.system.dto.UserSaveReq;
 import com.hxj.oa.system.dto.UserVO;
+import com.hxj.oa.system.auth.AuthSnapshotCache;
 import com.hxj.oa.system.entity.Department;
 import com.hxj.oa.system.entity.Post;
 import com.hxj.oa.system.entity.SysRole;
@@ -58,6 +59,14 @@ public class UserAdminService {
     private final PostMapper postMapper;
     private final OrgResolver orgResolver;
     private final PasswordEncoder passwordEncoder;
+
+    /**
+     * 权限快照缓存。只有<b>角色绑定发生变化</b>时才需要失效：
+     * 改姓名/手机号/部门都不影响快照内容 —— 快照只装角色、权限点、数据范围、指定部门，
+     * 部门名与部门路径每次登录都重新查库，所以"部门改名"不需要动它。
+     * 无谓的失效会让所有已缓存用户下次登录都回库重查，白白抵消缓存的意义。
+     */
+    private final AuthSnapshotCache snapshotCache;
 
     /* ------------------------------------------------------------------ 查询 */
 
@@ -132,6 +141,7 @@ public class UserAdminService {
 
         rebindRoles(u.getId(), orgResolver.resolveRoleCodes(companyId, req.getRoleCodes(), req.getRoleNames()));
         rebindPrimaryPost(u);
+        snapshotCache.invalidateAfterCommit();
 
         log.info("新建员工 id={} account={} deptId={} postId={} 操作人={}",
                 u.getId(), account, u.getDeptId(), u.getPostId(), UserContext.currentUserId());
@@ -181,6 +191,7 @@ public class UserAdminService {
         SysUser exist = requireUser(id);
         List<String> resolved = orgResolver.resolveRoleCodes(exist.getCompanyId(), roleCodes, null);
         rebindRoles(id, resolved);
+        snapshotCache.invalidateAfterCommit();
         log.info("调整员工角色 id={} roles={} 操作人={}", id, resolved, UserContext.currentUserId());
         return detail(id);
     }
@@ -215,6 +226,8 @@ public class UserAdminService {
         // 角色绑定必须真删：留着的话，账号被重建（同 id 复用场景）会意外继承旧权限
         userRoleMapper.physicalDeleteByUserId(id);
         userPostMapper.physicalDeleteByUserId(id);
+        // 账号被停用即权限作废，必须失效；否则同名账号重建后会命中旧快照
+        snapshotCache.invalidateAfterCommit();
         log.info("删除员工 id={} account={} 操作人={}", id, exist.getAccount(), UserContext.currentUserId());
     }
 

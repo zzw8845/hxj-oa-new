@@ -35,6 +35,17 @@
     <mysql.version>8.3.0</mysql.version>
     <jjwt.version>0.12.5</jjwt.version>
     <springdoc.version>2.3.0</springdoc.version>
+    <!-- 阿里云 OSS SDK：测试环境附件存储用（oa.storage.type=oss） -->
+    <aliyun-oss.version>3.15.2</aliyun-oss.version>
+    <!--
+      JAXB 必须锁在 javax 世代（2.3.x / 3.0.x）。
+      Boot 3.x 默认管到 4.x（jakarta.xml.bind），而 aliyun-sdk-oss 用的是 javax.xml.bind；
+      版本一升到 4.x，OSS SDK 就解析不了错误响应 XML，
+      "读不存在的对象"返回 InvalidResponse 而不是 NoSuchKey，404 映射静默失效。
+      见 dependencyManagement 中的详细说明。
+    -->
+    <jaxb.version>2.3.3</jaxb.version>
+    <istack.version>3.0.11</istack.version>
   </properties>
 
   <dependencyManagement>
@@ -93,6 +104,53 @@
         <groupId>org.mybatis</groupId>
         <artifactId>mybatis</artifactId>
         <version>${mybatis.version}</version>
+      </dependency>
+
+      <!-- 阿里云 OSS SDK：测试环境附件存储（oa.storage.type=oss） -->
+      <dependency>
+        <groupId>com.aliyun.oss</groupId>
+        <artifactId>aliyun-sdk-oss</artifactId>
+        <version>${aliyun-oss.version}</version>
+      </dependency>
+
+      <!--
+        JAXB —— 必须在这里覆盖 Spring Boot 的管理版本，不能只在子模块里写 <version>。
+
+        背景：OSS SDK 解析**错误响应**时要 JAXB 实现，而它自己只声明 API 不声明实现。
+        实测症状（跑在打包后的真实 classpath 上）：
+          正常上传/下载/删除全部成功，但"读一个不存在的对象"抛出的是
+          OSSException(InvalidResponse) 而不是 OSSException(NoSuchKey) ——
+          于是 OssStorageService 里 NoSuchKey → 404 的映射永远不触发。
+        只有专门测错误分支才能发现，冒烟测试一定漏掉。
+
+        为什么必须放在根 pom 的 dependencyManagement：
+          ① Boot 3.x 把 jaxb-runtime / txw2 / istack 都管到了 4.x，
+             4.x 实现的是 jakarta.xml.bind，而 OSS SDK 用的是 javax.xml.bind，两者不通用；
+          ② 只在 oa-document 里写 <version>2.3.3</version> 不够 ——
+             它只压住 jaxb-runtime 本身，传递依赖 txw2 / istack-comons-runtime
+             仍会被 Boot 管成 4.x（实测：jaxb-runtime=2.3.3 却配着 txw2=4.0.5）；
+          ③ 而 oa-boot 组装 fat jar 时还有另一条路径带入 jaxb-runtime 4.0.5 并赢得仲裁，
+             最终打进包里的仍是 4.x。
+        本 POM 自己的 dependencyManagement 优先级高于继承自父 POM 的，因此写在这里才生效。
+
+        代价与取舍：全局只能保留**一个** jaxb-runtime，选了 javax 世代就意味着
+        没有 jakarta JAXB 实现。本项目对外只出 JSON、不用 XML 媒体类型，
+        唯一的 JAXB 运行时消费者就是 OSS SDK，因此这个取舍是安全的。
+      -->
+      <dependency>
+        <groupId>org.glassfish.jaxb</groupId>
+        <artifactId>jaxb-runtime</artifactId>
+        <version>${jaxb.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.glassfish.jaxb</groupId>
+        <artifactId>txw2</artifactId>
+        <version>${jaxb.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.sun.istack</groupId>
+        <artifactId>istack-commons-runtime</artifactId>
+        <version>${istack.version}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>

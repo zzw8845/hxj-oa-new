@@ -1,0 +1,57 @@
+# ===========================================================================
+#  海峡金 OA · nginx 站点配置（一次性安装，之后由 run.sh 自动改端口）
+#
+#  【安装位置】/opt/docker/nginx/conf/include/oa.conf
+#  【安装方式】填入下面两处 @@ 占位符后，在 nginx 容器的 conf 主文件里 include 它，
+#              然后 `docker exec nginx nginx -t && docker exec nginx nginx -s reload`。
+#
+#  ┌───────────────────────────────────────────────────────────────────────┐
+#  │  @@UPSTREAM_HOST@@ 请不要猜 —— 直接抄同服务器上现有可用的配置：        │
+#  │      grep -n "proxy_pass\|server .*:80" /opt/docker/nginx/conf/include/rlzx-wms.conf │
+#  │  把那里的上游 IP 原样搬过来。它在这台机器上已被验证可达，              │
+#  │  而我们无法从代码侧推断出这个地址（可能是宿主 IP、也可能是内网 IP）。  │
+#  └───────────────────────────────────────────────────────────────────────┘
+# ===========================================================================
+
+upstream oa_backend {
+    # 蓝绿切换时 run.sh 只改这一行的端口：8010（蓝）↔ 9010（绿）
+    server @@UPSTREAM_HOST@@:8010;
+    keepalive 32;
+}
+
+server {
+    listen       80;
+    server_name  @@SERVER_NAME@@;
+
+    charset utf-8;
+
+    # 【必须与后端对齐】后端 spring.servlet.multipart.max-request-size=60MB。
+    # 这里若小于它，一个 60MB 的多附件提交会被 nginx 直接以 413 拒掉，
+    # 而前端只看到"上传失败"，排查时很容易怀疑到后端头上。
+    client_max_body_size 64m;
+
+    access_log /var/log/nginx/oa.access.log;
+    error_log  /var/log/nginx/oa.error.log warn;
+
+    location / {
+        proxy_pass         http://oa_backend;
+
+        # HTTP/1.1 + 清空 Connection 才能复用 keepalive 连接池
+        proxy_http_version 1.1;
+        proxy_set_header   Connection "";
+
+        proxy_set_header   Host              $host;
+        proxy_set_header   X-Real-IP         $remote_addr;
+        proxy_set_header   X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header   X-Forwarded-Proto $scheme;
+
+        # 台账导出会一次性生成整张表，超时太短会在数据量大时被 nginx 掐断连接。
+        # 后端用的是 HTTP 响应流式写出，这里只要不主动断就行。
+        proxy_connect_timeout 10s;
+        proxy_send_timeout    120s;
+        proxy_read_timeout    120s;
+
+        # 附件下载是流式的，关掉缓冲才能让浏览器尽快开始接收
+        proxy_buffering off;
+    }
+}

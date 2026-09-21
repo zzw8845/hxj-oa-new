@@ -30,5 +30,38 @@
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-validation</artifactId>
     </dependency>
+    <!--
+      阿里云 OSS：附件存储实现（OssStorageService）用。
+      做成 compile 依赖而非 optional —— 打包成 fat jar 后实现类必须能被加载；
+      本地联调不受影响，因为该实现类只在 oa.storage.type=oss 时才注册为 Bean。
+      版本由父 pom 的 dependencyManagement 统一管理。
+    -->
+    <dependency>
+      <groupId>com.aliyun.oss</groupId>
+      <artifactId>aliyun-sdk-oss</artifactId>
+    </dependency>
+
+    <!--
+      JAXB 实现 —— OSS SDK 解析**错误响应**时必需，而它自己只声明了 API，不声明实现。
+
+      缺少它时的症状极其隐蔽，是本项目实测出来的：
+        · 正常路径（上传 / 下载 / 删除 / 存在性判断）全部成功；
+        · 唯独"读取一个不存在的对象"这类错误分支解析不了错误 XML，
+          抛出来的是 OSSException(InvalidResponse) 而不是 OSSException(NoSuchKey)；
+        · 后果是 OssStorageService 里 "NoSuchKey → 404 附件不存在" 的映射永远不生效，
+          用户看到一个莫名奇妙的"附件读取失败，请联系管理员"，日志还会刷 SDK 的 WARN。
+      也就是说：只跑冒烟测试（传一个文件再删掉）永远发现不了，必须专门测错误分支。
+
+      带 jaxb-runtime 2.3.3 + istack + txw2 重跑探针后，errorCode 由
+      InvalidResponse 变为 NoSuchKey，映射生效。
+
+      【版本不在这里写】统一由根 pom 的 dependencyManagement 管到 2.3.3。
+      原因是实测发现：只在子模块写 <version> 既压不住传递依赖 txw2 / istack 的版本，
+      也压不住 oa-boot 组装 fat jar 时另一条路径带入的 4.0.5。详见根 pom 的注释。
+    -->
+    <dependency>
+      <groupId>org.glassfish.jaxb</groupId>
+      <artifactId>jaxb-runtime</artifactId>
+    </dependency>
   </dependencies>
 </project>

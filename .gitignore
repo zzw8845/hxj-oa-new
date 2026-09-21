@@ -18,6 +18,13 @@ oa-backend/data/attachments/
 oa-backend/sql/demo_snapshot_*.sql
 # 本地 JWT 签名密钥（启动脚本首次运行自动生成，绝不入库）
 oa-backend/.jwt_secret
+# 环境变量文件：含数据库/Redis/OSS 真实凭据与 JWT 密钥。
+# 本仓库是 public，一旦入库等于把生产凭据与"伪造管理员令牌"的钥匙一起公开。
+# 模板见 oa-backend/docker-test/.env.example（可入库，只有占位符）。
+# 注意：只忽略 .env 本身，.env.example 必须保留在版本控制里。
+.env
+**/.env
+!**/.env.example
 
 # ============================== IDE / 编辑器 ==============================
 .idea/

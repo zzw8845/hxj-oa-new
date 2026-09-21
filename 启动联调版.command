@@ -11,6 +11,10 @@
 #        NO_OPEN=1       只启服务不打开浏览器（自动化测试用）
 #        NO_SUPERVISE=1  不进入守护循环
 #        SERVE=1         另起静态服务并用 http 打开（旧模式）
+#        OA_PROFILE=test 连测试环境（MySQL 47.115.133.58 / Redis / OSS），凭据读 .env
+#
+#  凭据来源：oa-backend/docker-test/.env（与 docker 部署共用同一份），
+#           没有则回落到 oa-backend/.env；都没有则按 local 跑，零外部依赖。
 # =============================================================
 set -u
 export LANG="${LANG:-en_US.UTF-8}"
@@ -33,6 +37,42 @@ BE_PID=""
 WEB_PID=""
 
 mkdir -p "$RUN_DIR"
+
+# ---------- 环境变量（.env） ----------
+# 测试环境的数据库/Redis/OSS 凭据**一律不入仓库**（仓库是 public，写进去就等于公开泄露），
+# 统一由 .env 注入。docker 部署与本地联调**复用同一份文件**，从根上消除
+# 「本地跑得通、部署就报错」的配置漂移 —— 这类问题的排查成本往往比写代码还高。
+# 查找顺序：$OA_ENV_FILE → oa-backend/docker-test/.env → oa-backend/.env
+ENV_FILE="${OA_ENV_FILE:-}"
+if [ -z "$ENV_FILE" ]; then
+  for cand in "$BE_DIR/docker-test/.env" "$BE_DIR/.env"; do
+    if [ -f "$cand" ]; then ENV_FILE="$cand"; break; fi
+  done
+fi
+if [ -f "${ENV_FILE:-}" ]; then
+  echo "· 已加载环境变量：${ENV_FILE}"
+  while IFS= read -r line || [ -n "$line" ]; do
+    case "$line" in ''|'#'*) continue ;; esac
+    line="${line#export }"
+    key="${line%%=*}"
+    val="${line#*=}"
+    # 变量名必须合法，否则跳过 —— 防止 .env 里的说明性文本被当成变量导出
+    case "$key" in *[!A-Za-z0-9_]*|'') continue ;; esac
+    case "$val" in
+      \"*\") val="${val#\"}"; val="${val%\"}" ;;
+      \'*\') val="${val#\'}"; val="${val%\'}" ;;
+    esac
+    export "$key=$val"
+  done < "$ENV_FILE"
+fi
+
+# 运行环境：local（默认，零外部依赖）/ test（连测试环境 MySQL+Redis+OSS）
+OA_PROFILE="${OA_PROFILE:-local}"
+PROFILE_ARGS=""
+if [ "$OA_PROFILE" != "local" ]; then
+  PROFILE_ARGS="--spring.profiles.active=$OA_PROFILE"
+  echo "· 运行 profile：${OA_PROFILE}（数据库/Redis/OSS 取自 .env）"
+fi
 
 # ---------- JWT 密钥 ----------
 # 后端已改为 fail-fast：未配置 OA_JWT_SECRET 时**拒绝启动**。
@@ -90,8 +130,9 @@ start_be() {
   fi
   mkdir -p "$BE_DIR/logs"
   # 用 exec 让子 shell 被 java 替换，$! 才是 java 的真实 PID（否则 kill 杀不掉）
+  # PROFILE_ARGS 不加引号是有意的：local 时为空串，需要展开成"零个参数"
   ( cd "$BE_DIR" && exec env JAVA_HOME="$JAVA_HOME" "$JAVA_HOME/bin/java" \
-      -jar "$JAR" --server.port=${BE_PORT} > logs/app.log 2>&1 ) &
+      -jar "$JAR" --server.port=${BE_PORT} ${PROFILE_ARGS} > logs/app.log 2>&1 ) &
   BE_PID=$!
   echo "$BE_PID" > "$RUN_DIR/backend.pid"
   printf "· 正在启动后端（%s）" "${BE_PORT}"

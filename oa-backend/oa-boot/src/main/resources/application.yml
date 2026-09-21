@@ -92,14 +92,15 @@ oa:
 
   # CORS 来源白名单。
   # 默认（false）只放行本机联调地址；用 file:// 打开页面联调时才需要 true（放行任意 origin）。
-  # 生产环境保持 false，并把 WebConfig 里的白名单换成实际部署域名。
+  # 部署到服务器且前端另起域名时，把域名写进 OA_CORS_ALLOWED_ORIGINS（逗号分隔），无需改代码。
   cors:
     permissive: ${OA_CORS_PERMISSIVE:false}
+    allowed-origins: ${OA_CORS_ALLOWED_ORIGINS:}
 
   # ---------------------------------------------------------------------------
   # 附件存储
   #   type=local   → LocalStorageService（本机磁盘，零外部依赖）
-  #   type=oss/cos → 新增一个 StorageService 实现类即可，业务代码零改动
+  #   type=oss     → OssStorageService（阿里云 OSS，见下方 oa.oss 段）
   #   attachment.file_key 里存的是实现自定的键，切存储时旧数据需要做一次搬迁
   # ---------------------------------------------------------------------------
   storage:
@@ -109,6 +110,36 @@ oa:
     # 单文件上限（字节），需与 spring.servlet.multipart.max-file-size 保持一致
     max-file-size: 20971520
     allowed-ext: jpg,jpeg,png,gif,bmp,webp,pdf,doc,docx,xls,xlsx,ppt,pptx,txt,csv,zip,rar,7z
+
+  # ---------------------------------------------------------------------------
+  # 阿里云 OSS。仅当 oa.storage.type=oss 时被读取；本地联调留空即可。
+  # 密钥无默认值，必须由环境变量注入（仓库是 public，任何默认值都等于公开泄露）。
+  # ---------------------------------------------------------------------------
+  oss:
+    endpoint: ${OSS_ENDPOINT:}
+    access-key-id: ${OSS_ACCESS_KEY_ID:}
+    access-key-secret: ${OSS_ACCESS_KEY_SECRET:}
+    # 私有桶：业务附件（走 /api/attachments/** 鉴权代理下载，不直接对外暴露 URL）
+    bucket: ${OSS_BUCKET:}
+    # 公开桶：无需鉴权即可访问的资源（当前代码中没有这类资源，预留）
+    public-bucket: ${OSS_PUBLIC_BUCKET:}
+    # 上传时让 SDK 依扩展名推断 Content-Type，避免浏览器下载 zip 时一律弹"另存为"
+    auto-content-type: true
+
+  # ---------------------------------------------------------------------------
+  # Redis：登录失败限速 + 权限快照缓存的跨实例共享层。
+  #   enabled=false（默认）→ 走进程内实现，行为与改造前一致，本地零依赖跑通
+  #   enabled=true         → 蓝绿双实例共享计数与缓存，见 RedisConfig
+  # ---------------------------------------------------------------------------
+  redis:
+    enabled: ${OA_REDIS_ENABLED:false}
+    key-prefix: "oa:"
+
+  # ---------------------------------------------------------------------------
+  # 日志：目录由 logback-spring.xml 读取（oa.log.dir）
+  # ---------------------------------------------------------------------------
+  log:
+    dir: ${OA_LOG_DIR:./logs}
 
 # OpenAPI 文档：**默认关闭**。
 # 它会把全部接口路径、参数与 DTO 结构以 JSON 形式暴露给**未认证**访客（实测 70KB），

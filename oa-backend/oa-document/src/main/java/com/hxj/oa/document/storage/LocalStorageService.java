@@ -28,10 +28,6 @@ import java.util.UUID;
 @ConditionalOnProperty(name = "oa.storage.type", havingValue = "local", matchIfMissing = true)
 public class LocalStorageService implements StorageService {
 
-    private static final DateTimeFormatter DAY_DIR = DateTimeFormatter.ofPattern("yyyy/MM/dd");
-    /** 扩展名只保留字母数字，最长 12 位 —— 挡住 {@code .php/ .jsp/} 之类的可执行后缀与超长垃圾 */
-    private static final int MAX_EXT_LEN = 12;
-
     private final Path root;
 
     public LocalStorageService(@Value("${oa.storage.local.root:./data/attachments}") String rootDir) {
@@ -49,10 +45,8 @@ public class LocalStorageService implements StorageService {
         if (in == null) {
             throw new BizException("附件内容为空");
         }
-        String ext = extensionOf(originalName);
-        String key = LocalDate.now().format(DAY_DIR) + "/"
-                + UUID.randomUUID().toString().replace("-", "")
-                + (ext.isEmpty() ? "" : "." + ext);
+        // 键的生成规则与 OSS 实现共用（见 StorageKeys），避免切换存储时键对不上
+        String key = StorageKeys.dailyKey(originalName);
         Path target = resolveInside(key);
         try {
             Files.createDirectories(target.getParent());
@@ -103,11 +97,11 @@ public class LocalStorageService implements StorageService {
 
     // ------------------------------------------------------------------ 内部
 
-    /**
-     * 把存储键解析成绝对路径，并确认它没有逃出根目录。
+    /** 把存储键解析成绝对路径，并确认它没有逃出根目录。
      *
      * <p>键虽然来自自己的数据库，但脏数据或人为写入的 {@code ../../etc/passwd} 一旦被拼接读取，
      * 就是任意文件读取漏洞 —— 这道校验是本地存储实现里最不能省的一步。
+     * （对象存储实现不需要它：OSS 的 objectKey 是平坦命名空间，不存在"越界"这个维度。）
      */
     private Path resolveInside(String fileKey) {
         if (fileKey == null || fileKey.isBlank()) {
@@ -119,27 +113,5 @@ public class LocalStorageService implements StorageService {
             throw BizException.forbidden("非法的附件存储键");
         }
         return p;
-    }
-
-    /** 从原始文件名里取一个安全的扩展名；取不到就返回空串（不猜、不例外） */
-    private String extensionOf(String originalName) {
-        if (originalName == null) {
-            return "";
-        }
-        int dot = originalName.lastIndexOf('.');
-        if (dot < 0 || dot == originalName.length() - 1) {
-            return "";
-        }
-        String ext = originalName.substring(dot + 1).toLowerCase(Locale.ROOT);
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < ext.length() && sb.length() < MAX_EXT_LEN; i++) {
-            char c = ext.charAt(i);
-            if ((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9')) {
-                sb.append(c);
-            } else {
-                break;
-            }
-        }
-        return sb.toString();
     }
 }

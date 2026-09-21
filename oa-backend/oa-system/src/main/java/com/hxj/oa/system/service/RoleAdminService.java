@@ -8,6 +8,7 @@ import com.hxj.oa.common.util.JsonColumn;
 import com.hxj.oa.common.util.JsonUtils;
 import com.hxj.oa.system.dto.RoleSaveReq;
 import com.hxj.oa.system.dto.RoleVO;
+import com.hxj.oa.system.auth.AuthSnapshotCache;
 import com.hxj.oa.system.entity.Department;
 import com.hxj.oa.system.entity.RoleDataScope;
 import com.hxj.oa.system.entity.RolePermission;
@@ -62,6 +63,13 @@ public class RoleAdminService {
     private final SysUserMapper userMapper;
     private final DepartmentMapper deptMapper;
     private final OrgResolver orgResolver;
+
+    /**
+     * 权限快照缓存。角色/权限的任何写操作都必须让它失效 —— 否则成员重新登录后
+     * 会拿到改之前的权限，看起来就是"改了没生效"，而这类问题几乎不可能靠看代码发现。
+     * 失效点集中在本类与 {@code UserAdminService}，新增写入口时请一并处理。
+     */
+    private final AuthSnapshotCache snapshotCache;
 
     /* ------------------------------------------------------------------ 查询 */
 
@@ -163,6 +171,7 @@ public class RoleAdminService {
             overwriteDataScope(id, req.getScopeType(), req.getScopeDeptIds());
         }
         log.info("编辑角色 id={} name={} 操作人={}", id, name, UserContext.currentUserId());
+        snapshotCache.invalidateAfterCommit();
         return detail(id);
     }
 
@@ -173,6 +182,7 @@ public class RoleAdminService {
         overwritePermissions(id, permCodes);
         log.info("配置角色权限 id={} 权限点数={} 操作人={}", id,
                 permCodes == null ? 0 : permCodes.size(), UserContext.currentUserId());
+        snapshotCache.invalidateAfterCommit();
         return detail(id);
     }
 
@@ -185,6 +195,7 @@ public class RoleAdminService {
         }
         overwriteDataScope(id, scopeType, deptIds);
         log.info("配置角色数据范围 id={} scope={} 操作人={}", id, scopeType, UserContext.currentUserId());
+        snapshotCache.invalidateAfterCommit();
         return detail(id);
     }
 

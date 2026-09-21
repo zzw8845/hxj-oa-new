@@ -1,0 +1,119 @@
+# ===========================================================================
+# 测试服务器 profile（spring.profiles.active=test）
+#
+# 【凭据策略】本仓库是 public，任何写进文件的密钥都等于公开泄露。
+#   因此本文件里 **不出现** 任何密码/密钥字面量，全部走环境变量，
+#   由 docker-compose 的 env_file: .env 注入（.env 已被 .gitignore 排除）。
+#   非敏感项（主机/端口/库名）保留已知测试值作为默认值，便于自查配置是否生效。
+#
+# 资产清单见 docker-test/.env.example。
+# ===========================================================================
+
+server:
+  port: 8080
+  tomcat:
+    # 蓝绿切换时 nginx 会同时连两个实例，适当放宽线程数避免切换瞬间排队
+    threads:
+      max: 400
+      min-spare: 20
+    # 反向代理（nginx）在前，让 request.getRemoteAddr() / 日志拿到真实客户端 IP
+    remoteip:
+      remote-ip-header: X-Forwarded-For
+      protocol-header: X-Forwarded-Proto
+
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    # 库名 hxj-oa 含连字符；serverTimezone 必须显式指定，否则 JDBC 驱动按 JVM 默认时区解释
+    url: jdbc:mysql://${MYSQL_HOST:47.115.133.58}:${MYSQL_PORT:3305}/${MYSQL_DATABASE:hxj-oa}?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true&rewriteBatchedStatements=true&zeroDateTimeBehavior=convertToNull
+    username: ${MYSQL_USER:root}
+    # 无默认值：未注入即连接失败并明确报错，好过静默连上一个错库
+    password: ${MYSQL_PASSWORD}
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      pool-name: OaHikariPool
+      # 数据库在另一台机器上，探测一次，别让坏连接拖到业务线程
+      connection-test-query: SELECT 1
+
+  data:
+    redis:
+      host: ${REDIS_HOST:47.107.79.42}
+      port: ${REDIS_PORT:6378}
+      password: ${REDIS_PASSWORD}
+      # 【必须用独立 db 索引，不要用 0】
+      # 这台 Redis 是**多项目共用**的：db0 已被 WMS/物流项目占用
+      # （实测 25 个 key：KuaiDi100:*、JST_ACCESS_TOKEN、PACKING_LOCK:*、DISTRIBUTION_LOCK:* …），
+      # db1/db2 也是它的。混在 db0 里一旦有人手滑 FLUSHDB，会连带清掉别人的数据。
+      # db3 实测为空，OA 独占。（db4+ 空闲，将来要再隔离也有余地）
+      database: ${REDIS_DATABASE:3}
+      # 连接超时必须短：Redis 挂了要立刻降级到本地实现，不能把登录接口一起拖死
+      timeout: 2s
+      connect-timeout: 2s
+      lettuce:
+        pool:
+          max-active: 16
+          max-idle: 8
+          min-idle: 2
+          max-wait: 2s
+        shutdown-timeout: 200ms
+
+flowable:
+  # 【与本地默认值不同】测试库表结构由 sql/init_database.sql 预建，见下方说明。
+  # 但 Flowable 的 schema update 是幂等且向前兼容的（先比对版本号，只建缺失的表），
+  # 首次部署时保留 true 可自愈"忘了跑建库脚本里 ACT_* 那一段"这类问题；
+  # 确认部署稳定后可改为 false 换取更干净的启动日志。
+  database-schema-update: true
+  async-executor-activate: false
+  history-level: full
+  check-process-definitions: false
+
+oa:
+  # 测试服务器必须显式注入；docker-compose 从 .env 读取，绝不使用内置默认值
+  jwt:
+    secret: ${OA_JWT_SECRET}
+    expire-minutes: 720
+
+  # 前端与后端同源（同一个 jar 提供 /oa.html），正常访问不走 CORS。
+  # 若另起独立前端域名，把地址加进 OA_CORS_ALLOWED_ORIGINS（逗号分隔）即可，无需改代码。
+  cors:
+    permissive: false
+    allowed-origins: ${OA_CORS_ALLOWED_ORIGINS:}
+
+  # 附件走 OSS；本地磁盘路径在容器里是易失的，蓝绿切换还会分成两份
+  storage:
+    type: ${OA_STORAGE_TYPE:oss}
+  oss:
+    endpoint: ${OSS_ENDPOINT:oss-cn-shenzhen.aliyuncs.com}
+    access-key-id: ${OSS_ACCESS_KEY_ID}
+    access-key-secret: ${OSS_ACCESS_KEY_SECRET}
+    bucket: ${OSS_BUCKET:shenzhen-rlzx}
+    public-bucket: ${OSS_PUBLIC_BUCKET:can-open-resource-shenzhen-rlzx}
+
+  redis:
+    enabled: true
+
+  log:
+    dir: ${OA_LOG_DIR:/logs}
+
+# 测试环境开放接口文档（排查用）。想关掉就把 OA_OPENAPI_ENABLED 置为 false/不设。
+springdoc:
+  api-docs:
+    enabled: ${OA_OPENAPI_ENABLED:true}
+  swagger-ui:
+    enabled: ${OA_OPENAPI_ENABLED:true}
+
+logging:
+  level:
+    root: INFO
+    # 测试环境不开 DEBUG：蓝绿两实例同时写日志，DEBUG 会让 IO 成为瓶颈
+    com.hxj.oa: INFO
+    org.flowable: WARN
+    # MyBatis-Plus 的 SQL 明细走 DEBUG；需要排查慢 SQL 时单独调这个（见 logback 的 SQL 段）
+    com.hxj.oa.system.mapper: INFO
+    com.hxj.oa.document.mapper: INFO
+    com.hxj.oa.flow.mapper: INFO
+    org.springframework.jdbc: INFO

@@ -1,0 +1,82 @@
+# ===========================================================================
+#  海峡金 OA · 测试服务器部署（蓝绿双实例）
+#
+#  【version 字段为什么留着】
+#  Compose v2 会提示 "the attribute `version` is obsolete"，但只是提示。
+#  保留它是因为服务器上装的可能是老版 docker-compose(v1)，而 v1 读到没有 version
+#  的文件会按最早的 v1 格式解析，直接报 "Unsupported config option for services"。
+#  留一行字换 v1/v2 都能跑，值得。（run.sh 里也自动识别 `docker compose` / `docker-compose`。）
+#
+#  【蓝绿怎么工作】
+#  两个实例 oa / oa-1 同时在线，映射到宿主机不同端口，nginx 只指向其中一个。
+#  发版时先把新镜像起在"当前没在服务"的那一个上，等它真的能应答再切 nginx，最后停旧的。
+#  好处是切换瞬间不丢请求。代价是两个实例同时连同一个库、同一个 Redis ——
+#  这正是登录限速与权限快照必须放进 Redis 的原因：进程内计数在双实例下
+#  可以被"轮流打两个实例"绕过，等于限速失效。
+#
+#  【端口】宿主机 8010=蓝 / 9010=绿；容器内固定 8080。
+#  刻意避开 8081/9081 —— 那是同服务器上 wms-mng 的端口，不能抢。
+#
+#  【凭据】全部经 env_file 从 .env 注入。.env 不入库（模板见 .env.example）。
+# ===========================================================================
+version: "3.8"
+
+x-oa-common: &oa-common
+  # 镜像 tag 做成可覆盖：每次部署都会 push 一个时间戳 tag，
+  # 万一新版本有问题，可以直接回滚到某个历史版本而不用重新构建：
+  #     OA_IMAGE=swr.cn-north-4.myhuaweicloud.com/zzw8845/oa:20260921143000 docker compose up -d oa
+  # （正常发版不带这个变量，用 :latest 即可）
+  image: ${OA_IMAGE:-swr.cn-north-4.myhuaweicloud.com/zzw8845/oa:latest}
+  restart: always
+  env_file: .env
+  volumes:
+    - ./logs:/logs:rw
+  networks:
+    - oa-network
+  # 1G 上限：这台服务器上还跑着别的项目，不能让 OA 的 JVM 按宿主机内存去自动膨胀。
+  # 配合下面的 MaxRAMPercentage，堆最多约 700M，留出元空间与线程栈的余量。
+  mem_limit: 1g
+  logging:
+    # 容器 stdout 也要兜底轮转：docker 默认的 json-file 日志不限制大小，
+    # 长期运行能把磁盘写满（本项目的应用日志另有 logback 轮转，这是第二条保险）
+    driver: json-file
+    options:
+      max-size: "20m"
+      max-file: "5"
+
+services:
+  oa:
+    <<: *oa-common
+    container_name: oa
+    ports:
+      - "8010:8080"
+    environment:
+      # 【必须】Dockerfile 里没有写死 profile。缺了它，应用会退回默认配置去连
+      # 127.0.0.1:3306，而 Hikari 是懒连接 —— 服务能起来、每个查询都失败，
+      # 正是本项目已经踩过一次的"假活"形态（端口能连、HTTP 永远超时）。
+      SPRING_PROFILES_ACTIVE: test
+      # 容器里日志必须落到挂载出来的 /logs。
+      # .env 中的 OA_LOG_DIR=./logs 是给本地开发用的，这里显式覆盖 ——
+      # environment 优先级高于 env_file，所以这一行确实生效。
+      OA_LOG_DIR: /logs
+      TZ: Asia/Shanghai
+      # Java 17 能感知 cgroup 限制，显式按比例设堆；想调就在 .env 里加 JAVA_OPTS
+      JAVA_OPTS: ${JAVA_OPTS:--XX:MaxRAMPercentage=70.0 -XX:InitialRAMPercentage=25.0}
+
+  oa-1:
+    <<: *oa-common
+    container_name: oa-1
+    ports:
+      - "9010:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: test
+      OA_LOG_DIR: /logs
+      TZ: Asia/Shanghai
+      JAVA_OPTS: ${JAVA_OPTS:--XX:MaxRAMPercentage=70.0 -XX:InitialRAMPercentage=25.0}
+
+networks:
+  # 独立网络，不与 wms 的 wg-network 混用：nginx 是通过"宿主机 IP:发布端口"回源访问的
+  # （见 nginx 配置模板里的 upstream），不需要容器间互相解析，
+  # 因此没必要把自己的生命周期绑到别的项目的网络上。
+  oa-network:
+    driver: bridge
