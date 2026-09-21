@@ -28,6 +28,12 @@ const API = 'http://127.0.0.1:8080';
 const PW = '123456';
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
+/* 预期断言总数：脚本正常跑完必须**恰好**产出这么多条。
+   为什么要把这个数写死在代码里：本项目出过一次「假绿灯」—— 上游某条断言依赖的接口被回退后
+   抛错中断，导致其后 16 条断言（含整条审计留痕链路）**从未执行**，而末行照样打印
+   "85/85 通过"。有了这个数，任何"少跑了"都会立刻变成红灯，而不是无声无息。 */
+const EXPECTED_TOTAL = 44;
+
 const results = [];
 function check(name, ok, extra) {
   results.push({ name, ok });
@@ -574,14 +580,21 @@ fs.writeFileSync(PNG_PATH, Buffer.from(
     check('临时文件清理', !fs.existsSync(TMP));
 
     const passed = results.filter(r => r.ok).length;
+    const total = results.length;
+    // 自证闸门：条数必须与预期一致（少跑 = 有断言被删除、注释，或中断后静默跳过）
+    const countOk = total === EXPECTED_TOTAL;
     console.log('\n' + '='.repeat(74));
-    console.log(`  看板真值 / 用印附件 / 关联单据 UI 验证：${passed}/${results.length} 通过`);
+    console.log(`  看板真值 / 用印附件 / 关联单据 UI 验证：${passed}/${total} 通过（预期 ${EXPECTED_TOTAL} 条）`);
     const bad = results.filter(r => !r.ok);
     if (bad.length) {
       console.log('  失败项：');
       bad.forEach(r => console.log('    - ' + r.name));
     }
+    if (!countOk) {
+      console.log(`  ❌ 断言条数异常：实际 ${total} 条，预期 ${EXPECTED_TOTAL} 条`);
+      console.log('     条数变少通常意味着上游抛错后，其后断言被静默跳过（假绿灯）。');
+    }
     console.log('='.repeat(74));
-    process.exit(bad.length ? 1 : 0);
+    process.exit((bad.length || !countOk) ? 1 : 0);
   }
 })();

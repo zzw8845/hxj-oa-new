@@ -29,6 +29,12 @@ const PW = '123456';
 const LOCAL_HTML = '/Users/zhouzewei/WorkBuddy/2026-09-18-15-53-12/海峡金OA审批系统-联调版.html';
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
+/* 预期断言总数：脚本正常跑完必须**恰好**产出这么多条。
+   为什么要把这个数写死在代码里：本项目出过一次「假绿灯」—— 上游某条断言依赖的接口被回退后
+   抛错中断，导致其后 16 条断言（含整条审计留痕链路）**从未执行**，而末行照样打印
+   "85/85 通过"。有了这个数，任何"少跑了"都会立刻变成红灯，而不是无声无息。 */
+const EXPECTED_TOTAL = 60;
+
 const results = [];
 function check(name, ok, extra) {
   results.push({ name, ok });
@@ -509,13 +515,20 @@ const BIZ_TEXT = { DAILY: '日常付款', BIZ: '业务付款', REIMBURSE: '员�
   }
 
   const passed = results.filter(r => r.ok).length;
+  const total = results.length;
+  // 自证闸门：条数必须与预期一致（少跑 = 有断言被删除、注释，或中断后静默跳过）
+  const countOk = total === EXPECTED_TOTAL;
   console.log('\n' + '='.repeat(74));
-  console.log(`  首页图表真值 / 通知中心 / 筛选口径 UI 验证：${passed}/${results.length} 通过`);
+  console.log(`  首页图表真值 / 通知中心 / 筛选口径 UI 验证：${passed}/${total} 通过（预期 ${EXPECTED_TOTAL} 条）`);
   const bad = results.filter(r => !r.ok);
   if (bad.length) {
     console.log('  失败项：');
     bad.forEach(r => console.log('    - ' + r.name));
   }
+  if (!countOk) {
+    console.log(`  ❌ 断言条数异常：实际 ${total} 条，预期 ${EXPECTED_TOTAL} 条`);
+    console.log('     条数变少通常意味着上游抛错后，其后断言被静默跳过（假绿灯）。');
+  }
   console.log('='.repeat(74));
-  process.exit(bad.length ? 1 : 0);
-})().catch(e => { console.error(e); process.exit(1); });
+  process.exit((bad.length || !countOk) ? 1 : 0);
+})().catch(e => { console.error('ERR [断言未跑完，本次结果无效]', e); process.exit(1); });

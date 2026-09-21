@@ -21,16 +21,33 @@ public class SecurityBeanConfig {
         return new BCryptPasswordEncoder();
     }
 
+    /**
+     * JWT 工具。
+     *
+     * <p><b>fail-fast</b>：密钥未配置直接启动失败，绝不回落到内置默认值。
+     * 原实现给了一个 54 字节的默认密钥，恰好能通过 {@link JwtUtils} 的「>= 32 字节」校验，
+     * 于是"忘记配置"这件事**不会报任何错**，服务照常起来对外发令牌 —— 而这串默认值随公开仓库公开，
+     * 等于把管理员令牌的伪造权一起公开了。宁可起不来，也不要静默地不安全。
+     *
+     * <p>本地联调无需手动配置：`启动联调版.command` 会自动生成并复用本地密钥文件。
+     */
     @Bean
     public JwtUtils jwtUtils(JwtProperties props) {
-        return new JwtUtils(props.getSecret(), props.getExpireMinutes() * 60_000L);
+        String secret = props.getSecret();
+        if (secret == null || secret.isBlank()) {
+            throw new IllegalStateException("""
+                    未配置 JWT 签名密钥，服务拒绝启动。
+                    请通过环境变量注入：export OA_JWT_SECRET=<至少 32 字节的随机串>
+                    本地联调可直接运行「启动联调版.command」，它会自动生成并复用本地密钥。""");
+        }
+        return new JwtUtils(secret, props.getExpireMinutes() * 60_000L);
     }
 
     @Data
     @ConfigurationProperties(prefix = "oa.jwt")
     public static class JwtProperties {
-        /** 至少 32 字节，生产环境务必用环境变量注入 */
-        private String secret = "haixiajin-oa-default-secret-please-change-in-production";
+        /** 必须由环境变量 OA_JWT_SECRET 注入；无默认值，未配置即启动失败 */
+        private String secret;
         private long expireMinutes = 720;
     }
 

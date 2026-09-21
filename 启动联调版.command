@@ -34,6 +34,21 @@ WEB_PID=""
 
 mkdir -p "$RUN_DIR"
 
+# ---------- JWT 密钥 ----------
+# 后端已改为 fail-fast：未配置 OA_JWT_SECRET 时**拒绝启动**。
+# 原因：原实现带一个内置默认密钥，恰好能通过长度校验，于是"忘记配置"不会报任何错；
+# 而那串默认值已随公开仓库公开，等于公开了管理员令牌的伪造权。
+# 本地联调不折腾用户：自动生成一份随机密钥并复用（文件不入库）。
+SECRET_FILE="$BE_DIR/.jwt_secret"
+if [ -z "${OA_JWT_SECRET:-}" ]; then
+  if [ ! -s "$SECRET_FILE" ]; then
+    ( umask 077; head -c 48 /dev/urandom | base64 | tr -d '\n' > "$SECRET_FILE" )
+    echo "· 已生成本地 JWT 密钥：${SECRET_FILE}（仅首次，勿提交入仓库）"
+  fi
+  OA_JWT_SECRET="$(cat "$SECRET_FILE")"
+  export OA_JWT_SECRET
+fi
+
 # ---------- 工具函数 ----------
 # 判断"服务是否可用"只以 HTTP 健康检查为准，绝不用"端口有人监听"来推断：
 #   · 只写 -iTCP:PORT 会把别的进程监听在 [::1]:PORT(IPv6) 也算成已占用，
@@ -42,7 +57,10 @@ mkdir -p "$RUN_DIR"
 #   · curl 不加 -f 时 502/404 也算成功，必须加 -f 并校验响应内容。
 port_busy()   { lsof -nP -iTCP:"$1" -sTCP:LISTEN >/dev/null 2>&1; }
 alive()       { [ -n "${1:-}" ] && kill -0 "$1" 2>/dev/null; }
-be_healthy()  { curl -sf --noproxy '*' -m 3 "http://127.0.0.1:${BE_PORT}/v3/api-docs" 2>/dev/null | grep -q '"openapi"'; }
+# 健康检查打 /api/ping（免登录轻量端点，只回 {"code":0,...,"data":"pong"}）。
+# 此前用的是 /v3/api-docs 并 grep "openapi" —— 那个端点会把完整接口契约暴露给未认证访客，
+# 后端已关闭它；这里若不同步改，健康检查会永远失败，守护进程就会反复重启后端。
+be_healthy()  { curl -sf --noproxy '*' -m 3 "http://127.0.0.1:${BE_PORT}/api/ping" 2>/dev/null | grep -qE '"code"[[:space:]]*:[[:space:]]*0'; }
 web_healthy() { curl -sf --noproxy '*' -o /dev/null -m 3 "http://127.0.0.1:${WEB_PORT}/" 2>/dev/null; }
 # 后端在跑 ≠ 页面能开：老 jar 里没有静态页。用 ASCII 标记校验，避免 locale 影响中文匹配。
 page_healthy(){ curl -sf --noproxy '*' -m 3 "http://127.0.0.1:${BE_PORT}/oa.html" 2>/dev/null | grep -q 'hxj_oa_token'; }

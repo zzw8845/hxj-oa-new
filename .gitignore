@@ -16,6 +16,8 @@ oa-backend/logs/
 oa-backend/data/attachments/
 # 演示库快照（含真实业务数据、用户记录与审计日志，绝不入库）
 oa-backend/sql/demo_snapshot_*.sql
+# 本地 JWT 签名密钥（启动脚本首次运行自动生成，绝不入库）
+oa-backend/.jwt_secret
 
 # ============================== IDE / 编辑器 ==============================
 .idea/

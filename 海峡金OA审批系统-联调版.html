@@ -205,7 +205,7 @@ async function probeReachable(){
   try {
     const ctl = new AbortController();
     const timer = setTimeout(function(){ ctl.abort(); }, 2500);
-    await fetch(API_BASE + '/v3/api-docs', {mode:'no-cors', cache:'no-store', signal: ctl.signal});
+    await fetch(API_BASE + '/api/ping', {mode:'no-cors', cache:'no-store', signal: ctl.signal});
     clearTimeout(timer);
     return true;
   } catch (e) { return false; }
@@ -964,14 +964,16 @@ createApp({setup(){
 
   /* ---------- 登录 / 切换 / 登出 ---------- */
   /* 连通性探测：未连接时每 3s 自动重试，连上后降频到 30s。
-     这样后端晚于页面启动也不会一直卡在「未连接」。 */
+     这样后端晚于页面启动也不会一直卡在「未连接」。
+     探测端点用 /api/ping（轻量、免登录、不碰鉴权链）。
+     此前用的是 /v3/api-docs —— 那会把完整接口契约暴露给未认证访客，后端已关闭该端点。 */
   let pingTimer = null, pingBusy = false;
   const ping = async function(){
     if (pingBusy) return;
     pingBusy = true;
     const wasOk = pingOk.value;
     try {
-      const r = await fetch(API_BASE + '/v3/api-docs', {method:'GET'});
+      const r = await fetch(API_BASE + '/api/ping', {method:'GET'});
       pingOk.value = r.ok; pingText.value = r.ok ? '已连接' : ('HTTP ' + r.status);
       corsBlocked.value = false;
     } catch(e){

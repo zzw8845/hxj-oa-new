@@ -84,9 +84,17 @@ flowable:
 # ---------------------------------------------------------------------------
 oa:
   jwt:
-    # 生产环境务必通过环境变量 OA_JWT_SECRET 注入，长度 >= 32 字节
-    secret: ${OA_JWT_SECRET:haixiajin-oa-default-secret-please-change-in-production}
+    # 必须由环境变量 OA_JWT_SECRET 注入（>= 32 字节）。**留空即启动失败**（fail-fast）：
+    # 原实现有内置默认值，会让"忘记配置"静默通过，而那串默认值已随公开仓库公开。
+    # 本地联调：运行「启动联调版.command」，它会自动生成并复用 oa-backend/.jwt_secret。
+    secret: ${OA_JWT_SECRET:}
     expire-minutes: 720
+
+  # CORS 来源白名单。
+  # 默认（false）只放行本机联调地址；用 file:// 打开页面联调时才需要 true（放行任意 origin）。
+  # 生产环境保持 false，并把 WebConfig 里的白名单换成实际部署域名。
+  cors:
+    permissive: ${OA_CORS_PERMISSIVE:false}
 
   # ---------------------------------------------------------------------------
   # 附件存储
@@ -102,10 +110,16 @@ oa:
     max-file-size: 20971520
     allowed-ext: jpg,jpeg,png,gif,bmp,webp,pdf,doc,docx,xls,xlsx,ppt,pptx,txt,csv,zip,rar,7z
 
+# OpenAPI 文档：**默认关闭**。
+# 它会把全部接口路径、参数与 DTO 结构以 JSON 形式暴露给**未认证**访客（实测 70KB），
+# 等于给攻击者一份完整攻击面地图。前端登录页的连通性探测已改用轻量的 /api/ping，
+# 不再依赖此端点，因此可以安全关闭。需要查文档时用 OA_OPENAPI_ENABLED=true 临时打开。
 springdoc:
   api-docs:
+    enabled: ${OA_OPENAPI_ENABLED:false}
     path: /v3/api-docs
   swagger-ui:
+    enabled: ${OA_OPENAPI_ENABLED:false}
     path: /swagger-ui.html
     operations-sorter: method
 

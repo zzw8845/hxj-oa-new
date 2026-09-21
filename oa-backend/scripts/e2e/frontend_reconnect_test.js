@@ -1,4 +1,12 @@
-/* 验证：① 后端不可达时的提示与重试按钮；② 后端恢复后自动重连；③ 正常场景 file:// 直开可登录 */
+/* 验证：① 后端不可达时的提示与重试按钮；② 后端恢复后自动重连；③ 正常场景 file:// 直开可登录
+ *
+ * 前置条件（重要）：C 段用 file:// 打开页面直连后端，属于跨源请求。
+ * 后端默认只放行本机 http 源（安全默认），跑 C 段前请用放行模式启动：
+ *     OA_CORS_PERMISSIVE=true NO_OPEN=1 bash 启动联调版.command
+ * 否则 C 段会因为浏览器拦跨域而失败 —— 那是**预期行为**，不是缺陷（官方推荐走同源地址
+ * http://127.0.0.1:8080/oa.html，同源不触发 CORS 校验）。A/B 段不受影响。
+ *
+ * 探测端点：登录页用 /api/ping 判断连通性（早前是 /v3/api-docs，该端点会暴露完整接口契约，已关闭）。 */
 const puppeteer = require('puppeteer-core');
 const http = require('http');
 const { pathToFileURL } = require('url');
@@ -31,7 +39,7 @@ const check = (name, ok, extra) => { (ok ? pass++ : fail++); console.log((ok ? '
   console.log('\n=== A. 后端不可达（模拟你遇到的情况） ===');
   const p = await b.newPage(); await p.setViewport({ width: 1400, height: 950 });
   let probes = 0;
-  p.on('request', r => { if (r.url().indexOf(':' + FAKE) >= 0 && r.url().indexOf('api-docs') >= 0) probes++; });
+  p.on('request', r => { if (r.url().indexOf(':' + FAKE) >= 0 && r.url().indexOf('/api/ping') >= 0) probes++; });
   await p.evaluateOnNewDocument(() => { window.HXJ_API_BASE = 'http://127.0.0.1:8099'; });
   await p.goto(pathToFileURL(FILE).href, { waitUntil: 'domcontentloaded' });
   await sleep(1500);

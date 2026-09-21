@@ -1,3 +1,14 @@
+/* file:// 直开 + 跨域连通性探针
+ *
+ * 前置条件（重要）：本脚本用 file:// 打开页面直连后端，属于跨源请求。
+ * 后端默认只放行本机 http 源（安全默认，且 allowCredentials 已关闭），
+ * 跑本脚本前请用放行模式启动：
+ *     OA_CORS_PERMISSIVE=true NO_OPEN=1 bash 启动联调版.command
+ * 否则「后端状态=已连接」一条会失败 —— 那是**预期行为**，不是缺陷。
+ * 官方推荐路径是同源打开 http://127.0.0.1:8080/oa.html，同源不触发 CORS 校验，
+ * 对应的验证脚本是 frontend_same_origin_test.js。
+ *
+ * 探测端点为 /api/ping（早前是 /v3/api-docs，该端点会暴露完整接口契约，已关闭）。 */
 const puppeteer = require('puppeteer-core');
 const {pathToFileURL} = require('url');
 const EXEC = '/Users/zhouzewei/Library/Caches/ms-playwright/chromium-1243/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing';

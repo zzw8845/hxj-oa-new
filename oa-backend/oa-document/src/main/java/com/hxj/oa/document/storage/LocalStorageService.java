@@ -58,7 +58,9 @@ public class LocalStorageService implements StorageService {
             Files.createDirectories(target.getParent());
             Files.copy(in, target, StandardCopyOption.REPLACE_EXISTING);
         } catch (IOException e) {
-            throw new BizException("附件保存失败：" + e.getMessage());
+            // 细节（含落盘绝对路径）只进日志：异常消息会被 GlobalExceptionHandler 原样返回给前端
+            log.error("附件保存失败 key={}", key, e);
+            throw new BizException("附件保存失败，请稍后重试");
         }
         log.info("附件落盘 key={} size={} mime={}", key, size, mimeType);
         return key;
@@ -72,7 +74,9 @@ public class LocalStorageService implements StorageService {
         } catch (NoSuchFileException e) {
             throw BizException.notFound("附件文件不存在或已被清理");
         } catch (IOException e) {
-            throw new BizException("附件读取失败：" + e.getMessage());
+            // 同上：不把文件系统路径回给调用方
+            log.error("附件读取失败 fileKey={}", fileKey, e);
+            throw new BizException("附件读取失败，请联系管理员");
         }
     }
 
