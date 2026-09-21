@@ -73,8 +73,11 @@ DICT_TYPE = 'zztest_type'
 
 def physical_cleanup(label):
     """物理删除本脚本造的数据。逻辑删除的行留着会让演示库快照对不上。"""
-    sql("DELETE FROM department WHERE code LIKE 'ZZT%'")
-    sql("DELETE FROM post WHERE code LIKE 'ZZT%'")
+    # 必须同时按 name 匹配：逻辑删除前 UniqueKeys.release 会把 code 改写成
+    # 「xxx#D<id>」，于是 code 不再以 ZZT 开头 —— 只按 code 删会每跑一次留一条残渣
+    # （实测几次就堆了 5 条 P001#D14 这种）。name 不会被改写，所以按 name 兜住。
+    sql("DELETE FROM department WHERE code LIKE 'ZZT%' OR name LIKE 'ZZT%'")
+    sql("DELETE FROM post WHERE code LIKE 'ZZT%' OR name LIKE 'ZZT%'")
     sql("DELETE FROM sys_dict WHERE dict_type = '%s'" % DICT_TYPE)
     print('      （已物理清理自建主数据：%s）' % label)
 
@@ -289,7 +292,7 @@ check('自建主数据已物理清干净（不留逻辑删除残骸）',
 demo_dept = sql_scalar("SELECT COUNT(*) FROM department WHERE deleted=0")
 demo_post = sql_scalar("SELECT COUNT(*) FROM post WHERE deleted=0")
 check('演示部门数未变（8）', demo_dept == '8', '实际 %s' % demo_dept)
-check('演示岗位数未变（10，含既有 POST_001/002）', demo_post == '10', '实际 %s' % demo_post)
+check('演示岗位数未变（8）', demo_post == '8', '实际 %s' % demo_post)
 
 print()
 print('=' * 72)

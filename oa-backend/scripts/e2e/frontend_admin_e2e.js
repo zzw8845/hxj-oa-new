@@ -191,7 +191,10 @@ async function closeDialogs(page) {
   await fillInput(page, '工号', 'UI' + stamp);
   await fillInput(page, '登录账号', uiAccount);
   await fillInput(page, '初始密码', '123456');
-  await fillInput(page, '岗位', 'UI测试岗');
+  // 用**已存在**的岗位名：后端会按名字解析岗位，名字不存在时会顺手新建一条岗位记录，
+  // 而这个套件不负责清理它 ⇒ 每跑一次演示库就多一条「UI测试岗」（历史上就是这么堆出来的）。
+  // 本套件的目的是「走通 UI → 落库」，不是测自动建岗，所以填一个真实存在的岗位。
+  await fillInput(page, '岗位', '普通员工');
   await sleep(400);
   await clickButtonByText(page, '保存员工', '.el-dialog');
   await sleep(3200);
