@@ -6,7 +6,6 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.hxj.oa.common.api.PageResult;
 import com.hxj.oa.common.exception.BizException;
-import com.hxj.oa.common.security.DataScopeType;
 import com.hxj.oa.common.security.LoginUser;
 import com.hxj.oa.common.util.DataScopeHelper;
 import com.hxj.oa.common.util.JsonColumn;
@@ -432,28 +431,56 @@ public class DocumentService {
      *
      * <p>public 是刻意为之：附件下载、附件删除等一切「挂在单据上的东西」都必须过同一道可见性判定，
      * 各自再实现一份必然会漂移。
+     *
+     * <p>【历史缺陷 · 横向越权】本方法曾用一段独立的 Java switch 复刻数据范围，DEPT/CENTER/CUSTOM_DEPT
+     * 分支写成 {@code Objects.equals(doc.getDeptId(), user.getDeptId())
+     * || (user.getDeptPath() != null && user.getDeptPath().length() > 1)} —— 后半段**只和用户有关、
+     * 与单据无关**，只要用户有部门（path 形如 {@code /6/}，长度恒 &gt; 1）就恒为 true。
+     * 后果：任何 dept/center 范围的用户都能按 ID 读到**任意**单据的详情、附件列表并下载附件，
+     * 哪怕这些单据在他的列表里根本不存在（典型 IDOR）。根因是「列表走 SQL 片段、详情走 Java 分支」
+     * 两套实现并存，必然漂移。
+     *
+     * <p>现已收敛为与列表/统计/台账**同源**：直接把
+     * {@link DataScopeHelper#buildClause} 生成的片段套回本单据自身，
+     * 让「详情可见 ⟺ 出现在我的列表里」成为构造性事实，而不是靠人工同步两处代码。
      */
     public void assertVisible(Document doc, LoginUser user) {
         if (user.hasRole("ADMIN")) {
             return;
         }
-        DataScopeType scope = user.getDataScope() == null ? DataScopeType.SELF : user.getDataScope();
-        boolean inScope = switch (scope) {
-            case COMPANY -> Objects.equals(doc.getCompanyId(), user.getCompanyId());
-            case DEPT, CENTER, CUSTOM_DEPT -> Objects.equals(doc.getDeptId(), user.getDeptId())
-                    || (user.getDeptPath() != null && user.getDeptPath().length() > 1);
-            case SELF -> Objects.equals(doc.getApplicantId(), user.getUserId());
-        };
-        if (inScope) {
+        if (inDataScope(doc, user)) {
             return;
         }
-        // 流程参与者（审批人/被抄送人）也应可见
+        // 流程参与者（审批人/被抄送人）也应可见：待办/已办里的单据即使不在自己的数据范围内，
+        // 也必须能打开，否则审批人拿到待办却点不进去。
         boolean participant = flowInstanceNodeMapper.selectHistoryByDocument(doc.getId()).stream()
                 .anyMatch(n -> Objects.equals(n.getAssigneeId(), user.getUserId())
                         || (n.getCandidateIds() != null && n.getCandidateIds().contains(String.valueOf(user.getUserId()))));
         if (!participant) {
             throw BizException.forbidden("无权查看该单据");
         }
+    }
+
+    /**
+     * 行级数据范围判定：与列表查询共用同一个 SQL 片段生成器。
+     *
+     * <p>做法是把片段原样套回**本单据自己**做一次主键 count —— 命中即说明这张单据
+     * 落在该用户的数据范围内。代价是一次走主键的 count（毫秒级），换到的是
+     * 「详情口径不可能与列表口径漂移」这一结构性保证。
+     *
+     * <p>{@code buildClause} 返回 null 表示「无任何行级限制」（仅当用户没有公司归属、
+     * 且范围是最宽的 COMPANY 时出现）；此时与列表「不加过滤」保持一致，视为可见。
+     */
+    private boolean inDataScope(Document doc, LoginUser user) {
+        String clause = DataScopeHelper.buildClause("", user);
+        if (clause == null || clause.isBlank()) {
+            return true;
+        }
+        QueryWrapper<Document> qw = new QueryWrapper<>();
+        qw.eq("id", doc.getId());
+        qw.apply(clause);
+        Long matched = documentMapper.selectCount(qw);
+        return matched != null && matched > 0;
     }
 
     private void saveLinks(Long documentId, List<Long> linkedDocIds) {

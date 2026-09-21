@@ -2,7 +2,6 @@ package com.hxj.oa.document.service;
 
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.hxj.oa.common.exception.BizException;
-import com.hxj.oa.common.security.DataScopeType;
 import com.hxj.oa.common.security.LoginUser;
 import com.hxj.oa.common.util.JsonUtils;
 import com.hxj.oa.document.entity.Attachment;
@@ -63,10 +62,17 @@ public class TodoService {
                     || (doc.getStatus() != DocumentService.STATUS_WAIT && doc.getStatus() != DocumentService.STATUS_RUNNING)) {
                 continue; // 单据已办结，待办视为过期
             }
-            // 待办同样受数据范围约束（如按部门的会计只看到本部门）
-            if (!visibleByScope(doc, user)) {
-                continue;
-            }
+            // 【这里刻意不做数据范围过滤】待办数据源是 selectTodoByAssignee，条件只有
+            // assignee_id = 当前用户 —— 每一条待办上的单据，当前用户都是它的**指定承办人**。
+            // 而「承办人可见」正是详情口径里明确的放行分支（DocumentService.assertVisible 的
+            // participant 判定）：审批人拿到待办却打不开单据是不可用的。
+            //
+            // 历史实现曾在此叠加一段数据范围判定，其中 DEPT/CENTER/CUSTOM_DEPT 分支写成
+            // 「部门相等 || user.getDeptPath().length() > 1」，后半段恒真 —— 效果上等价于
+            // 不过滤，却把「此处本就不该过滤」伪装成了一个看起来在生效的权限判断。
+            // 实测后果：若把它「修」成严格的部门子树判定，zhouzh（dept 范围，部门 6）名下
+            // 4 条待办会全部消失（这些单据都在 dept 8）。故直接删除该过滤，语义即为
+            // 「我承办的单据我可见」，与待办查询条件同源。
             TodoVO vo = new TodoVO();
             vo.setDocumentId(doc.getId());
             vo.setDocNo(doc.getDocNo());
@@ -204,18 +210,5 @@ public class TodoService {
         return flowRuntimeService.nodesOf(dt.getFlowConfigId()).stream()
                 .filter(n -> nodeKey != null && nodeKey.equals(n.getNodeKey()))
                 .findFirst().orElse(null);
-    }
-
-    private boolean visibleByScope(Document doc, LoginUser user) {
-        if (user.hasRole("ADMIN")) {
-            return true;
-        }
-        DataScopeType scope = user.getDataScope() == null ? DataScopeType.SELF : user.getDataScope();
-        return switch (scope) {
-            case COMPANY -> Objects.equals(doc.getCompanyId(), user.getCompanyId());
-            case DEPT, CENTER, CUSTOM_DEPT -> Objects.equals(doc.getDeptId(), user.getDeptId())
-                    || (user.getDeptPath() != null && user.getDeptPath().length() > 1);
-            case SELF -> Objects.equals(doc.getApplicantId(), user.getUserId());
-        };
     }
 }
