@@ -54,10 +54,20 @@ public class AuthController {
         return R.ok(authService.loadPermissions(UserContext.require().getUserId()));
     }
 
-    /** 无状态 JWT，登出由前端丢弃 token 完成；保留接口以便将来接 Redis 黑名单 */
+    /**
+     * 登出：**服务端把这一张 token 作废**（此前只是返回一句"已登出"，什么也没做）。
+     *
+     * <p>为什么改成真吊销：token 有效期 720 分钟，只清前端等于"界面退出了、
+     * 凭证还能用 12 小时"。切换登录身份、共用电脑都会踩到。
+     * 实现见 {@code AuthService#logout}：按 jti 拉黑，只作废当前这一张。
+     *
+     * <p>头缺失或 token 已过期时**不报错** —— 登出的语义是"尽力作废"，
+     * 前端随后无论如何都会清掉本地 token。
+     */
     @PostMapping("/logout")
     @Audit(module = "auth", action = "logout")
-    public R<Void> logout() {
+    public R<Void> logout(@RequestHeader(value = "Authorization", required = false) String authorization) {
+        authService.logout(authorization);
         return R.ok(null, "已登出");
     }
 }

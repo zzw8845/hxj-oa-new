@@ -6,6 +6,7 @@ import com.hxj.oa.common.security.DataScopeType;
 import com.hxj.oa.common.security.LoginUser;
 import com.hxj.oa.common.util.JsonColumn;
 import com.hxj.oa.common.util.JwtUtils;
+import com.hxj.oa.system.auth.TokenRevocationStore;
 import com.hxj.oa.system.dto.LoginRequest;
 import com.hxj.oa.system.dto.LoginResp;
 import com.hxj.oa.system.auth.AuthSnapshotCache;
@@ -52,6 +53,7 @@ public class AuthService {
     private final JwtUtils jwtUtils;
     private final LoginThrottle loginThrottle;
     private final AuthSnapshotCache snapshotCache;
+    private final TokenRevocationStore revocationStore;
 
     public LoginResp login(LoginRequest req) {
         loginThrottle.assertAllowed(req.getAccount());
@@ -184,4 +186,53 @@ public class AuthService {
     public List<SysPermission> loadPermissions(Long userId) {
         return permissionMapper.selectByUserId(userId);
     }
+
+    /**
+     * 登出：**真的作废这一个 token**（而不只是让前端把本地 token 删掉）。
+     *
+     * <p>为什么必须做：无状态 JWT 在到期前一直有效（当前 720 分钟）。
+     * 只清前端的话，界面上"已经退出"，但拿到过这张 token 的人仍能继续调用接口
+     * —— 共用电脑、或切换登录身份后，旧身份的权限并没有消失。
+     *
+     * <p>为什么按 token 而不是按用户：按 userId 拉黑会把登出后**重新登录**
+     * 拿到的新 token 一起废掉，变成"登出之后再也登不进来"。
+     *
+     * @param authorization 原始 {@code Authorization} 头。允许为空（此时什么也不做），
+     *                      因为登出不该因为头缺失而报错 —— 前端的语义是"尽力作废，然后清本地"。
+     */
+    public void logout(String authorization) {
+        String token = extractBearer(authorization);
+        if (token == null) {
+            return;
+        }
+        JwtUtils.ParsedToken parsed;
+        try {
+            parsed = jwtUtils.parseFull(token);
+        } catch (RuntimeException e) {
+            // 已过期/被改过的 token 本来就过不了拦截器，无需吊销
+            return;
+        }
+        long remain = parsed.expiration().getTime() - System.currentTimeMillis();
+        if (parsed.tokenId() != null && remain > 0) {
+            revocationStore.revoke(parsed.tokenId(), remain);
+        }
+    }
+
+    /** 取出 "Bearer xxx" 里的 xxx；不是这个格式就返回 null。 */
+    private String extractBearer(String authorization) {
+        if (authorization == null) {
+            return null;
+        }
+        String v = authorization.trim();
+        int sp = v.indexOf(' ');
+        if (sp < 0) {
+            return null;
+        }
+        if (!"Bearer".equalsIgnoreCase(v.substring(0, sp))) {
+            return null;
+        }
+        String token = v.substring(sp + 1).trim();
+        return token.isEmpty() ? null : token;
+    }
+
 }

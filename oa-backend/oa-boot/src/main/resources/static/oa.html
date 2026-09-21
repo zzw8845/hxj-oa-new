@@ -256,6 +256,7 @@ async function http(path, opts){
 const api = {
   login:        function(a,p){ return http('/api/auth/login', {method:'POST', body:{account:a, password:p}}); },
   me:           function(){ return http('/api/auth/me'); },
+  logout:       function(){ return http('/api/auth/logout', {method:'POST'}); },
   docTypes:     function(){ return http('/api/documents/types'); },
   docs:         function(params){ return http('/api/documents', {params:params}); },
   docStats:     function(){ return http('/api/documents/stats'); },
@@ -1017,6 +1018,9 @@ createApp({setup(){
     if (!account) return;
     logging.value = true;
     try {
+      // 切换身份就是一次"登出"：不先把旧 token 作废的话，旧身份的凭证在 12 小时内仍然可用，
+      // 界面上却已经显示成别人了 —— 这是"看着登出了其实没登出"的典型场景。
+      await doLogout();
       const r = await api.login(account, DEMO_PASSWORD);
       setToken(r.token); me.value = r.user; currentAccount.value = account;
       await afterLogin();
@@ -1030,6 +1034,19 @@ createApp({setup(){
   const logout = function(){
     setToken(''); me.value = null; documents.value = []; todos.value = [];
     loginError.value = ''; detailVisible.value = false;
+  };
+  /* 显式登出：先让服务端把**当前这一张** token 作废，再清本地。
+     与 logout()（只清本地）分开是刻意的：
+     401 那条路径（onUnauthorized）绝不能调它 —— 那时 token 已经失效，
+     调过去必然又是一条 401，会被 E2E 的「无失败请求 / 无控制台错误」断言抓到，
+     变成"修一个洞又踩一个洞"。 */
+  const doLogout = async function(){
+    try {
+      if (getToken()) await api.logout();
+    } catch(e) {
+      /* 作废失败也要清本地：不能因为服务端没响应就把用户卡在"退不出去"的状态 */
+    }
+    logout();
   };
   onUnauthorized = function(){ logout(); ElementPlus.ElMessage.warning('登录已过期，请重新登录'); };
 
@@ -1863,7 +1880,7 @@ createApp({setup(){
 
   return {
     apiBase, me, logging, loginError, loginForm, currentAccount, demoAccounts,
-    doLogin, fillLogin, switchAccount, logout, pingOk, pingText, ping, corsBlocked, altUrl,
+    doLogin, fillLogin, switchAccount, logout, doLogout, pingOk, pingText, ping, corsBlocked, altUrl,
     greeting, todayText, roleText, scopeText, todoCount, rejectTargets,
     page, role, keyword, statusFilter, businessTypeFilter, docTypeFilter, applicantFilter, listMode,
     submitVisible, detailVisible, selected, detailTab, approvalComment, boardDate, archiveApplicant,

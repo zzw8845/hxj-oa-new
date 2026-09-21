@@ -5,6 +5,7 @@ import com.hxj.oa.common.api.R;
 import com.hxj.oa.common.security.LoginUser;
 import com.hxj.oa.common.security.UserContext;
 import com.hxj.oa.common.util.JwtUtils;
+import com.hxj.oa.system.auth.TokenRevocationStore;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +30,7 @@ public class AuthInterceptor implements HandlerInterceptor {
 
     private final JwtUtils jwtUtils;
     private final ObjectMapper objectMapper;
+    private final TokenRevocationStore revocationStore;
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
@@ -38,8 +40,14 @@ public class AuthInterceptor implements HandlerInterceptor {
         String header = request.getHeader(HEADER);
         if (header != null && header.startsWith(PREFIX)) {
             try {
-                LoginUser user = jwtUtils.parse(header.substring(PREFIX.length()).trim());
-                UserContext.set(user);
+                JwtUtils.ParsedToken parsed = jwtUtils.parseFull(header.substring(PREFIX.length()).trim());
+                // 登出吊销：这是全链路里唯一额外的一次查询，其余权限校验仍走 token、零查库。
+                // 代价与取舍见 TokenRevocationStore（Redis 故障时失败开放）。
+                if (parsed.tokenId() != null && revocationStore.isRevoked(parsed.tokenId())) {
+                    writeRevoked(response);
+                    return false;
+                }
+                UserContext.set(parsed.user());
                 return true;
             } catch (Exception e) {
                 // 落到下面的 401 分支，统一让前端跳登录
@@ -55,6 +63,17 @@ public class AuthInterceptor implements HandlerInterceptor {
                                 Object handler, Exception ex) {
         // 线程复用场景下必须清理，否则会造成越权
         UserContext.clear();
+    }
+
+    /**
+     * 已登出的 token：与"未登录"分开报，因为两者的处置完全不同 ——
+     * 前者是用户主动退出的，前端不该弹出"登录已过期"这种误导性提示。
+     */
+    private void writeRevoked(HttpServletResponse response) throws Exception {
+        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+        response.setCharacterEncoding(StandardCharsets.UTF_8.name());
+        response.getWriter().write(objectMapper.writeValueAsString(R.fail(401, "该登录已退出，请重新登录")));
     }
 
     private void writeUnauthorized(HttpServletResponse response) throws Exception {
