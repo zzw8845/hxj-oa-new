@@ -9,6 +9,12 @@
  *   4. 保存动作真的落库（走一次完整的新增员工闭环）
  */
 const puppeteer = require('puppeteer-core');
+const { execSync } = require('child_process');
+/** 最小 SQL 助手：本套件不需要 hygiene，但用印闭环的收尾必须能物理还原状态 */
+function sql(stmt) {
+  return execSync('mysql -uroot haixiajin_oa -N -B -e ' + JSON.stringify(stmt),
+    { encoding: 'utf-8' }).trim();
+}
 const EXEC = '/Users/zhouzewei/Library/Caches/ms-playwright/chromium-1243/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing';
 const PAGE = 'http://127.0.0.1:8080/oa.html';
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -17,7 +23,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
    为什么要把这个数写死在代码里：本项目出过一次「假绿灯」—— 上游某条断言依赖的接口被回退后
    抛错中断，导致其后 16 条断言（含整条审计留痕链路）**从未执行**，而末行照样打印
    "85/85 通过"。有了这个数，任何"少跑了"都会立刻变成红灯，而不是无声无息。 */
-const EXPECTED_TOTAL = 43;
+const EXPECTED_TOTAL = 51;
 
 const results = [];
 function check(name, ok, extra) {
@@ -411,7 +417,103 @@ async function closeDialogs(page) {
     nodeOpts.slice(0, 3).join(' || ').slice(0, 150));
   await page.screenshot({ path: '/tmp/proto/shots2/admin-flow.png' });
 
-  console.log('\n=== 6. 控制台 ===');
+  console.log('\n=== 6. 用印台账与归还闭环（后端 seal_apply/seal_record 的可视化验证） ===');
+  await page.reload({ waitUntil: 'networkidle2' });
+  await sleep(2600);
+  const sealMenuHit = await page.evaluate(() => {
+    const items = [...document.querySelectorAll('.el-menu .el-menu-item, .el-menu li')];
+    const h = items.find(i => i.getClientRects().length > 0 && i.textContent.includes('用印台账'));
+    if (h) { h.click(); return h.textContent.trim(); }
+    return '';
+  });
+  await sleep(2200);
+  check('菜单可进入「用印台账」', sealMenuHit.length > 0, sealMenuHit);
+
+  const sealTitle = await page.evaluate(() => {
+    const h = document.querySelector('.el-main h2');
+    return h ? h.textContent.trim() : '';
+  });
+  check('  页面标题为「用印台账」', sealTitle === '用印台账', sealTitle);
+
+  const sealCalls = apiCalls.filter(u => u.indexOf('/api/seals') >= 0);
+  check('  台账数据来自服务端接口 /api/seals（不是前端造的假数据）',
+    sealCalls.length >= 1, '命中 ' + sealCalls.length + ' 次');
+
+  /**
+   * 按按钮文案找台账行。
+   *
+   * ⚠ 不能图省事用"第一行"：台账按创建时间倒序，第一行可能是**上一次跑测试留下来的**
+   * 已归还记录（实测踩过：断言因此失败，而功能其实是对的）。
+   * 断言必须对起始状态鲁棒 —— 找"当前处于目标状态的那一行"。
+   */
+  const findSealRow = (btnText) => page.evaluate((t) => {
+    const trs = [...document.querySelectorAll('.el-table__body tbody tr')];
+    for (const tr of trs) {
+      const btns = [...tr.querySelectorAll('button')].map(b => b.textContent.trim());
+      if (btns.some(b => b.indexOf(t) >= 0)) {
+        return { text: tr.textContent.replace(/\s+/g, ' ').trim(), buttons: btns };
+      }
+    }
+    return null;
+  }, btnText);
+  const readFirstSealRow = () => page.evaluate(() => {
+    const tr = document.querySelector('.el-table__body tbody tr');
+    if (!tr) return null;
+    return {
+      text: tr.textContent.replace(/\s+/g, ' ').trim(),
+      buttons: [...tr.querySelectorAll('button')].map(b => b.textContent.trim())
+    };
+  });
+
+  const row0 = await findSealRow('登记用印');
+  check('★ 存在「待用印」记录且带「登记用印」按钮',
+    !!row0 && row0.text.indexOf('待用印') >= 0 && row0.buttons.some(b => b.indexOf('登记用印') >= 0),
+    row0 ? (row0.buttons.join('/') + ' | ' + row0.text.slice(0, 60)) : '(台账为空)');
+
+  const sealedBefore = sql('SELECT COUNT(*) FROM seal_record');
+  // 点「登记用印」
+  await page.evaluate(() => {
+    const trs = [...document.querySelectorAll('.el-table__body tbody tr')];
+    const tr = trs.find(t => [...t.querySelectorAll('button')].some(b => b.textContent.includes('登记用印')));
+    const b = tr && [...tr.querySelectorAll('button')].find(x => x.textContent.includes('登记用印'));
+    if (b) b.click();
+  });
+  await sleep(2200);
+  const row1 = await findSealRow('归还');
+  check('★ 点「登记用印」后状态变为「已用印」（并写了用印时间）',
+    !!row1 && row1.text.indexOf('已用印') >= 0 && /\d{4}-\d{2}-\d{2} \d{2}:\d{2}/.test(row1.text),
+    row1 ? row1.text.slice(0, 90) : '(无行)');
+
+  const sealedAfter = sql('SELECT COUNT(*) FROM seal_record');
+  check('  后端台账 seal_record 落了一条 use 记录',
+    Number(sealedAfter) === Number(sealedBefore) + 1,
+    sealedBefore + ' → ' + sealedAfter);
+
+  // 点「归还」
+  await page.evaluate(() => {
+    const trs = [...document.querySelectorAll('.el-table__body tbody tr')];
+    const tr = trs.find(t => [...t.querySelectorAll('button')].some(b => b.textContent.includes('归还')));
+    const b = tr && [...tr.querySelectorAll('button')].find(x => x.textContent.includes('归还'));
+    if (b) b.click();
+  });
+  await sleep(2200);
+  const row2 = await readFirstSealRow();
+  check('★ 点「归还」后状态变为「已归还」且显示「闭环已完成」',
+    !!row2 && row2.text.indexOf('已归还') >= 0 && row2.text.indexOf('闭环已完成') >= 0,
+    row2 ? row2.text.slice(0, 90) : '(无行)');
+
+  /* 收尾：**重置全部**而不是只还原刚操作的那一条。
+     只还原一条的话，上一次异常中断留下的脏数据会一直躺在库里，
+     把下一次的断言带偏（实测踩过一次）。演示基线就是"全部待用印、无动作记录"。 */
+  sql("DELETE FROM seal_record");
+  sql("UPDATE seal_apply SET return_status=0, seal_time=NULL, return_at=NULL");
+  check('收尾：台账全部还原为「待用印」、seal_record 清空（E2E 不留残渣）',
+    sql('SELECT COUNT(*) FROM seal_record') === '0'
+    && sql('SELECT COUNT(*) FROM seal_apply WHERE return_status<>0') === '0',
+    'record=' + sql('SELECT COUNT(*) FROM seal_record')
+    + ' 非待用印=' + sql('SELECT COUNT(*) FROM seal_apply WHERE return_status<>0'));
+
+  console.log('\n=== 7. 控制台 ===');
   const realErrs = errs.filter(e => !/favicon/.test(e));
   check('无控制台错误 / 无失败请求', realErrs.length === 0, realErrs.slice(0, 3).join(' | ') || '(干净)');
 

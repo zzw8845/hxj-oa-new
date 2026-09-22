@@ -59,6 +59,7 @@ public class DocumentService {
     private final FlowRuntimeService flowRuntimeService;
     private final FlowConfigMapper flowConfigMapper;
     private final FlowInstanceNodeMapper flowInstanceNodeMapper;
+    private final SealService sealService;
 
     // ============================================================ 创建 / 更新
 
@@ -167,6 +168,11 @@ public class DocumentService {
         doc.setCurrentNodeName(nodeName(doc.getDocTypeId(), inst.getCurrentNodeKey()));
         doc.setStatus(STATUS_RUNNING);
         documentMapper.updateById(doc);
+
+        // 用印类单据：提交即产生「待用印」台账记录。
+        // 不做这一步，印章管理岗在台账里就看不到任何待办 —— 因为台账行原本只能靠"登记用印"创建，
+        // 而登记用印又必须在台账里点，形成死循环。
+        sealService.ensureApplyOnSubmit(doc);
 
         log.info("单据提交 docNo={} flow={} 当前节点={}", doc.getDocNo(), flowConfig.getName(), doc.getCurrentNodeKey());
         return doc;

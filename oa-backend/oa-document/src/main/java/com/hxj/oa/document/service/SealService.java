@@ -148,6 +148,32 @@ public class SealService {
         return vo;
     }
 
+    /**
+     * 用印类单据**提交时**就创建一条「待用印」台账行（幂等）。
+     *
+     * <p>为什么必须在提交时建：台账列的是 seal_apply 行，而这行原本只能由"登记用印"创建
+     * ⇒ **"没有记录就不能登记用印、不登记用印就没有记录"的死循环**，
+     * 印章管理岗在台账里永远看不到待办。
+     *
+     * <p>表单缺「用章类型」时**只记警告不抛错**：提交是单据的主链路，
+     * 不能被台账的问题挡住（记录缺失时操作人仍可直接登记用印，服务端会按需补建）。
+     */
+    public void ensureApplyOnSubmit(Document doc) {
+        if (doc == null || !BIZ_SEAL.equalsIgnoreCase(doc.getBusinessCategory())) {
+            return;
+        }
+        if (findApply(doc.getId()) != null) {
+            return;
+        }
+        try {
+            applyMapper.insert(deriveFromDocument(doc));
+            log.info("用印台账已建待办记录 docNo={} 用章类型={}", doc.getDocNo(),
+                    JsonColumn.toMap(doc.getFormData()).get("sealType"));
+        } catch (RuntimeException e) {
+            log.warn("用印台账建待办记录失败（不阻塞提交）docNo={} 原因={}", doc.getDocNo(), e.toString());
+        }
+    }
+
     /* ================================================================== 动作 */
 
     /** 登记用印：待用印 → 已用印 */
