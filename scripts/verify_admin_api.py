@@ -128,7 +128,11 @@ new_account = 'e2e_user_' + suffix
 new_job_no = 'E2E' + suffix
 st, r = call('POST', '/api/users', token=admin, body={
     'realName': '端到端测试员', 'jobNo': new_job_no, 'account': new_account,
-    'password': '123456', 'deptId': 3, 'postName': '测试岗', 'roleCodes': ['EMPLOYEE']})
+    # ⚠ 岗位名必须用**已存在**的：后端会按名字解析岗位，名字不存在时会顺手新建一条
+    #    （实测新建出 `POST_001 测试岗`），而本脚本不清理它 ⇒ **每跑一次演示库就多一条岗位**。
+    #    同类问题在 frontend_admin_e2e.js 上也犯过一次（那个用的是「UI测试岗」）。
+    #    断言只要求 postName 非空，所以用真实岗位即可。
+    'password': '123456', 'deptId': 3, 'postName': '普通员工', 'roleCodes': ['EMPLOYEE']})
 ok = st == 200 and r.get('code') == 0
 check('admin 新建员工', ok, r.get('msg', ''))
 new_user_id = (r.get('data') or {}).get('id')

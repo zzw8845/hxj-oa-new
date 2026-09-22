@@ -58,6 +58,7 @@ public class TodoService {
         Map<Long, FlowInstanceNode> merged = new LinkedHashMap<>();
         Map<Long, Long> onBehalfNodeIds = new HashMap<>();          // nodeId -> 委托人
         Map<Long, DelegationVO> delegationByDelegator = new HashMap<>();
+        Set<Long> candidateNodeIds = new HashSet<>();               // 仅候选人（非自己的、非委托的）
         for (FlowInstanceNode n : instanceNodeMapper.selectTodoByAssignee(user.getUserId())) {
             merged.put(n.getId(), n);
         }
@@ -69,6 +70,22 @@ public class TodoService {
                 }
                 merged.put(n.getId(), n);
                 onBehalfNodeIds.put(n.getId(), d.getDelegatorId());
+            }
+        }
+        /* 还有一类：**我作为候选人的任务**（典型来源是超时升级把上级加签进来）。
+           必须一起纳入 —— 之前只按 assignee_id 查，导致"升级了、通知也发了，
+           但上级打开工作台什么也看不到"，功能等于没生效（交叉面自检实测抓到）。
+           候选人的口径取自**引擎**（identity link），与 assertAssignee 的放行判定同源；
+           不用业务表里的 candidate_ids 冗余列，避免两处状态不同步。 */
+        Set<String> candidateTaskIds = new HashSet<>(
+                instanceNodeMapper.selectCandidateTaskIds(String.valueOf(user.getUserId())));
+        candidateTaskIds.removeAll(merged.values().stream()
+                .map(FlowInstanceNode::getTaskId).filter(Objects::nonNull).collect(Collectors.toSet()));
+        if (!candidateTaskIds.isEmpty()) {
+            for (FlowInstanceNode n : instanceNodeMapper.selectList(Wrappers.<FlowInstanceNode>lambdaQuery()
+                    .in(FlowInstanceNode::getTaskId, candidateTaskIds))) {
+                merged.putIfAbsent(n.getId(), n);
+                candidateNodeIds.add(n.getId());
             }
         }
         if (merged.isEmpty()) {
@@ -125,6 +142,7 @@ public class TodoService {
 
             // 代办标记：委托限定了业务类别时不匹配就不展示 ——
             // **口径必须与审批放行一致**，否则会出现"看得见却批不了"（或反之）这种最难排查的状态。
+            vo.setViaCandidate(candidateNodeIds.contains(n.getId()));
             Long delegatorId = onBehalfNodeIds.get(n.getId());
             if (delegatorId != null) {
                 DelegationVO d = delegationByDelegator.get(delegatorId);

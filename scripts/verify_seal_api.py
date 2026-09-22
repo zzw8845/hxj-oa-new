@@ -89,6 +89,7 @@ seal_doc2 = scalar("SELECT id FROM document WHERE deleted=0 AND business_categor
                    "AND status=3 ORDER BY id LIMIT 1 OFFSET 1")
 non_seal = scalar("SELECT id FROM document WHERE deleted=0 AND business_category<>'SEAL' "
                   "AND status=3 ORDER BY id LIMIT 1")
+seal_count_before = scalar('SELECT COUNT(*) FROM seal_apply')
 check('取到两张已通过的用印单与一张非用印单',
       bool(seal_doc and seal_doc2 and non_seal),
       'seal=%s,%s 非seal=%s' % (seal_doc, seal_doc2, non_seal))
@@ -109,8 +110,11 @@ if weak:
     check('无权限登记用印 → 403', st == 403, 'HTTP %d' % st)
     st, _ = call('POST', '/api/seals/return', token=weak, body={'documentId': int(seal_doc)})
     check('无权限归还 → 403', st == 403, 'HTTP %d' % st)
+    # 断言"没有因越权尝试而增加"，而不是"表里是 0 行" —— 演示库本来就有
+    # 9 条「待用印」基线（历史用印单回填），写死 0 会随基线变化而假失败（实测踩过）
     leaked = scalar('SELECT COUNT(*) FROM seal_apply')
-    check('越权尝试没有落库', leaked == '0', 'seal_apply 行数=%s' % leaked)
+    check('越权尝试没有落库（台账行数未变）', leaked == seal_count_before,
+          '%s → %s' % (seal_count_before, leaked))
 else:
     for _ in range(5):
         check('（跳过）弱权限账号不可用', False)
@@ -127,8 +131,8 @@ check('★ 对非 SEAL 类单据登记用印 → 业务拒绝',
       'HTTP %d / %s' % (st, (r.get('msg') or '')[:60]))
 
 st, r = call('POST', '/api/seals/return', token=admin, body={'documentId': int(seal_doc2)})
-check('★ 没登记用印就直接归还 → 业务拒绝',
-      biz_fail(st, r) and '没有登记用印' in (r.get('msg') or ''),
+check('★ 还没用印就直接归还 → 业务拒绝',
+      biz_fail(st, r) and '不能直接归还' in (r.get('msg') or ''),
       'HTTP %d / %s' % (st, (r.get('msg') or '')[:60]))
 
 # 新建一张 SEAL 草稿（不提交）来验证"草稿不允许用印"，跑完物理删掉
@@ -157,8 +161,11 @@ print('=' * 72)
 
 st, r = call('GET', '/api/seals/by-document/%s' % seal_doc, token=admin)
 d0 = r.get('data') or {}
-check('未登记时返回「待用印」视图（而不是 404）',
-      st == 200 and d0.get('id') is None and d0.get('returnStatus') == 0,
+# 两种形态都表示"还没用印"：① 提交即建行之前的历史单据 —— 无行（id 为空）；
+# ② 之后的单据 —— 有行但状态为待用印。断言只关心"待用印"这个业务含义。
+check('未用印时返回「待用印」（而不是 404）',
+      st == 200 and d0.get('returnStatus') == 0
+      and (d0.get('id') is None or d0.get('id') is not None),
       'HTTP %d / status=%s id=%s' % (st, d0.get('returnStatus'), d0.get('id')))
 check('  视图带出单据可读信息（单号/申请人/用章类型中文）',
       bool(d0.get('docNo')) and bool(d0.get('applicantName')) and d0.get('sealTypeName') == '合同章',
@@ -231,15 +238,26 @@ print('=' * 72)
 print('五、收尾：物理清理本次产生的数据')
 print('=' * 72)
 
+# ⚠ 收尾**不能整表清空** seal_apply —— 演示库里有 9 条「待用印」基线记录
+#   （历史用印单回填而来），全表删掉会把 admin E2E 的用印断言打挂（实测踩过：
+#   E2E 报"台账为空"4 条失败）。这里只还原本次动过的东西：
+#   删掉本次产生的动作记录 + 把被操作的那张单还原为「待用印」。
+used_doc = seal_doc if seal_doc else None
 sql('DELETE FROM seal_record')
-sql('DELETE FROM seal_apply')
+if used_doc:
+    sql('UPDATE seal_apply SET return_status=0, seal_time=NULL, return_at=NULL WHERE document_id=%s' % used_doc)
 if created_draft_id:
+    sql('DELETE FROM seal_apply WHERE document_id=%s' % created_draft_id)
     sql('DELETE FROM document WHERE id=%s' % created_draft_id)
     sql("DELETE FROM document_link WHERE document_id=%s" % created_draft_id)
     sql("DELETE FROM notification WHERE biz_type='document' AND biz_id=%s" % created_draft_id)
 
-check('seal_apply 已清空（演示库回到 0 行）', scalar('SELECT COUNT(*) FROM seal_apply') == '0')
-check('seal_record 已清空（演示库回到 0 行）', scalar('SELECT COUNT(*) FROM seal_record') == '0')
+check('seal_record 已清空（动作记录不留）', scalar('SELECT COUNT(*) FROM seal_record') == '0')
+check('演示库的用印台账基线仍在（全部待用印）',
+      int(scalar('SELECT COUNT(*) FROM seal_apply') or 0) >= 1
+      and scalar('SELECT COUNT(*) FROM seal_apply WHERE return_status<>0') == '0',
+      '台账 %s 条，非待用印 %s 条' % (scalar('SELECT COUNT(*) FROM seal_apply'),
+                                  scalar('SELECT COUNT(*) FROM seal_apply WHERE return_status<>0')))
 check('测试草稿已删除，单据总数未变（46）',
       scalar('SELECT COUNT(*) FROM document') == '46',
       '实际 %s' % scalar('SELECT COUNT(*) FROM document'))

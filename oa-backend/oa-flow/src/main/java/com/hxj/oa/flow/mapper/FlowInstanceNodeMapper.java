@@ -20,6 +20,25 @@ public interface FlowInstanceNodeMapper extends BaseMapper<FlowInstanceNode> {
             """)
     List<FlowInstanceNode> selectTodoByAssignee(@Param("userId") Long userId);
 
+    /**
+     * 「我作为候选人」的引擎任务 id（典型来源：超时升级用 {@code addCandidateUser} 把上级加签进来）。
+     *
+     * <p><b>为什么直接查引擎的 identity link 表</b>：运行期加签只会写引擎侧，
+     * 业务表的 {@code candidate_ids} 不会跟着变，拿它当来源会漏掉刚加签的人。
+     *
+     * <p><b>为什么不用 {@code TaskQuery.taskCandidateUser}</b>：它**对已有 assignee 的任务不返回候选人**
+     * （实测：加签成功后候选人的待办数仍是 0，即"升级了但上级看不到"）。
+     *
+     * <p>与「节点是否在办」不是同一件事：那件事要用 {@code flow_instance_node.status}
+     * （见本类其他方法的说明：以 ACT_RU_TASK 为准会随引擎内部状态漂移）。
+     * 这里问的是"引擎认为谁是候选人"，只有引擎知道，所以只能查它。
+     */
+    @Select("""
+            SELECT DISTINCT TASK_ID_ FROM ACT_RU_IDENTITYLINK
+            WHERE USER_ID_ = #{userId} AND TYPE_ = 'candidate' AND TASK_ID_ IS NOT NULL
+            """)
+    List<String> selectCandidateTaskIds(@Param("userId") String userId);
+
     /** 某单据的完整流转记录（按顺序，用于「查看流程」弹窗） */
     @Select("""
             SELECT n.* FROM flow_instance_node n

@@ -35,6 +35,12 @@ public class TodoVO {
     private Long assigneeId;
     /** 代谁办理；null = 这是自己的待办 */
     private String onBehalfOf;
+    /**
+     * 是否只是「候选人」（既不是我的待办、也不是委托给我的）。
+     * 典型来源：**超时升级**把上级加签成候选人 —— 不加这个标记的话，
+     * 升级进来的待办会与"自己的待办"长得一模一样，界面无从区分。
+     */
+    private boolean viaCandidate;
     /** 是否允许加签 / 驳回 */
     private boolean allowCountersign;
     private boolean allowReject;

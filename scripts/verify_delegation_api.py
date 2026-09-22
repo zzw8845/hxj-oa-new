@@ -102,7 +102,7 @@ def cleanup():
             sql('DELETE FROM %s WHERE document_id=%s' % (t, doc_id))
         sql("DELETE FROM notification WHERE biz_type='document' AND biz_id=%s" % doc_id)
         sql('DELETE FROM document WHERE id=%s' % doc_id)
-    # 委托记录：只删本次创建的那些 id
+    # 只删本次创建的那些 id（**不要整表删** —— 那是别人的数据）
     if delegation_ids:
         sql('DELETE FROM flow_delegation WHERE id IN (%s)' % ','.join(str(i) for i in delegation_ids))
 
