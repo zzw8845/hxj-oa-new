@@ -161,11 +161,16 @@ const {createApp,ref,reactive,computed,onMounted,watch,nextTick}=Vue;
    ========================================================================= */
 /* 后端地址：
    ① 优先 window.HXJ_API_BASE（换环境时在页面顶部覆盖即可）；
-   ② 若页面本身由后端提供（同源 8080），直接用同源地址 —— 此时请求不受 CORS 约束，
-      可绕开「CORS 类浏览器扩展改写响应头」导致的跨域拦截；
-   ③ 否则（file:// 直开）回落到 http://127.0.0.1:8080。 */
+   ② 页面本身由后端提供（http/https 且端口是 8080 本机直连、或 80/443 走 nginx/域名），
+      一律用同源地址 —— 此时请求不受 CORS 约束。
+      ⚠ 此前只认 8080 端口：测试站 https://hxj-oa-test.wgit123.com（443）不满足条件，
+      掉进兜底③连到访问者本机 127.0.0.1:8080 → 登录页直接报「被跨域/扩展拦截」。
+   ③ 否则（file:// 直开等非同源场景）回落到 http://127.0.0.1:8080。 */
 const API_BASE = (window.HXJ_API_BASE
-  || (location.protocol.indexOf('http') === 0 && location.port === '8080' ? location.origin : 'http://127.0.0.1:8080')
+  || (location.protocol.indexOf('http') === 0
+        && ['8080', '', '80', '443'].indexOf(location.port) >= 0
+      ? location.origin
+      : 'http://127.0.0.1:8080')
 ).replace(/\/$/, '');
 const TOKEN_KEY = 'hxj_oa_token';
 
