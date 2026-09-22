@@ -23,7 +23,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
    为什么要把这个数写死在代码里：本项目出过一次「假绿灯」—— 上游某条断言依赖的接口被回退后
    抛错中断，导致其后 16 条断言（含整条审计留痕链路）**从未执行**，而末行照样打印
    "85/85 通过"。有了这个数，任何"少跑了"都会立刻变成红灯，而不是无声无息。 */
-const EXPECTED_TOTAL = 61;
+const EXPECTED_TOTAL = 72;
 
 const results = [];
 function check(name, ok, extra) {
@@ -592,6 +592,95 @@ async function closeDialogs(page) {
   const flowBtns = await page.$$eval('.page-head button', bs => bs.map(b => b.textContent.trim()));
   check('流程管理页有「执行超时升级盘点」按钮',
     flowBtns.some(t => t.indexOf('超时升级') >= 0), flowBtns.join('/'));
+
+  console.log('\n=== 7. 主数据 / 表单模板 / 审计日志（三块补齐的可视化界面） ===');
+  await page.reload({ waitUntil: 'networkidle2' });
+  await sleep(2600);
+
+  /* ---- 主数据：三个 tab 都要有真实数据。**全程只读** —— 部门/岗位/字典是
+     演示库基线的一部分（post=8 等），写操作的闭环由 verify_master_data_api 覆盖。 ---- */
+  await clickMenu(page, '主数据');
+  await sleep(2000);
+  const mdHead = await page.evaluate(() => ({
+    h2: (document.querySelector('.el-main h2') || {}).textContent || '',
+    tabs: [...document.querySelectorAll('.el-tabs__item')].map(t => t.textContent.trim()),
+    treeNodes: [...document.querySelectorAll('.el-tree .el-tree-node__content')].length
+  }));
+  check('「主数据」页可进入（含 部门/岗位/数据字典 三个 tab）',
+    mdHead.h2 === '主数据' && mdHead.tabs.length === 3, 'tabs=' + mdHead.tabs.join('/'));
+  check('★ 部门树渲染出真实节点', mdHead.treeNodes > 0, '节点数=' + mdHead.treeNodes);
+  check('主数据页有「新增一级部门」入口（admin 有 system:dept）',
+    await page.evaluate(() => [...document.querySelectorAll('.el-main button')].some(b => b.textContent.includes('新增一级部门'))), '');
+
+  await page.evaluate(() => {
+    const t = [...document.querySelectorAll('.el-tabs__item')].find(x => x.textContent.includes('岗位'));
+    if (t) t.click();
+  });
+  await sleep(1000);
+  const postRows = await page.$$eval('.el-main .el-table__body tbody tr', trs => trs.length);
+  check('★ 岗位 tab 有数据行', postRows > 0, '行数=' + postRows);
+
+  await page.evaluate(() => {
+    const t = [...document.querySelectorAll('.el-tabs__item')].find(x => x.textContent.includes('字典'));
+    if (t) t.click();
+  });
+  await sleep(1000);
+  const dictRows = await page.$$eval('.el-main .el-table__body tbody tr', trs => trs.length);
+  check('★ 数据字典 tab 有数据行', dictRows > 0, '行数=' + dictRows);
+
+  /* ---- 表单模板：版本列表（只看，不启用/不删除 —— 状态变更由接口用例覆盖） ---- */
+  await clickMenu(page, '表单模板');
+  await sleep(2000);
+  const tplHead = await page.evaluate(() => (document.querySelector('.el-main h2') || {}).textContent || '');
+  check('「表单模板」页可进入且自动选中第一个单据类型', tplHead.trim() === '表单模板', tplHead);
+  await sleep(600);
+  const tplInfo = await page.evaluate(() => ({
+    rows: [...document.querySelectorAll('.el-main .el-table__body tbody tr')].length,
+    hasActive: [...document.querySelectorAll('.el-main .el-table .el-tag')].some(t => t.textContent.trim() === '生效'),
+    hasView: [...document.querySelectorAll('.el-main .el-table button')].some(b => b.textContent.includes('查看'))
+  }));
+  check('★ 表单模板版本列表出现「生效」版本', tplInfo.rows > 0 && tplInfo.hasActive,
+    '行数=' + tplInfo.rows);
+  check('表单模板行有「查看」入口（草稿才显示 编辑/启用/删除）', tplInfo.hasView, '');
+
+  /* ---- 审计日志：真实数据 + 模块筛选（只读查询，随便查） ---- */
+  await clickMenu(page, '审计日志');
+  await sleep(2400);
+  const audit1 = await page.evaluate(() => ({
+    h2: (document.querySelector('.el-main h2') || {}).textContent || '',
+    rows: [...document.querySelectorAll('.el-main .el-table__body tbody tr')].length,
+    total: parseInt(((document.querySelector('.el-pagination__total') || {}).textContent || '共 0 条').replace(/\D/g, ''), 10)
+  }));
+  check('「审计日志」页可进入', audit1.h2 === '审计日志', audit1.h2);
+  check('★ 审计日志渲染出真实记录（后端强制分页）', audit1.rows > 0 && audit1.total > 0,
+    '本页=' + audit1.rows + ' 总数=' + audit1.total);
+
+  // 选模块 auth → 查询 → 本页所有行的模块列都应为 auth（验证服务端筛选真的下推了）
+  await page.evaluate(() => {
+    const sel = [...document.querySelectorAll('.el-main .filters .el-select')][0];
+    const w = sel && (sel.querySelector('.el-select__wrapper') || sel);
+    if (w) w.click();
+  });
+  await sleep(800);
+  await page.evaluate(() => {
+    const opt = [...document.querySelectorAll('.el-select-dropdown__item')]
+      .filter(x => x.offsetParent !== null)
+      .find(x => x.textContent.trim() === 'auth');
+    if (opt) opt.click();
+  });
+  await sleep(500);
+  await clickButtonByText(page, '查询', '.el-main');
+  await sleep(1600);
+  const audit2 = await page.evaluate(() => {
+    const rows = [...document.querySelectorAll('.el-main .el-table__body tbody tr')];
+    const mods = rows.map(r => {
+      const tag = r.querySelector('.el-tag');
+      return tag ? tag.textContent.trim() : '';
+    });
+    return { rows: rows.length, allAuth: mods.length > 0 && mods.every(m => m === 'auth'), sample: mods.slice(0, 3) };
+  });
+  check('★ 审计模块筛选下推到服务端（选 auth 后本页行全部为 auth）',
+    audit2.rows > 0 && audit2.allAuth, '样例=' + audit2.sample.join('/'));
 
   console.log('\n=== 7. 控制台 ===');
   const realErrs = errs.filter(e => !/favicon/.test(e));

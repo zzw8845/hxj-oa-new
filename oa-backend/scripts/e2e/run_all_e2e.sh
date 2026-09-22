@@ -52,7 +52,7 @@ echo "使用 node：${NODE}（$("$NODE" --version)）"
 
 # 套件:预期断言数 —— 改动套件时这里必须同步改，否则下面的核对会失败（故意的）
 SUITES="
-frontend_admin_e2e:61
+frontend_admin_e2e:72
 frontend_attachment_e2e:56
 frontend_dashboard_e2e:44
 frontend_final_gaps_e2e:65
@@ -74,6 +74,15 @@ if [ "${OA_E2E_SKIP_PREFLIGHT:-0}" != "1" ]; then
     if ! "$PY_BIN" ../../../scripts/check_shell_var_i18n.py; then
       echo
       echo "✗ 脚本自检未通过 —— 先修掉上面的写法再跑用例。"
+      exit 2
+    fi
+  fi
+  # 页面模板配平自检：漏一个 </template> 会把其后所有 <script> 吞进 template.content，
+  # 页面白渲染且零报错（2026-09-22 实际事故）。E2E 对此只会表现为成片失败，查不动。
+  if command -v "$PY_BIN" >/dev/null 2>&1 && [ -f ../../../scripts/check_html_template_balance.py ]; then
+    if ! "$PY_BIN" ../../../scripts/check_html_template_balance.py; then
+      echo
+      echo "✗ 页面模板配平自检未通过 —— 先修掉上面的 <template>/引号 问题再跑用例。"
       exit 2
     fi
   fi

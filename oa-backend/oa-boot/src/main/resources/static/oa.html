@@ -21,7 +21,7 @@ body{background:linear-gradient(135deg,#f4faff 0,#edf7fe 45%,#f8fbff 100%);color
 @media(min-width:1001px){.el-main:has(>.hero)>.grid2{height:100%;align-self:stretch}.el-main:has(>.hero)>.grid2>.el-card:first-child{height:100%;display:flex;flex-direction:column}.el-main:has(>.hero)>.grid2>.el-card:first-child>.el-card__body{flex:1}.work-zones>.zone.stamp{grid-column:1/-1}}
 
 </style></head><body><div id="app">
-<el-container class="shell"><el-aside width="228px" class="aside"><div class="logo"><i>峡</i><div><b>海峡金</b><span>OA 内控审批中心</span></div></div><el-menu :default-active="page" background-color="#172036" text-color="#aeb8cf" active-text-color="#fff" @select="page=$event"><el-menu-item index="home"><span class="mi">⌂</span>首页</el-menu-item><el-menu-item index="work"><span class="mi">▦</span>工作台<el-badge :value="unreadCount" :max="99" :hidden="!unreadCount" class="menu-badge"></el-badge></el-menu-item><el-menu-item index="board"><span class="mi">▥</span>工作看板</el-menu-item><div class="menu-label">业务管理</div><el-menu-item index="forms"><span class="mi">▤</span>全部表单</el-menu-item><el-menu-item index="approve"><span class="mi">✓</span>审批中心<el-badge :value="todos.length" :max="99" :hidden="!todos.length" class="menu-badge"></el-badge></el-menu-item><el-menu-item index="archive"><span class="mi">≡</span>台账档案</el-menu-item><el-menu-item index="seal"><span class="mi">▣</span>用印台账</el-menu-item><el-menu-item index="delegation"><span class="mi">⇄</span>我的委托</el-menu-item><div class="menu-label">系统管理</div><el-menu-item index="permission"><span class="mi">♙</span>权限管理</el-menu-item><el-menu-item index="flow"><span class="mi">▷</span>流程管理</el-menu-item><el-menu-item index="risk"><span class="mi">△</span>风险预警</el-menu-item></el-menu><div class="aside-foot"><i></i>系统运行正常<span>数据更新于 10:28</span></div></el-aside>
+<el-container class="shell"><el-aside width="228px" class="aside"><div class="logo"><i>峡</i><div><b>海峡金</b><span>OA 内控审批中心</span></div></div><el-menu :default-active="page" background-color="#172036" text-color="#aeb8cf" active-text-color="#fff" @select="page=$event"><el-menu-item index="home"><span class="mi">⌂</span>首页</el-menu-item><el-menu-item index="work"><span class="mi">▦</span>工作台<el-badge :value="unreadCount" :max="99" :hidden="!unreadCount" class="menu-badge"></el-badge></el-menu-item><el-menu-item index="board"><span class="mi">▥</span>工作看板</el-menu-item><div class="menu-label">业务管理</div><el-menu-item index="forms"><span class="mi">▤</span>全部表单</el-menu-item><el-menu-item index="approve"><span class="mi">✓</span>审批中心<el-badge :value="todos.length" :max="99" :hidden="!todos.length" class="menu-badge"></el-badge></el-menu-item><el-menu-item index="archive"><span class="mi">≡</span>台账档案</el-menu-item><el-menu-item index="seal"><span class="mi">▣</span>用印台账</el-menu-item><el-menu-item index="delegation"><span class="mi">⇄</span>我的委托</el-menu-item><div class="menu-label">系统管理</div><el-menu-item index="permission"><span class="mi">♙</span>权限管理</el-menu-item><el-menu-item index="flow"><span class="mi">▷</span>流程管理</el-menu-item><el-menu-item index="risk"><span class="mi">△</span>风险预警</el-menu-item><el-menu-item index="masterdata" v-if="can('system:dept') || can('system:dict')"><span class="mi">⌗</span>主数据</el-menu-item><el-menu-item index="formtpl" v-if="can('system:form')"><span class="mi">✎</span>表单模板</el-menu-item><el-menu-item index="audit" v-if="can('system:audit')"><span class="mi">☰</span>审计日志</el-menu-item></el-menu><div class="aside-foot"><i></i>系统运行正常<span>数据更新于 10:28</span></div></el-aside>
 <el-container><el-header class="topbar"><div><h1>{{pageNames[page]}}</h1><el-breadcrumb separator="/"><el-breadcrumb-item>审批中心</el-breadcrumb-item><el-breadcrumb-item>{{pageNames[page]}}</el-breadcrumb-item></el-breadcrumb></div><div class="top-actions"><el-button circle>⌕</el-button><el-badge :value="unreadCount" :max="99" :hidden="!unreadCount" @click="openNotify" style="cursor:pointer"><el-button circle title="通知中心">♧</el-button></el-badge><el-avatar shape="square">林</el-avatar><div class="who"><b>林安然</b><span>{{role}}</span></div><el-select v-model="role" size="small" style="width:112px"><el-option v-for="r in roles" :key="r" :label="r" :value="r"></el-option></el-select></div></el-header><el-main>
 <template v-if="page==='home'"><section class="hero"><div><span>2026年8月26日 · 星期三</span><h2>早上好，林安然</h2><p>今日有 <b>{{todoCount}} 项审批</b>待处理，{{riskOverview.overdue}} 项风险预警需要关注。</p><el-button type="primary" plain @click="openSubmit('员工报销')">＋ 发起报销</el-button><el-button class="glass" @click="openSubmit('日常付款')">＋ 付款申请</el-button></div><el-progress type="circle" :percentage="96" color="#fff"><template #default><b class="percent">96%</b><small>流程合规率</small></template></el-progress></section><div class="stats"><el-card v-for="s in stats" :key="s.name" shadow="never"><i :class="s.color">{{s.icon}}</i><div><span>{{s.name}}</span><b>{{s.value}}</b><small>{{s.note}}</small></div></el-card></div><div class="grid2"><el-card shadow="never"><template #header><div class="card-title"><div><b>待办审批</b><span>优先处理临近超时的申请</span></div><el-button link type="primary" @click="page='approve'">查看全部 →</el-button></div></template><div class="todo" v-for="d in documents.slice(0,4)" :key="d.id" @click="openDetail(d)"><i>{{d.type[0]}}</i><div><b>{{d.title}}</b><span>{{d.applicant}} · {{d.department}} · {{d.current}}</span></div><strong>{{money(d.amount)}}<small>{{d.updated}}</small></strong></div></el-card><el-card shadow="never"><template #header><div class="card-title"><div><b>流程透明度</b><span>所有节点均可穿透查看前置资料</span></div><el-tag type="success">100% 留痕</el-tag></div></template><div class="transparency"><div class="shield">✓</div><h3>前置流程完整可见</h3><p>审批人可查看申请表、历史附件、全部前置节点意见和操作时间。</p><el-button type="primary" plain @click="page='approve'">进入审批中心</el-button></div></el-card></div></template>
 <template v-else-if="page==='work'"><div class="page-head"><div><h2>工作台</h2><p>按业务区域发起申请，常用单据一键提交</p></div></div><div class="work-zones"><el-card shadow="never" class="zone daily"><template #header><div class="zone-title"><i>日</i><div><b>日常提交</b><span>个人日常费用与行政类申请</span></div><el-button type="primary" @click="openSubmit('员工报销')">新建报销</el-button></div></template><div class="quick-docs"><button v-for="q in dailyQuick" @click="quickSubmit(q,'报销申请单')"><i>{{q[0]}}</i><b>{{q}}</b><span>快捷提交 →</span></button></div></el-card><el-card shadow="never" class="zone business"><template #header><div class="zone-title"><i>业</i><div><b>业务单据提交</b><span>付款、供应商及经营业务申请</span></div><el-button type="primary" @click="openSubmit('日常付款')">新建付款</el-button></div></template><div class="quick-docs"><button v-for="q in businessQuick" @click="quickSubmit(q,'付款申请单')"><i>{{q[0]}}</i><b>{{q}}</b><span>快捷提交 →</span></button></div></el-card></div><el-card shadow="never"><template #header><div class="card-title"><div><b>我已发起的单据</b><span>点击查看全流程，或复制历史单据再次提交</span></div><el-input v-model="keyword" clearable placeholder="搜索单号或事项" style="width:260px" @input="onDocsKeywordInput" @clear="onDocsKeywordInput"></el-input></div></template><el-table :data="myDocuments" @row-click="openDetail" class="click-table"><el-table-column prop="id" label="单据编号" width="165"></el-table-column><el-table-column prop="title" label="申请事项" min-width="210"></el-table-column><el-table-column prop="type" label="类型" width="110"></el-table-column><el-table-column label="金额" width="130"><template #default="s">{{money(s.row.amount)}}</template></el-table-column><el-table-column prop="current" label="当前节点" width="130"></el-table-column><el-table-column label="状态" width="110"><template #default="s"><el-tag :type="tagType(s.row.status)">{{s.row.status}}</el-tag></template></el-table-column><el-table-column label="操作" width="180"><template #default="s"><el-button link type="primary" @click.stop="openDetail(s.row)">查看全流程</el-button><el-button link @click.stop="repeatSubmit(s.row)">再次提交</el-button></template></el-table-column></el-table></el-card></template>
@@ -30,12 +30,15 @@ body{background:linear-gradient(135deg,#f4faff 0,#edf7fe 45%,#f8fbff 100%);color
 <template v-else-if="page==='archive'"><div class="page-head"><div><h2>台账档案</h2><p>仅归档全部审批通过的单据，支持多条件组合查询</p></div><el-button v-if="can('document:export')" :loading="exporting" @click="exportLedger">导出台账</el-button></div><el-card shadow="never"><div class="archive-filter"><el-input v-model="archiveApplicant" clearable placeholder="申请人"></el-input><el-select v-model="archiveDepartment" clearable placeholder="申请部门"><el-option v-for="d in departments" :label="d" :value="d"></el-option></el-select><el-input v-model="archiveCode" clearable placeholder="单据编号"></el-input><el-date-picker v-model="archiveDate" type="daterange" range-separator="至" start-placeholder="开始时间" end-placeholder="结束时间"></el-date-picker></div><el-table :data="archiveDocs" @row-click="openDetail" class="click-table"><el-table-column prop="id" label="单据编号" width="170"></el-table-column><el-table-column prop="title" label="申请事项" min-width="210"></el-table-column><el-table-column prop="applicant" label="申请人" width="100"></el-table-column><el-table-column prop="department" label="申请部门" width="120"></el-table-column><el-table-column label="金额" width="130"><template #default="s">{{money(s.row.amount)}}</template></el-table-column><el-table-column prop="updated" label="归档时间" width="120"></el-table-column><el-table-column label="状态" width="100"><template #default><el-tag type="success">已通过</el-tag></template></el-table-column><el-table-column label="操作" width="110"><template #default="s"><el-button link type="primary" @click.stop="openDetail(s.row)">查看档案</el-button></template></el-table-column></el-table></el-card></template>
 <template v-else-if="page==='seal'"><div class="page-head"><div><h2>用印台账</h2><p>印章使用与归还闭环：待用印 → 已用印 → 已归还，每一次动作都留痕可查</p></div><el-button type="primary" plain @click="refreshSeals">刷新</el-button></div><el-card shadow="never"><div style="display:flex;align-items:center;gap:12px;margin-bottom:12px"><el-select v-model="sealTypeFilter" placeholder="用章类型" clearable style="width:150px" @change="refreshSeals"><el-option v-for="o in sealOptions" :key="o.dictCode" :label="o.dictLabel" :value="o.dictCode"></el-option></el-select><el-select v-model="sealStatusFilter" placeholder="归还状态" clearable style="width:150px" @change="refreshSeals"><el-option label="待用印" :value="0"></el-option><el-option label="已用印" :value="1"></el-option><el-option label="已归还" :value="2"></el-option></el-select><span style="font-size:12px;color:var(--muted)">共 {{sealTotal}} 条</span></div><el-table :data="sealRows" empty-text="暂无用印记录（需用印类单据走完审批后方可登记）"><el-table-column prop="docNo" label="单据编号" width="165"></el-table-column><el-table-column prop="sealProject" label="用印项目" min-width="200"></el-table-column><el-table-column prop="applicantName" label="申请人" width="90"></el-table-column><el-table-column prop="deptName" label="用印部门" width="120"></el-table-column><el-table-column prop="sealTypeName" label="用章类型" width="110"></el-table-column><el-table-column label="状态" width="100"><template #default="s"><el-tag :type="s.row.returnStatus===2?'success':(s.row.returnStatus===1?'warning':'info')">{{s.row.returnStatusText}}</el-tag></template></el-table-column><el-table-column label="用印时间" width="150"><template #default="s">{{(s.row.sealTime||'').replace('T',' ')}}</template></el-table-column><el-table-column label="归还时间" width="150"><template #default="s">{{(s.row.returnAt||'').replace('T',' ')}}</template></el-table-column><el-table-column label="操作" width="180"><template #default="s"><el-button v-if="s.row.returnStatus===0" link type="primary" @click="sealUse(s.row)">登记用印</el-button><el-button v-if="s.row.returnStatus===1" link type="primary" @click="sealReturn(s.row)">归还</el-button><span v-if="s.row.returnStatus===2" style="font-size:12px;color:var(--muted)">闭环已完成</span></template></el-table-column></el-table></el-card></template>
 <template v-else-if="page==='delegation'"><div class="page-head"><div><h2>我的委托</h2><p>我不在时由谁代办：委托生效期间，受托人能看见并处理我的待办（流程记录里仍记原承办人）</p></div><el-button type="primary" @click="newDelegation">＋ 新建委托</el-button></div><el-card shadow="never"><el-table :data="delegationsMine" empty-text="还没有设置委托"><el-table-column prop="delegateName" label="受托人" width="110"></el-table-column><el-table-column label="生效期间" min-width="270"><template #default="s">{{(s.row.startAt||'').replace('T',' ')}} ~ {{(s.row.endAt||'').replace('T',' ')}}</template></el-table-column><el-table-column prop="bizCategoryText" label="限定范围" width="120"></el-table-column><el-table-column label="状态" width="120"><template #default="s"><el-tag :type="s.row.status===1 && s.row.active ? 'success' : 'info'">{{s.row.status!==1 ? '已撤销' : (s.row.active ? '生效中' : '未到/已过期')}}</el-tag></template></el-table-column><el-table-column prop="remark" label="说明" min-width="140"></el-table-column><el-table-column label="操作" width="90"><template #default="s"><el-button v-if="s.row.status===1" link type="danger" @click="cancelDelegation(s.row)">撤销</el-button><span v-else style="font-size:12px;color:var(--muted)">—</span></template></el-table-column></el-table><div style="margin:16px 0 8px"><b style="font-size:13px">别人委托给我的</b></div><el-table :data="delegationsToMe" empty-text="暂时没有人委托你代办"><el-table-column prop="delegatorName" label="委托人" width="110"></el-table-column><el-table-column label="生效期间" min-width="270"><template #default="s">{{(s.row.startAt||'').replace('T',' ')}} ~ {{(s.row.endAt||'').replace('T',' ')}}</template></el-table-column><el-table-column prop="bizCategoryText" label="限定范围" width="120"></el-table-column><el-table-column label="状态" width="120"><template #default="s"><el-tag :type="s.row.status===1 && s.row.active ? 'success' : 'info'">{{s.row.status!==1 ? '已撤销' : (s.row.active ? '生效中' : '未到/已过期')}}</el-tag></template></el-table-column></el-card></template>
+<template v-else-if="page==='masterdata'"><div class="page-head"><div><h2>主数据</h2><p>部门 / 岗位 / 数据字典的维护入口；写操作留痕于审计日志，引用中的记录删除会被后端守卫拒绝</p></div></div><el-card shadow="never"><el-tabs v-model="mdTab"><el-tab-pane label="部门" name="dept"><div style="margin-bottom:12px"><el-button v-if="can('system:dept')" type="primary" size="small" @click="newDept(null)">＋ 新增一级部门</el-button><span v-else style="font-size:12px;color:var(--muted)">只读（无 system:dept 权限）</span></div><el-tree :data="deptRows" node-key="id" default-expand-all :expand-on-click-node="false"><template #default="{ data }"><span style="flex:1;display:flex;align-items:center;gap:8px"><b style="font-size:13px">{{data.name}}</b><small style="color:var(--muted)">{{data.code}}{{data.leaderName ? ' · 负责人 ' + data.leaderName : ''}}</small><template v-if="can('system:dept')"><el-button link type="primary" size="small" @click="newDept(data.id)">＋子部门</el-button><el-button link size="small" @click="editDept(data)">编辑</el-button><el-button link type="danger" size="small" @click="removeDept(data)">删除</el-button></template></span></template></el-tree></el-tab-pane><el-tab-pane label="岗位" name="post"><div style="margin-bottom:12px"><el-button v-if="can('system:dept')" type="primary" size="small" @click="newPost">＋ 新增岗位</el-button></div><el-table :data="postRows" size="small"><el-table-column prop="name" label="岗位名称" min-width="160"></el-table-column><el-table-column prop="code" label="编码" width="160"></el-table-column><el-table-column prop="sortNo" label="排序" width="80"></el-table-column><el-table-column label="状态" width="90"><template #default="s"><el-tag :type="s.row.status===1 ? 'success' : 'info'" size="small">{{s.row.status===1 ? '启用' : '停用'}}</el-tag></template></el-table-column><el-table-column v-if="can('system:dept')" label="操作" width="130"><template #default="s"><el-button link size="small" @click="editPost(s.row)">编辑</el-button><el-button link type="danger" size="small" @click="removePost(s.row)">删除</el-button></template></el-table-column></el-table></el-tab-pane><el-tab-pane label="数据字典" name="dict"><div class="filters"><el-select v-model="dictTypeSel" placeholder="选择字典类型" style="width:220px" @change="refreshDictRows"><el-option v-for="t in dictTypes" :key="t" :label="t" :value="t"></el-option></el-select><el-button v-if="can('system:dict')" type="primary" size="small" :disabled="!dictTypeSel" @click="newDict">＋ 新增字典项</el-button></div><el-table :data="dictRows" size="small"><el-table-column prop="dictCode" label="编码" width="160"></el-table-column><el-table-column prop="dictLabel" label="标签" min-width="180"></el-table-column><el-table-column prop="sortNo" label="排序" width="80"></el-table-column><el-table-column label="状态" width="90"><template #default="s"><el-tag :type="s.row.status===1 ? 'success' : 'info'" size="small">{{s.row.status===1 ? '启用' : '停用'}}</el-tag></template></el-table-column><el-table-column v-if="can('system:dict')" label="操作" width="130"><template #default="s"><el-button link size="small" @click="editDict(s.row)">编辑</el-button><el-button link type="danger" size="small" @click="removeDict(s.row)">删除</el-button></template></el-table-column></el-table></el-tab-pane></el-tabs></el-card></template>
+<template v-else-if="page==='formtpl'"><div class="page-head"><div><h2>表单模板</h2><p>每类单据的表单由模板 schema 驱动；生效版本只读，要改必须新建版本（在途单据不受影响）</p></div><div style="display:flex;gap:10px;align-items:center"><el-select v-model="tplDocTypeId" placeholder="选择单据类型" style="width:200px" @change="refreshTpl"><el-option v-for="t in documentTypes" :key="t.id" :label="t.name" :value="t.id"></el-option></el-select><el-button type="primary" :disabled="!tplDocTypeId" @click="newTplVersion">＋ 新建版本</el-button></div></div><el-card shadow="never"><el-table :data="tplRows" v-loading="tplBusy" empty-text="请先选择单据类型"><el-table-column prop="version" label="版本" width="80"></el-table-column><el-table-column prop="name" label="模板名称" min-width="200"></el-table-column><el-table-column label="状态" width="100"><template #default="s"><el-tag :type="s.row.status===1 ? 'success' : (s.row.status===0 ? 'info' : 'danger')" size="small">{{s.row.status===1 ? '生效' : (s.row.status===0 ? '草稿' : '废弃')}}</el-tag></template></el-table-column><el-table-column label="生效期间" min-width="230"><template #default="s">{{(s.row.effectiveFrom||'').replace('T',' ').slice(0,16) || '—'}} ~ {{(s.row.effectiveTo||'').replace('T',' ').slice(0,16) || '今'}}</template></el-table-column><el-table-column label="操作" width="240"><template #default="s"><el-button link size="small" @click="viewTpl(s.row)">查看</el-button><template v-if="s.row.status===0"><el-button link size="small" @click="editTpl(s.row)">编辑</el-button><el-button link type="success" size="small" @click="activateTpl(s.row)">启用</el-button><el-button link type="danger" size="small" @click="removeTpl(s.row)">删除</el-button></template></template></el-table-column></el-table></el-card></template>
+<template v-else-if="page==='audit'"><div class="page-head"><div><h2>审计日志</h2><p>全系统敏感操作的留痕记录（只读；审计表无界增长，后端强制分页）</p></div></div><el-card shadow="never"><div class="filters"><el-select v-model="auditFilters.module" clearable placeholder="模块" style="width:140px"><el-option v-for="m in ['document','system','permission','flow','seal','auth']" :key="m" :label="m" :value="m"></el-option></el-select><el-input v-model="auditFilters.keyword" placeholder="搜操作人 / 动作 / 详情" clearable style="width:250px" @keyup.enter="auditSearch(1)"></el-input><el-date-picker v-model="auditFilters.range" type="datetimerange" value-format="YYYY-MM-DDTHH:mm:ss" start-placeholder="开始时间" end-placeholder="结束时间" style="width:360px"></el-date-picker><el-button type="primary" @click="auditSearch(1)">查询</el-button><el-button @click="auditReset">重置</el-button></div><el-table :data="auditRows" v-loading="auditBusy" size="small"><el-table-column label="时间" width="160"><template #default="s">{{(s.row.createdAt||'').replace('T',' ').slice(0,19)}}</template></el-table-column><el-table-column prop="userName" label="操作人" width="100"></el-table-column><el-table-column label="模块" width="110"><template #default="s"><el-tag size="small" effect="plain">{{s.row.module}}</el-tag></template></el-table-column><el-table-column prop="action" label="动作" width="160"></el-table-column><el-table-column prop="bizId" label="业务ID" width="90"></el-table-column><el-table-column prop="detail" label="详情" min-width="280" show-overflow-tooltip></el-table-column><el-table-column prop="ip" label="IP" width="135"></el-table-column></el-table><el-pagination style="margin-top:14px;display:flex;justify-content:flex-end" background layout="total, sizes, prev, pager, next" :total="auditTotal" :current-page="auditPage" :page-size="auditPageSize" :page-sizes="[20,50,100]" @current-change="auditPageChange" @size-change="auditSizeChange"></el-pagination></el-card></template>
 <template v-else-if="page==='permission'"><div class="page-head"><div><h2>权限管理</h2><p>人员仅分配部门、岗位和角色；权限统一由角色配置</p></div><el-button v-if="permissionTab==='people'" type="primary" @click="personVisible=true">＋ 增加员工</el-button><el-button v-else type="primary" @click="newRole">＋ 新增角色</el-button></div><el-tabs v-model="permissionTab" class="permission-tabs"><el-tab-pane label="人员管理" name="people"><el-card shadow="never"><div style="display:flex;align-items:center;gap:12px;margin-bottom:12px"><el-input v-model="peopleKeyword" placeholder="搜索姓名 / 工号 / 登录账号" clearable style="width:264px" @input="onPeopleKeywordInput" @clear="onPeopleKeywordInput"></el-input><span style="font-size:12px;color:var(--muted)">共 {{peopleTotal}} 人（分页来自后端）</span></div><el-table :data="adminPeople"><el-table-column prop="name" label="姓名" width="100"></el-table-column><el-table-column prop="jobNo" label="工号" width="110"></el-table-column><el-table-column prop="department" label="部门" width="110"></el-table-column><el-table-column prop="post" label="岗位" width="130"></el-table-column><el-table-column prop="position" label="分配角色" width="150"></el-table-column><el-table-column label="状态" width="90"><template #default><el-tag type="success">在职</el-tag></template></el-table-column><el-table-column label="操作" min-width="200"><template #default="s"><el-button link type="primary" @click="editPerson(s.row)">编辑员工</el-button><el-button link @click="adjustRole(s.row)">调整角色</el-button><el-button link type="danger" @click="deletePerson(s.row)">删除</el-button></template></el-table-column></el-table><el-pagination v-if="peopleTotal > peoplePageSize" layout="prev, pager, next, sizes, total" :current-page="peoplePage" :page-size="peoplePageSize" :page-sizes="[10,20,50,100]" :total="peopleTotal" style="margin-top:12px" @current-change="changePeoplePage" @size-change="changePeopleSize"></el-pagination></el-card></el-tab-pane><el-tab-pane label="角色管理" name="roles"><div class="role-grid"><el-card v-for="r in roleConfigs" :key="r.name" shadow="hover"><template #header><div class="card-title"><div><b>{{r.name}}</b><span>{{r.post}}</span></div><el-button link type="primary" @click="editRole(r)">配置权限</el-button></div></template><p class="role-scope">数据范围：{{r.scope}}</p><div><el-tag v-for="p in r.permissions" :key="p" class="perm-tag" effect="plain">{{p}}</el-tag></div></el-card></div></el-tab-pane></el-tabs></template><template v-else-if="page==='risk'"><div class="page-head"><div><h2>风险预警</h2><p>处理时限已超期或即将到期的审批节点，仅含你数据范围内可见的单据</p></div><el-button type="primary" plain @click="refreshRisks">刷新</el-button></div><div class="stats"><el-card v-for="s in riskStats" :key="s.name" shadow="never"><i :class="s.color">{{s.icon}}</i><div><span>{{s.name}}</span><b>{{s.value}}</b><small>{{s.note}}</small></div></el-card></div><el-card shadow="never"><template #header><div class="card-title"><div><b>超期 / 临期明细</b><span>按处理时限升序，点行可打开单据</span></div><el-tag type="info">{{riskOverview.runningTotal}} 个进行中节点</el-tag></div></template><el-table :data="riskRows" @row-click="openDetail" class="click-table" empty-text="当前数据范围内没有超期或临期的审批节点"><el-table-column prop="docNo" label="单据编号" width="165"></el-table-column><el-table-column prop="title" label="申请事项" min-width="190"></el-table-column><el-table-column prop="docTypeName" label="单据类型" width="110"></el-table-column><el-table-column prop="applicant" label="申请人" width="90"></el-table-column><el-table-column prop="department" label="申请部门" width="120"></el-table-column><el-table-column prop="nodeName" label="卡在节点" width="140"></el-table-column><el-table-column prop="assignee" label="承办人" width="95"></el-table-column><el-table-column prop="deadlineText" label="处理时限" width="150"></el-table-column><el-table-column label="风险" width="130"><template #default="s"><el-tag :type="s.row.tag">{{s.row.riskText}}</el-tag></template></el-table-column></el-table></el-card></template><template v-else-if="page==='flow'"><div class="page-head"><div><h2>流程管理</h2><p>查看、修改或新增所有业务单据的审批流程</p></div><el-button type="warning" plain :loading="escalating" @click="runEscalation">执行超时升级盘点</el-button><el-button type="primary" @click="newFlow">＋ 新增流程</el-button></div><div class="flow-config-grid"><el-card v-for="f in flowConfigs" :key="f.type" shadow="hover"><template #header><div class="card-title"><div><b>{{f.type}}</b><span>{{f.category}}</span></div><el-button type="primary" plain @click="editFlow(f)">修改流程</el-button></div></template><div class="flow-chain"><template v-for="(n,i) in f.nodes"><span>{{n}}</span><i v-if="i<f.nodes.length-1">→</i></template></div></el-card></div></template><template v-else><el-empty :description="pageNames[page]+'功能区'"></el-empty></template>
 </el-main></el-container></el-container>
-<el-dialog v-model="submitVisible" :title="submitForm.type" width="760px" destroy-on-close><div class="code-banner"><span>本次单据编码</span><b>{{submitForm.code}}</b><small>编码已自动生成，提交后不可修改</small></div><el-steps :active="1" align-center><el-step title="填写申请"></el-step><el-step title="上传附件"></el-step><el-step title="提交审批"></el-step></el-steps><el-form :model="submitForm" label-position="top" class="submit-form"><div class="form2"><el-form-item label="申请人"><el-input v-model="submitForm.applicant" disabled></el-input></el-form-item><el-form-item label="所属部门"><el-select v-model="submitForm.department"><el-option v-for="d in departments" :label="d" :value="d"></el-option></el-select></el-form-item><el-form-item label="申请事项"><el-input v-model="submitForm.title"></el-input></el-form-item><el-form-item label="申请金额（元）"><el-input-number v-model="submitForm.amount" :min="0" :controls="false"></el-input-number></el-form-item></div><el-form-item label="申请事由"><el-input v-model="submitForm.reason" type="textarea" :rows="3"></el-input></el-form-item><el-form-item label="附件与关联资料"><div class="attachment-grid"><div class="attachment-item" v-for="(a,i) in attachmentRules"><div><i>{{i+1}}</i><b>{{a}}</b><span v-if="isLinkRule(i)">{{linkedDocument?'已关联：'+(linkMode==='daily'?linkedDocument.code:linkedDocument.contract)+' · '+linkedDocument.name:'请查询并选择已审批的前置单据'}}</span><span v-else>请上传与“{{a}}”对应的清晰文件</span></div><el-button v-if="isLinkRule(i)" type="primary" plain @click="openLink">{{linkedDocument?'重新关联':'关联单据'}}</el-button><el-upload v-else action="#" :auto-upload="false" :limit="1" :on-change="onApplyFileChange.bind(null, i)" :on-remove="onApplyFileRemove.bind(null, i)"><el-button type="primary" plain>＋ 上传文件</el-button><template #tip><span style="font-size:11px;color:#909399">提交时统一上传</span></template></el-upload></div></div></el-form-item><div class="flow-tip"><b>审批流程</b><span>提交人 → 部门负责人 → 核算会计 → 内控合规/公司负责人 → 出纳回单</span></div></el-form><template #footer><el-button @click="submitVisible=false">取消</el-button><el-button>保存草稿</el-button><el-button type="primary" @click="submitRequest">提交审批</el-button></template></el-dialog>
+<el-dialog v-model="submitVisible" :title="submitForm.type" width="760px" destroy-on-close><div class="code-banner"><span>本次单据编码</span><b>{{submitForm.code}}</b><small>编码已自动生成，提交后不可修改</small></div><el-steps :active="1" align-center><el-step title="填写申请"></el-step><el-step title="上传附件"></el-step><el-step title="提交审批"></el-step></el-steps><el-form :model="submitForm" label-position="top" class="submit-form"><div class="form2"><el-form-item label="申请人"><el-input v-model="submitForm.applicant" disabled></el-input></el-form-item><el-form-item label="所属部门"><el-select v-model="submitForm.department"><el-option v-for="d in departments" :label="d" :value="d"></el-option></el-select></el-form-item><el-form-item label="申请事项"><el-input v-model="submitForm.title"></el-input></el-form-item><el-form-item label="申请金额（元）"><el-input-number v-model="submitForm.amount" :min="0" :controls="false"></el-input-number></el-form-item></div><el-form-item label="申请事由"><el-input v-model="submitForm.reason" type="textarea" :rows="3"></el-input></el-form-item><el-form-item v-for="df in dynamicFields" :key="df.key" :label="df.label || df.key" :required="!!df.required"><el-input v-if="df.type==='textarea'" v-model="dynamicValues[df.key]" type="textarea" :rows="2"></el-input><el-input-number v-else-if="df.type==='money' || df.type==='number'" v-model="dynamicValues[df.key]" :controls="false" :precision="df.precision" :min="df.min" style="width:100%"></el-input-number><el-date-picker v-else-if="df.type==='date'" v-model="dynamicValues[df.key]" type="date" value-format="YYYY-MM-DD" style="width:100%"></el-date-picker><el-select v-else-if="df.type==='select'" v-model="dynamicValues[df.key]" clearable style="width:100%"><el-option v-for="o in (df.dictType ? (dictMap[df.dictType] || []) : (df.options || []))" :key="df.dictType ? o.dictCode : o.value" :label="df.dictType ? o.dictLabel : (o.label || o.value)" :value="df.dictType ? o.dictCode : o.value"></el-option></el-select><el-input v-else v-model="dynamicValues[df.key]" :maxlength="df.maxLength" :placeholder="df.placeholder || ''"></el-input></el-form-item><el-form-item label="附件与关联资料"><div class="attachment-grid"><div class="attachment-item" v-for="(a,i) in attachmentRules"><div><i>{{i+1}}</i><b>{{a}}</b><span v-if="isLinkRule(i)">{{linkedDocument?'已关联：'+(linkMode==='daily'?linkedDocument.code:linkedDocument.contract)+' · '+linkedDocument.name:'请查询并选择已审批的前置单据'}}</span><span v-else>请上传与“{{a}}”对应的清晰文件</span></div><el-button v-if="isLinkRule(i)" type="primary" plain @click="openLink">{{linkedDocument?'重新关联':'关联单据'}}</el-button><el-upload v-else action="#" :auto-upload="false" :limit="1" :on-change="onApplyFileChange.bind(null, i)" :on-remove="onApplyFileRemove.bind(null, i)"><el-button type="primary" plain>＋ 上传文件</el-button><template #tip><span style="font-size:11px;color:#909399">提交时统一上传</span></template></el-upload></div></div></el-form-item><div class="flow-tip"><b>审批流程</b><span>提交人 → 部门负责人 → 核算会计 → 内控合规/公司负责人 → 出纳回单</span></div></el-form><template #footer><el-button @click="submitVisible=false">取消</el-button><el-button>保存草稿</el-button><el-button type="primary" @click="submitRequest">提交审批</el-button></template></el-dialog>
 <el-dialog v-model="personVisible" title="增加人员与审批权限" width="620px"><el-form label-position="top"><div class="form2"><el-form-item label="姓名"><el-input v-model="newPerson.name"></el-input></el-form-item><el-form-item label="工号"><el-input v-model="newPerson.jobNo"></el-input></el-form-item><el-form-item label="所属部门"><el-select v-model="newPerson.deptId" placeholder="请选择部门" style="width:100%"><el-option v-for="d in deptOptions" :key="d.id" :label="d.name" :value="d.id"></el-option></el-select></el-form-item><el-form-item label="岗位/角色"><el-select v-model="newPerson.position"><el-option v-for="r in roles" :label="r" :value="r"></el-option></el-select></el-form-item></div><el-form-item label="审批权限配置"><el-checkbox-group v-model="newPerson.permissions"><el-checkbox v-for="p in ['查看本人表单','查看本部门表单','查看全部表单','提交全部表单','部门负责人审批','核算会计审批','内控合规审批','出纳审批','审批全部节点','上传审批凭证']" :label="p">{{p}}</el-checkbox></el-checkbox-group></el-form-item></el-form><template #footer><el-button @click="personVisible=false">取消</el-button><el-button type="primary" @click="addPerson">保存人员</el-button></template></el-dialog>
 <el-dialog v-model="delegationVisible" title="新建审批委托" width="520px" append-to-body><el-form label-position="top"><el-form-item label="受托人（代办人）"><el-select v-model="delegationForm.delegateId" filterable placeholder="请选择受托人" style="width:100%"><el-option v-for="u in people" :key="u.id" :label="u.name + '（' + u.department + '）'" :value="u.id"></el-option></el-select></el-form-item><div class="form2"><el-form-item label="生效开始"><el-date-picker v-model="delegationForm.startAt" type="datetime" value-format="YYYY-MM-DDTHH:mm:ss" placeholder="选择开始时间" style="width:100%"></el-date-picker></el-form-item><el-form-item label="生效结束"><el-date-picker v-model="delegationForm.endAt" type="datetime" value-format="YYYY-MM-DDTHH:mm:ss" placeholder="选择结束时间" style="width:100%"></el-date-picker></el-form-item></div><el-form-item label="限定单据范围（不选=全部）"><el-select v-model="delegationForm.bizCategory" clearable placeholder="全部单据" style="width:100%"><el-option label="日常付款" value="DAILY"></el-option><el-option label="员工报销" value="REIMBURSE"></el-option><el-option label="用印申请" value="SEAL"></el-option></el-select></el-form-item><el-form-item label="说明"><el-input v-model="delegationForm.remark" placeholder="如：出差两周"></el-input></el-form-item></el-form><template #footer><el-button @click="delegationVisible=false">取消</el-button><el-button type="primary" :loading="delegationSaving" @click="saveDelegation">保存</el-button></template></el-dialog>
-<el-drawer v-model="detailVisible" size="760px" :with-header="false"><template v-if="selected"><div class="drawer-head"><div><el-tag>{{selected.type}}</el-tag><h2>{{selected.title}}</h2><span>{{selected.id}} · {{selected.applicant}} · {{selected.department}}</span></div><el-button circle @click="detailVisible=false">×</el-button></div><el-alert title="流程信息完全可见" description="当前审批人可查看申请表、全部前置附件、历史审批意见与操作时间。" type="success" :closable="false" show-icon></el-alert><el-descriptions :column="3" border class="desc"><el-descriptions-item label="申请金额">{{money(selected.amount)}}</el-descriptions-item><el-descriptions-item label="当前节点">{{selected.current}}</el-descriptions-item><el-descriptions-item label="状态"><el-tag :type="tagType(selected.status)">{{selected.status}}</el-tag></el-descriptions-item><el-descriptions-item label="申请事由" :span="3">{{selected.reason}}</el-descriptions-item></el-descriptions><el-tabs v-model="detailTab"><el-tab-pane label="全流程" name="flow"><div class="flow-list"><div v-for="(n,i) in selected.nodes" :class="['flow-node',n.state]"><div class="node-dot">{{n.state==='done'?'✓':i+1}}</div><div class="node-body"><div><b>{{n.name}}</b><el-tag size="small" :type="n.state==='done'?'success':n.state==='current'?'warning':'info'">{{n.state==='done'?'已完成':n.state==='current'?'处理中':'待处理'}}</el-tag><span>{{n.time}}</span></div><p v-if="n.person">审批人：{{n.person}}</p><p v-if="n.comment">审批意见：{{n.comment}}</p><div v-if="n.files?.length" class="node-files"><el-button v-for="f in n.files" size="small" plain>▧ {{f}}</el-button></div><small v-if="i>0">可查看前 {{i}} 个节点的全部信息与附件</small></div></div></div></el-tab-pane><el-tab-pane :label="`附件资料 (${allFiles.length})`" name="files"><el-empty v-if="!allFiles.length" description="暂无附件" :image-size="70"></el-empty><div class="file-card" v-for="f in allFiles" :key="f.id"><i>▧</i><div><b>{{f.name}}</b><span>{{f.node}} · {{f.uploader}} · {{f.time}} · {{f.sizeText}}</span></div><el-button link type="primary" v-if="f.previewable" @click="previewAttachment(f.id)">预览</el-button><el-button link @click="downloadAttachment(f.id)">下载</el-button><el-button link type="danger" v-if="canDeleteFile(f)" @click="removeAttachment(f.id)">删除</el-button></div></el-tab-pane><el-tab-pane :label="'关联单据 (' + ((selected.links||[]).length) + ')'" name="links"><el-empty v-if="!selected.links||!selected.links.length" description="未关联前置单据" :image-size="70"></el-empty><div class="file-card" v-for="l in selected.links" :key="l.id"><i>⇄</i><div><b>{{l.linkedDocNo||('#'+l.linkedId)}} · {{l.linkedTitle||'关联单据已不存在'}}</b><span>{{l.linkType==='prev_doc'?'前置单据':(l.linkType||'关联')}}</span></div></div></el-tab-pane><el-tab-pane label="申请表信息" name="form"><el-descriptions :column="2" border><el-descriptions-item label="申请人">{{selected.applicant}}</el-descriptions-item><el-descriptions-item label="所属部门">{{selected.department}}</el-descriptions-item><el-descriptions-item label="单据类型">{{selected.type}}</el-descriptions-item><el-descriptions-item label="申请金额">{{money(selected.amount)}}</el-descriptions-item><el-descriptions-item label="申请事项" :span="2">{{selected.title}}</el-descriptions-item><el-descriptions-item label="申请事由" :span="2">{{selected.reason}}</el-descriptions-item></el-descriptions></el-tab-pane></el-tabs><div v-if="canApprove" class="approval-action"><h3>当前节点审批</h3><el-upload action="#" :auto-upload="false" :limit="3" :on-change="onVoucherChange" :on-remove="onVoucherChange"><el-button>＋ 上传{{selected.current}}凭证{{selected.requireAttachment?'（必填）':''}}</el-button><template #tip><span style="font-size:11px;color:#909399" v-if="selected.requireAttachment">该节点办理必须上传凭证，否则无法通过</span></template></el-upload><el-input v-model="approvalComment" type="textarea" placeholder="请输入审批意见"></el-input><div><el-button type="danger" plain @click="reject">驳回</el-button><el-button type="primary" @click="approve">通过审批</el-button></div></div></template></el-drawer>
+<el-dialog v-model="deptDialog.visible" :title="deptDialog.form.id ? '编辑部门' : '新增部门'" width="480px" append-to-body><el-form label-position="top"><div class="form2"><el-form-item label="部门名称"><el-input v-model="deptDialog.form.name" placeholder="如：财务部"></el-input></el-form-item><el-form-item label="部门编码"><el-input v-model="deptDialog.form.code" placeholder="如：FIN"></el-input></el-form-item></div><el-form-item label="上级部门（不选 = 一级部门）"><el-select v-model="deptDialog.form.parentId" clearable filterable style="width:100%"><el-option v-for="d in mdDeptFlat" :key="d.id" :label="d.label" :value="d.id" :disabled="deptDialog.form.id === d.id"></el-option></el-select></el-form-item><el-form-item label="负责人"><el-select v-model="deptDialog.form.leaderId" clearable filterable style="width:100%"><el-option v-for="u in people" :key="u.id" :label="u.name" :value="u.id"></el-option></el-select></el-form-item><div class="form2"><el-form-item label="排序"><el-input-number v-model="deptDialog.form.sortNo" :controls="false" style="width:100%"></el-input-number></el-form-item><el-form-item label="状态"><el-switch v-model="deptDialog.form.status" :active-value="1" :inactive-value="0"></el-switch></el-form-item></div></el-form><template #footer><el-button @click="deptDialog.visible=false">取消</el-button><el-button type="primary" :loading="deptDialog.saving" @click="saveDept">保存</el-button></template></el-dialog><el-dialog v-model="postDialog.visible" :title="postDialog.form.id ? '编辑岗位' : '新增岗位'" width="480px" append-to-body><el-form label-position="top"><div class="form2"><el-form-item label="岗位名称"><el-input v-model="postDialog.form.name"></el-input></el-form-item><el-form-item label="岗位编码"><el-input v-model="postDialog.form.code"></el-input></el-form-item><el-form-item label="排序"><el-input-number v-model="postDialog.form.sortNo" :controls="false" style="width:100%"></el-input-number></el-form-item><el-form-item label="状态"><el-switch v-model="postDialog.form.status" :active-value="1" :inactive-value="0"></el-switch></el-form-item></div></el-form><template #footer><el-button @click="postDialog.visible=false">取消</el-button><el-button type="primary" :loading="postDialog.saving" @click="savePost">保存</el-button></template></el-dialog><el-dialog v-model="dictDialog.visible" :title="dictDialog.form.id ? '编辑字典项' : '新增字典项'" width="480px" append-to-body><el-form label-position="top"><div class="form2"><el-form-item label="字典类型"><el-input v-model="dictDialog.form.dictType" placeholder="如：pay_type"></el-input></el-form-item><el-form-item label="编码"><el-input v-model="dictDialog.form.dictCode" placeholder="如：OFFICIAL"></el-input></el-form-item><el-form-item label="标签"><el-input v-model="dictDialog.form.dictLabel" placeholder="如：公章"></el-input></el-form-item><el-form-item label="排序"><el-input-number v-model="dictDialog.form.sortNo" :controls="false" style="width:100%"></el-input-number></el-form-item></div><el-form-item label="状态"><el-switch v-model="dictDialog.form.status" :active-value="1" :inactive-value="0"></el-switch></el-form-item></el-form><template #footer><el-button @click="dictDialog.visible=false">取消</el-button><el-button type="primary" :loading="dictDialog.saving" @click="saveDict">保存</el-button></template></el-dialog><el-dialog v-model="tplDetailVisible" :title="tplDetailTitle" width="720px" append-to-body><pre style="max-height:60vh;overflow:auto;font-size:12px;background:#f7f8fc;padding:14px;border-radius:8px;white-space:pre-wrap">{{tplDetailText}}</pre></el-dialog><el-dialog v-model="tplEditor.visible" :title="tplEditor.id ? '编辑模板草稿' : '新建模板版本'" width="720px" append-to-body><el-form label-position="top"><el-form-item label="模板名称"><el-input v-model="tplEditor.name" placeholder="如：日常付款申请单"></el-input></el-form-item><el-form-item label="schema（JSON；生效版本的修改会被拒绝，必须新建版本）"><el-input v-model="tplEditor.schemaText" type="textarea" :rows="14" style="font-family:monospace"></el-input></el-form-item></el-form><template #footer><el-button @click="tplEditor.visible=false">取消</el-button><el-button type="primary" :loading="tplEditor.saving" @click="saveTpl">保存草稿</el-button></template></el-dialog><el-drawer v-model="detailVisible" size="760px" :with-header="false"><template v-if="selected"><div class="drawer-head"><div><el-tag>{{selected.type}}</el-tag><h2>{{selected.title}}</h2><span>{{selected.id}} · {{selected.applicant}} · {{selected.department}}</span></div><el-button circle @click="detailVisible=false">×</el-button></div><el-alert title="流程信息完全可见" description="当前审批人可查看申请表、全部前置附件、历史审批意见与操作时间。" type="success" :closable="false" show-icon></el-alert><el-descriptions :column="3" border class="desc"><el-descriptions-item label="申请金额">{{money(selected.amount)}}</el-descriptions-item><el-descriptions-item label="当前节点">{{selected.current}}</el-descriptions-item><el-descriptions-item label="状态"><el-tag :type="tagType(selected.status)">{{selected.status}}</el-tag></el-descriptions-item><el-descriptions-item label="申请事由" :span="3">{{selected.reason}}</el-descriptions-item></el-descriptions><el-tabs v-model="detailTab"><el-tab-pane label="全流程" name="flow"><div class="flow-list"><div v-for="(n,i) in selected.nodes" :class="['flow-node',n.state]"><div class="node-dot">{{n.state==='done'?'✓':i+1}}</div><div class="node-body"><div><b>{{n.name}}</b><el-tag size="small" :type="n.state==='done'?'success':n.state==='current'?'warning':'info'">{{n.state==='done'?'已完成':n.state==='current'?'处理中':'待处理'}}</el-tag><span>{{n.time}}</span></div><p v-if="n.person">审批人：{{n.person}}</p><p v-if="n.comment">审批意见：{{n.comment}}</p><div v-if="n.files?.length" class="node-files"><el-button v-for="f in n.files" size="small" plain>▧ {{f}}</el-button></div><small v-if="i>0">可查看前 {{i}} 个节点的全部信息与附件</small></div></div></div></el-tab-pane><el-tab-pane :label="`附件资料 (${allFiles.length})`" name="files"><el-empty v-if="!allFiles.length" description="暂无附件" :image-size="70"></el-empty><div class="file-card" v-for="f in allFiles" :key="f.id"><i>▧</i><div><b>{{f.name}}</b><span>{{f.node}} · {{f.uploader}} · {{f.time}} · {{f.sizeText}}</span></div><el-button link type="primary" v-if="f.previewable" @click="previewAttachment(f.id)">预览</el-button><el-button link @click="downloadAttachment(f.id)">下载</el-button><el-button link type="danger" v-if="canDeleteFile(f)" @click="removeAttachment(f.id)">删除</el-button></div></el-tab-pane><el-tab-pane :label="'关联单据 (' + ((selected.links||[]).length) + ')'" name="links"><el-empty v-if="!selected.links||!selected.links.length" description="未关联前置单据" :image-size="70"></el-empty><div class="file-card" v-for="l in selected.links" :key="l.id"><i>⇄</i><div><b>{{l.linkedDocNo||('#'+l.linkedId)}} · {{l.linkedTitle||'关联单据已不存在'}}</b><span>{{l.linkType==='prev_doc'?'前置单据':(l.linkType||'关联')}}</span></div></div></el-tab-pane><el-tab-pane label="申请表信息" name="form"><el-descriptions :column="2" border><el-descriptions-item label="申请人">{{selected.applicant}}</el-descriptions-item><el-descriptions-item label="所属部门">{{selected.department}}</el-descriptions-item><el-descriptions-item label="单据类型">{{selected.type}}</el-descriptions-item><el-descriptions-item label="申请金额">{{money(selected.amount)}}</el-descriptions-item><el-descriptions-item label="申请事项" :span="2">{{selected.title}}</el-descriptions-item><el-descriptions-item label="申请事由" :span="2">{{selected.reason}}</el-descriptions-item></el-descriptions></el-tab-pane></el-tabs><div v-if="canApprove" class="approval-action"><h3>当前节点审批</h3><el-upload action="#" :auto-upload="false" :limit="3" :on-change="onVoucherChange" :on-remove="onVoucherChange"><el-button>＋ 上传{{selected.current}}凭证{{selected.requireAttachment?'（必填）':''}}</el-button><template #tip><span style="font-size:11px;color:#909399" v-if="selected.requireAttachment">该节点办理必须上传凭证，否则无法通过</span></template></el-upload><el-input v-model="approvalComment" type="textarea" placeholder="请输入审批意见"></el-input><div><el-button type="danger" plain @click="reject">驳回</el-button><el-button type="primary" @click="approve">通过审批</el-button></div></div></template></el-drawer>
 </div><script src="https://cdn.jsdelivr.net/npm/vue@3.5.22/dist/vue.global.prod.js"></script><script src="https://cdn.jsdelivr.net/npm/element-plus@2.11.5/dist/index.full.min.js"></script><script src="https://cdn.jsdelivr.net/npm/element-plus@2.11.5/dist/locale/zh-cn.min.js"></script><script>
 document.querySelector('#app').insertAdjacentHTML('beforeend',`<el-dialog v-model="linkVisible" :title="linkMode==='daily'?'关联前置单据':'关联合同或前置审批'" width="780px" append-to-body><el-alert :title="linkMode==='daily'?'可按单据编号、单据名称或提交人查询':'可按合同编号、单据名称或提交人查询'" type="info" :closable="false" show-icon></el-alert><div class="link-search"><el-input v-model="linkKeyword" clearable :placeholder="linkMode==='daily'?'输入单据编号、名称或提交人':'输入合同编号、单据名称或提交人'"><template #prepend>⌕</template></el-input><el-button type="primary">查询</el-button></div><el-table :data="filteredLinks" highlight-current-row><el-table-column v-if="linkMode==='daily'" prop="code" label="单据编号" width="160"></el-table-column><el-table-column v-else prop="contract" label="合同编号" width="160"></el-table-column><el-table-column prop="name" label="单据名称" min-width="210"></el-table-column><el-table-column label="提交人信息" min-width="170"><template #default="s"><b>{{s.row.applicant}}</b><small class="cell-sub">{{s.row.department}}</small></template></el-table-column><el-table-column label="操作" width="90"><template #default="s"><el-button link type="primary" @click="chooseLink(s.row)">选择关联</el-button></template></el-table-column></el-table><template #footer><el-button @click="linkVisible=false">取消</el-button></template></el-dialog>`);
 document.querySelector('#app').insertAdjacentHTML('beforeend',`<el-dialog v-model="flowVisible" :title="editingFlow?.isNew?'新增审批流程':'修改审批流程'" width="640px" append-to-body><template v-if="editingFlow"><el-form label-position="top" class="flow-editor"><div class="form2"><el-form-item label="流程名称"><el-input v-model="editingFlow.type" :disabled="!editingFlow.isNew" placeholder="例如：采购申请单"></el-input></el-form-item><el-form-item label="关联单据类型"><el-select v-model="editingFlow.docTypeId" placeholder="该流程服务的单据类型" style="width:100%"><el-option v-for="d in documentTypes" :key="d.id" :label="d.name" :value="d.id"></el-option></el-select></el-form-item></div><el-form-item label="审批节点（按审批顺序选择，可输入新节点）"><el-select v-model="editingFlow.nodes" multiple filterable allow-create default-first-option style="width:100%" placeholder="按审批顺序选择节点"><el-option v-for="n in nodeTemplateList" :key="n.name" :label="n.name" :value="n.name"><span>{{n.name}}</span><span style="float:right;color:#909399;font-size:12px;margin-left:16px">{{n.ruleLabel}}</span></el-option></el-select><el-alert title="保存后会生成新版本并自动部署；已在审批中的单据仍走原版本，不受影响。" type="info" :closable="false" style="margin-top:10px"></el-alert></el-form-item></el-form></template><template #footer><el-button v-if="!editingFlow?.isNew" type="danger" plain @click="removeFlow">废弃流程</el-button><el-button @click="flowVisible=false">取消</el-button><el-button type="primary" :loading="personSaving" @click="saveFlow">保存并部署</el-button></template></el-dialog>`);
@@ -293,6 +296,33 @@ const api = {
   createDelegation: function(body){ return http('/api/delegations', {method:'POST', body:body}); },
   cancelDelegation: function(id){ return http('/api/delegations/' + id, {method:'DELETE'}); },
   runEscalation: function(documentId){ return http('/api/flows/escalation/run' + (documentId ? ('?documentId=' + documentId) : ''), {method:'POST'}); },
+  /* ---- 审计日志（system:audit）：后端强制分页，前端必须带 pageNum/pageSize ---- */
+  auditLogs:    function(params){ return http('/api/audit-logs', {params:params||{}}); },
+  /* ---- 主数据维护（dept/post 挂 system:dept，dict 挂 system:dict）----
+     部门树读取走已有 deptTree()；写接口在 OrgAdminService（引用守卫 + 物化路径都在后端）。 */
+  deptList:     function(){ return http('/api/depts'); },
+  deptCreate:   function(body){ return http('/api/depts', {method:'POST', body:body}); },
+  deptUpdate:   function(id, body){ return http('/api/depts/' + id, {method:'PUT', body:body}); },
+  deptDelete:   function(id){ return http('/api/depts/' + id, {method:'DELETE'}); },
+  posts:        function(){ return http('/api/posts'); },
+  postCreate:   function(body){ return http('/api/posts', {method:'POST', body:body}); },
+  postUpdate:   function(id, body){ return http('/api/posts/' + id, {method:'PUT', body:body}); },
+  postDelete:   function(id){ return http('/api/posts/' + id, {method:'DELETE'}); },
+  dictCreate:   function(body){ return http('/api/dicts', {method:'POST', body:body}); },
+  dictUpdate:   function(id, body){ return http('/api/dicts/' + id, {method:'PUT', body:body}); },
+  dictDelete:   function(id){ return http('/api/dicts/' + id, {method:'DELETE'}); },
+  /* ---- 动态表单（原型 §9 的关键架构决策：表单由模板 schema 驱动）----
+     schema 按「发起节点 n1」渲染；validate 是提交前预检，后端提交时还会再校验一次。 */
+  formsSchema:  function(docTypeId){ return http('/api/forms/schema', {params:{docTypeId:docTypeId, nodeKey:'n1'}}); },
+  formsValidate:function(docTypeId, formData){ return http('/api/forms/validate', {params:{docTypeId:docTypeId}, method:'POST', body:formData}); },
+  /* ---- 表单模板维护（system:form）----
+     /templates 只返回生效版本（历史行为），配置页看全部版本必须用 /templates/versions。 */
+  formVersions: function(docTypeId){ return http('/api/forms/templates/versions', {params:{docTypeId:docTypeId}}); },
+  formTplDetail:function(id){ return http('/api/forms/templates/' + id); },
+  formTplCreate:function(body){ return http('/api/forms/templates', {method:'POST', body:body}); },
+  formTplUpdate:function(id, body){ return http('/api/forms/templates/' + id, {method:'PUT', body:body}); },
+  formTplActivate:function(id){ return http('/api/forms/templates/' + id + '/activate', {method:'POST'}); },
+  formTplDelete:function(id){ return http('/api/forms/templates/' + id, {method:'DELETE'}); },
   /* ---- 用印台账与归还闭环（document:approve:seal）---- */
   sealLedger:   function(params){ return http('/api/seals', {params:params||{}}); },
   sealByDoc:    function(id){ return http('/api/seals/by-document/' + id); },
@@ -613,7 +643,7 @@ createApp({setup(){
   const loading = ref(false), detailLoading = ref(false);
 
   const pageNames = {home:'首页', work:'工作台', board:'工作看板', forms:'全部表单', approve:'待我审批',
-                     archive:'台账档案', permission:'权限管理', risk:'风险预警', flow:'流程管理', seal:'用印台账', delegation:'我的委托'};
+                     archive:'台账档案', permission:'权限管理', risk:'风险预警', flow:'流程管理', seal:'用印台账', delegation:'我的委托', masterdata:'主数据', formtpl:'表单模板', audit:'审计日志'};
 
   const documentTypes = ref([]), allUsers = ref([]), allRoles = ref([]), deptFlat = ref([]);
   const flowConfigList = ref([]), dictMap = reactive({});
@@ -1463,6 +1493,7 @@ createApp({setup(){
     linkedDocument.value = null;
     attachmentRules.value = attachmentList(submitForm.title, realName);
     previewNodes.value = null;
+    loadDynamicFields(t ? t.id : null);
     if (!t) ElementPlus.ElMessage.warning('后端未配置「' + type + '」这一单据类型，请先在单据类型表中配置');
     const fc = flowConfigList.value.find(function(f){ return f.docTypeId === submitForm.typeId; });
     if (fc) api.flowPreview(fc.id, {bizCategory: fc.category, amount: submitForm.amount})
@@ -1520,6 +1551,23 @@ createApp({setup(){
          payeeName: submitForm.payeeName, payeeAccount: submitForm.payeeAccount, payeeBank: submitForm.payeeBank,
          expenseType: dictCodeOf('expense_type', submitForm.expenseType),
          occurDate: submitForm.occurDate || null};
+    /* 动态字段合并：只合固定字段没覆盖的 key —— 绝不用动态值覆盖固定字段
+       （两边来源不同，覆盖会静默改语义）。空值不合，避免把「未填」变成空串盖掉后端默认。 */
+    Object.keys(dynamicValues).forEach(function(k){
+      const v = dynamicValues[k];
+      if (!(k in formData) && v !== '' && v !== null && v !== undefined) formData[k] = v;
+    });
+    /* 服务端预检：与提交时同一套校验规则，错误在弹窗里就暴露，而不是提交后才 422。
+       仅当 schema 成功拉到（dynamicReady）才预检 —— 该类型没有生效模板时维持老行为。 */
+    if (dynamicReady.value){
+      try {
+        await api.formsValidate(submitForm.typeId, formData);
+      } catch(ve){
+        loading.value = false;
+        ElementPlus.ElMessageBox.alert('表单校验未通过：' + (ve.message || '存在不符合模板要求的字段'), '提交前校验', {type:'warning'});
+        return;
+      }
+    }
     loading.value = true;
     try {
       const created = await ensureDraft(function(){ return api.createDoc({
@@ -1922,6 +1970,257 @@ createApp({setup(){
     } finally { escalating.value = false; }
   };
 
+  /* ================= 审计日志（只读） =================
+     守卫放逻辑层：无 system:audit 的人不发必然 403 的请求（E2E 盯「无失败请求」）。 */
+  const auditRows = ref([]), auditTotal = ref(0), auditBusy = ref(false);
+  const auditPage = ref(1), auditPageSize = ref(20);
+  const auditFilters = reactive({module:'', keyword:'', range:null});
+  const refreshAudit = async function(){
+    if (!can('system:audit')){ auditRows.value = []; auditTotal.value = 0; return; }
+    auditBusy.value = true;
+    try {
+      const range = auditFilters.range || [];
+      const res = await api.auditLogs({
+        module: auditFilters.module || '', keyword: auditFilters.keyword || '',
+        from: range[0] || '', to: range[1] || '',
+        pageNum: auditPage.value, pageSize: auditPageSize.value
+      });
+      auditRows.value = (res && res.records) || [];
+      auditTotal.value = (res && res.total) || 0;
+    } catch(e){
+      auditRows.value = []; auditTotal.value = 0;
+      ElementPlus.ElMessage.error(e.message || '审计日志加载失败');
+    } finally { auditBusy.value = false; }
+  };
+  const auditSearch = function(pg){ auditPage.value = pg || 1; refreshAudit(); };
+  const auditPageChange = function(pg){ auditPage.value = pg; refreshAudit(); };
+  const auditSizeChange = function(n){ auditPageSize.value = n; auditPage.value = 1; refreshAudit(); };
+  const auditReset = function(){ auditFilters.module = ''; auditFilters.keyword = ''; auditFilters.range = null; auditSearch(1); };
+
+  /* ================= 主数据维护（部门/岗位/字典） ================= */
+  const mdTab = ref('dept');
+  const deptRows = ref([]), mdDeptFlat = ref([]);
+  const postRows = ref([]);
+  const dictTypeSel = ref(''), dictRows = ref([]);
+  const dictGroups = ref({});
+  const flattenMdDept = function(list, prefix, out){
+    (list || []).forEach(function(n){
+      out.push({id: n.id, label: prefix + n.name});
+      flattenMdDept(n.children, prefix + '\u3000', out);
+    });
+    return out;
+  };
+  const refreshDeptTree = async function(){
+    try {
+      deptRows.value = (await api.deptTree()) || [];
+      mdDeptFlat.value = flattenMdDept(deptRows.value, '', []);
+    } catch(e){ deptRows.value = []; mdDeptFlat.value = []; }
+  };
+  const refreshPosts = async function(){
+    try { postRows.value = (await api.posts()) || []; }
+    catch(e){ postRows.value = []; }
+  };
+  const refreshDicts = async function(){
+    try {
+      dictGroups.value = (await api.dicts()) || {};
+      if (!dictTypeSel.value || !dictGroups.value[dictTypeSel.value]){
+        dictTypeSel.value = Object.keys(dictGroups.value)[0] || '';
+      }
+      dictRows.value = dictGroups.value[dictTypeSel.value] || [];
+    } catch(e){ dictGroups.value = {}; dictRows.value = []; }
+  };
+  const refreshDictRows = function(){ dictRows.value = dictGroups.value[dictTypeSel.value] || []; };
+
+  const deptDialog = reactive({visible:false, saving:false,
+    form:{id:null, name:'', code:'', parentId:null, leaderId:null, sortNo:0, status:1}});
+  const newDept = function(parentId){
+    if (!can('system:dept')){ ElementPlus.ElMessage.warning('无主数据维护权限（system:dept）'); return; }
+    Object.assign(deptDialog.form, {id:null, name:'', code:'', parentId: parentId || null, leaderId:null, sortNo:0, status:1});
+    deptDialog.visible = true;
+  };
+  const editDept = function(node){
+    if (!can('system:dept')){ ElementPlus.ElMessage.warning('无主数据维护权限（system:dept）'); return; }
+    /* 树 VO 不带 sortNo/status：编辑时这两项只能给中性默认值 ——
+       部门实体在 GET /api/depts 里有，但树接口没有；先按启用处理。 */
+    Object.assign(deptDialog.form, {id:node.id, name:node.name, code:node.code, parentId:node.parentId || null, leaderId:node.leaderId || null, sortNo:0, status:1});
+    deptDialog.visible = true;
+  };
+  const saveDept = async function(){
+    const f = deptDialog.form;
+    if (!f.name || !f.code){ ElementPlus.ElMessage.warning('请填写部门名称与编码'); return; }
+    deptDialog.saving = true;
+    try {
+      const body = {name:f.name, code:f.code, parentId:f.parentId, leaderId:f.leaderId, sortNo:f.sortNo, status:f.status};
+      if (f.id) await api.deptUpdate(f.id, body); else await api.deptCreate(body);
+      ElementPlus.ElMessage.success('已保存');
+      deptDialog.visible = false;
+      await refreshDeptTree();
+    } catch(e){ ElementPlus.ElMessage.error(e.message || '保存失败'); }
+    finally { deptDialog.saving = false; }
+  };
+  const removeDept = function(node){
+    if (!can('system:dept')) return;
+    ElementPlus.ElMessageBox.confirm('确认删除部门「' + node.name + '」？仍有人员或子部门时后端会拒绝。', '删除部门', {type:'warning'})
+      .then(async function(){
+        try { await api.deptDelete(node.id); ElementPlus.ElMessage.success('已删除'); await refreshDeptTree(); }
+        catch(e){ ElementPlus.ElMessage.error(e.message || '删除失败'); }
+      }).catch(function(){});
+  };
+
+  const postDialog = reactive({visible:false, saving:false,
+    form:{id:null, name:'', code:'', sortNo:0, status:1}});
+  const newPost = function(){
+    if (!can('system:dept')){ ElementPlus.ElMessage.warning('无主数据维护权限（system:dept）'); return; }
+    Object.assign(postDialog.form, {id:null, name:'', code:'', sortNo:0, status:1});
+    postDialog.visible = true;
+  };
+  const editPost = function(row){
+    if (!can('system:dept')) return;
+    Object.assign(postDialog.form, {id:row.id, name:row.name, code:row.code, sortNo:row.sortNo || 0, status:row.status});
+    postDialog.visible = true;
+  };
+  const savePost = async function(){
+    const f = postDialog.form;
+    if (!f.name || !f.code){ ElementPlus.ElMessage.warning('请填写岗位名称与编码'); return; }
+    postDialog.saving = true;
+    try {
+      const body = {name:f.name, code:f.code, sortNo:f.sortNo, status:f.status};
+      if (f.id) await api.postUpdate(f.id, body); else await api.postCreate(body);
+      ElementPlus.ElMessage.success('已保存');
+      postDialog.visible = false;
+      await refreshPosts();
+    } catch(e){ ElementPlus.ElMessage.error(e.message || '保存失败'); }
+    finally { postDialog.saving = false; }
+  };
+  const removePost = function(row){
+    if (!can('system:dept')) return;
+    ElementPlus.ElMessageBox.confirm('确认删除岗位「' + row.name + '」？仍被人员引用时后端会拒绝。', '删除岗位', {type:'warning'})
+      .then(async function(){
+        try { await api.postDelete(row.id); ElementPlus.ElMessage.success('已删除'); await refreshPosts(); }
+        catch(e){ ElementPlus.ElMessage.error(e.message || '删除失败'); }
+      }).catch(function(){});
+  };
+
+  const dictDialog = reactive({visible:false, saving:false,
+    form:{id:null, dictType:'', dictCode:'', dictLabel:'', sortNo:0, status:1}});
+  const newDict = function(){
+    if (!can('system:dict')){ ElementPlus.ElMessage.warning('无字典维护权限（system:dict）'); return; }
+    Object.assign(dictDialog.form, {id:null, dictType:dictTypeSel.value || '', dictCode:'', dictLabel:'', sortNo:0, status:1});
+    dictDialog.visible = true;
+  };
+  const editDict = function(row){
+    if (!can('system:dict')) return;
+    Object.assign(dictDialog.form, {id:row.id, dictType:row.dictType, dictCode:row.dictCode, dictLabel:row.dictLabel, sortNo:row.sortNo || 0, status:row.status});
+    dictDialog.visible = true;
+  };
+  const saveDict = async function(){
+    const f = dictDialog.form;
+    if (!f.dictType || !f.dictCode || !f.dictLabel){ ElementPlus.ElMessage.warning('请填写字典类型、编码与标签'); return; }
+    dictDialog.saving = true;
+    try {
+      const body = {dictType:f.dictType, dictCode:f.dictCode, dictLabel:f.dictLabel, sortNo:f.sortNo, status:f.status};
+      if (f.id) await api.dictUpdate(f.id, body); else await api.dictCreate(body);
+      ElementPlus.ElMessage.success('已保存');
+      dictDialog.visible = false;
+      dictTypeSel.value = f.dictType;
+      await refreshDicts();
+    } catch(e){ ElementPlus.ElMessage.error(e.message || '保存失败'); }
+    finally { dictDialog.saving = false; }
+  };
+  const removeDict = function(row){
+    if (!can('system:dict')) return;
+    ElementPlus.ElMessageBox.confirm('确认删除字典项「' + row.dictLabel + '」？该类型被流程网关引用时会导致分支判断退化，请谨慎。', '删除字典项', {type:'warning'})
+      .then(async function(){
+        try { await api.dictDelete(row.id); ElementPlus.ElMessage.success('已删除'); await refreshDicts(); }
+        catch(e){ ElementPlus.ElMessage.error(e.message || '删除失败'); }
+      }).catch(function(){});
+  };
+
+  /* ================= 表单模板维护（system:form） ================= */
+  const tplDocTypeId = ref(null), tplRows = ref([]), tplBusy = ref(false);
+  const tplDetailVisible = ref(false), tplDetailTitle = ref(''), tplDetailText = ref('');
+  const tplEditor = reactive({visible:false, saving:false, id:null, name:'', schemaText:''});
+  const refreshTpl = async function(){
+    if (!can('system:form') || !tplDocTypeId.value){ tplRows.value = []; return; }
+    tplBusy.value = true;
+    try { tplRows.value = (await api.formVersions(tplDocTypeId.value)) || []; }
+    catch(e){ tplRows.value = []; ElementPlus.ElMessage.error(e.message || '模板版本加载失败'); }
+    finally { tplBusy.value = false; }
+  };
+  const viewTpl = async function(row){
+    try {
+      const d = await api.formTplDetail(row.id);
+      tplDetailTitle.value = (row.name || '模板') + ' · v' + row.version;
+      tplDetailText.value = JSON.stringify((d && (d.schema || d.schemaJson)) || d, null, 2);
+      tplDetailVisible.value = true;
+    } catch(e){ ElementPlus.ElMessage.error(e.message || '加载失败'); }
+  };
+  const newTplVersion = function(){
+    if (!can('system:form')) return;
+    if (!tplDocTypeId.value){ ElementPlus.ElMessage.warning('请先选择单据类型'); return; }
+    Object.assign(tplEditor, {visible:true, id:null, name:'', schemaText:'{\n  "fields": []\n}'});
+  };
+  const editTpl = async function(row){
+    if (!can('system:form')) return;
+    try {
+      const d = await api.formTplDetail(row.id);
+      Object.assign(tplEditor, {visible:true, id:row.id, name:row.name || '',
+        schemaText: JSON.stringify((d && (d.schema || d.schemaJson)) || {}, null, 2)});
+    } catch(e){ ElementPlus.ElMessage.error(e.message || '加载失败'); }
+  };
+  const saveTpl = async function(){
+    if (!tplEditor.name){ ElementPlus.ElMessage.warning('请填写模板名称'); return; }
+    let schema;
+    try { schema = JSON.parse(tplEditor.schemaText); }
+    catch(e){ ElementPlus.ElMessage.error('schema 不是合法 JSON：' + e.message); return; }
+    tplEditor.saving = true;
+    try {
+      const body = {docTypeId: tplDocTypeId.value, name: tplEditor.name, schema: schema};
+      if (tplEditor.id) await api.formTplUpdate(tplEditor.id, body);
+      else await api.formTplCreate(body);
+      ElementPlus.ElMessage.success('已保存（草稿）');
+      tplEditor.visible = false;
+      await refreshTpl();
+    } catch(e){ ElementPlus.ElMessage.error(e.message || '保存失败'); }
+    finally { tplEditor.saving = false; }
+  };
+  const activateTpl = function(row){
+    ElementPlus.ElMessageBox.confirm('启用 v' + row.version + ' 后，同单据类型的旧生效版本自动废弃（在途单据不受影响）。确认启用？', '启用模板', {type:'warning'})
+      .then(async function(){
+        try { await api.formTplActivate(row.id); ElementPlus.ElMessage.success('已启用'); await refreshTpl(); }
+        catch(e){ ElementPlus.ElMessage.error(e.message || '启用失败'); }
+      }).catch(function(){});
+  };
+  const removeTpl = function(row){
+    ElementPlus.ElMessageBox.confirm('确认删除草稿 v' + row.version + '？（只有草稿可删）', '删除模板', {type:'warning'})
+      .then(async function(){
+        try { await api.formTplDelete(row.id); ElementPlus.ElMessage.success('已删除'); await refreshTpl(); }
+        catch(e){ ElementPlus.ElMessage.error(e.message || '删除失败'); }
+      }).catch(function(){});
+  };
+
+  /* ================= 动态表单字段（schema 驱动） =================
+     只渲染「固定字段没覆盖」的 schema 字段；dictType 型下拉从字典映射取选项。
+     schema 拉不到（该类型无生效模板）时什么都不渲染，提交预检也跳过 —— 不给老流程添堵。 */
+  const FIXED_FORM_KEYS = ['title','amount','reason','invoiceSummary','payType','payeeName','payeeAccount','payeeBank',
+    'expenseType','occurDate','sealType','copies','isCarryOut','sealProject','sealReason','sealTime','sealDepartment','fileName'];
+  const dynamicFields = ref([]), dynamicReady = ref(false);
+  const dynamicValues = reactive({});
+  const loadDynamicFields = async function(docTypeId){
+    dynamicFields.value = []; dynamicReady.value = false;
+    Object.keys(dynamicValues).forEach(function(k){ delete dynamicValues[k]; });
+    if (!docTypeId) return;
+    try {
+      const schema = await api.formsSchema(docTypeId);
+      ((schema && schema.fields) || []).forEach(function(f){
+        if (!f || !f.key || FIXED_FORM_KEYS.indexOf(f.key) >= 0) return;
+        dynamicFields.value.push(f);
+        dynamicValues[f.key] = (f.default !== undefined && f.default !== null) ? f.default : '';
+      });
+      dynamicReady.value = true;
+    } catch(e){ /* 静默：无生效模板时维持原有固定表单行为 */ }
+  };
+
   const addPerson = async function(){
     if (!newPerson.name || !newPerson.jobNo || !newPerson.account){
       ElementPlus.ElMessage.warning('姓名、工号、登录账号均为必填'); return;
@@ -2109,6 +2408,29 @@ createApp({setup(){
       batchSelected.value = [];
       refreshDelegations().catch(function(){});
     }
+    if (v === 'masterdata'){
+      refreshDeptTree().catch(function(){});
+      refreshPosts().catch(function(){});
+      refreshDicts().catch(function(){});
+    }
+    if (v === 'formtpl'){
+      if (!documentTypes.value.length){
+        api.docTypes().then(function(list){
+          documentTypes.value = list || [];
+          if (!tplDocTypeId.value && documentTypes.value.length){
+            tplDocTypeId.value = documentTypes.value[0].id;
+            refreshTpl().catch(function(){});
+          }
+        }).catch(function(){});
+      } else {
+        if (!tplDocTypeId.value) tplDocTypeId.value = documentTypes.value[0].id;
+        refreshTpl().catch(function(){});
+      }
+    }
+    if (v === 'audit'){
+      auditPage.value = 1;
+      refreshAudit().catch(function(){});
+    }
   });
 
   return {
@@ -2119,7 +2441,17 @@ createApp({setup(){
            batchSelected, batchApproving, onTodoSelect, batchApprove,
            delegationsMine, delegationsToMe, delegationVisible, delegationSaving, delegationForm,
            refreshDelegations, newDelegation, saveDelegation, cancelDelegation,
-           escalating, runEscalation, pingOk, pingText, ping, corsBlocked, altUrl,
+           escalating, runEscalation,
+           mdTab, deptRows, mdDeptFlat, postRows, dictTypeSel, dictRows, dictGroups,
+           refreshDictRows, deptDialog, newDept, editDept, saveDept, removeDept,
+           postDialog, newPost, editPost, savePost, removePost,
+           dictDialog, newDict, editDict, saveDict, removeDict,
+           tplDocTypeId, tplRows, tplBusy, refreshTpl,
+           tplDetailVisible, tplDetailTitle, tplDetailText, viewTpl,
+           tplEditor, newTplVersion, editTpl, saveTpl, activateTpl, removeTpl,
+           auditRows, auditTotal, auditBusy, auditPage, auditPageSize, auditFilters,
+           refreshAudit, auditSearch, auditPageChange, auditSizeChange, auditReset,
+           dynamicFields, dynamicValues, dynamicReady, pingOk, pingText, ping, corsBlocked, altUrl,
     greeting, todayText, roleText, scopeText, todoCount, rejectTargets,
     page, role, keyword, statusFilter, businessTypeFilter, docTypeFilter, applicantFilter, listMode,
     submitVisible, detailVisible, selected, detailTab, approvalComment, boardDate, archiveApplicant,
