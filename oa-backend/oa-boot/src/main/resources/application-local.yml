@@ -1,0 +1,85 @@
+# ===========================================================================
+# 本地演示 profile（spring.profiles.active=local）
+#
+# 【为什么必须存在这个文件】
+#   此前 local 就是基础 application.yml：数据源写成 ${MYSQL_USER:root}/${MYSQL_PASSWORD:}。
+#   这占位符与 docker-test/.env 的键名**同名**——.env 是为服务器部署创建的，
+#   一旦它出现在 oa-backend/docker-test/.env，本地启动加载后 MYSQL_USER/MYSQL_PASSWORD
+#   作为环境变量的优先级高于 yml 默认值 → 本地连库变成「root + 测试库密码」
+#   → `Access denied for user 'root'@'localhost' (using password: YES)`，
+#   而 TCP/端口看起来一切正常，极易误判成 MySQL 问题。
+#
+# 【本文件的隔离手段（两层）】
+#   1. profile 专属文件对同一属性的声明优先于基础 application.yml，
+#      基础文件里的 ${MYSQL_USER:root} 占位符**不再参与求值**；
+#   2. 本文件自己的占位符改用 OA_LOCAL_ 前缀——与 .env 的全部键名物理不同名，
+#      环境变量想劫持也无从下手。
+#
+# 【local 的设计目标】零外部依赖：本机 MySQL（root 免密）+ 进程内限速/缓存 +
+#   本地磁盘附件存储。一切外部凭据（.env）只属于 test profile。
+# ===========================================================================
+
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    # 本地演示库：init_database.sql + seed_data.sql 建出来的 haixiajin_oa（46 张演示单据）
+    url: jdbc:mysql://${OA_LOCAL_DB_HOST:127.0.0.1}:${OA_LOCAL_DB_PORT:3306}/${OA_LOCAL_DB_NAME:haixiajin_oa}?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true&rewriteBatchedStatements=true
+    # 本机 root 免密；确有需要时用 OA_LOCAL_DB_USER / OA_LOCAL_DB_PASSWORD 覆盖
+    username: ${OA_LOCAL_DB_USER:root}
+    password: ${OA_LOCAL_DB_PASSWORD:}
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      pool-name: OaHikariPool
+
+# ---------------------------------------------------------------------------
+# Flowable：与基础 yml 相同（显式写一遍，让本文件自洽可读，不必翻基础文件对账）
+# ---------------------------------------------------------------------------
+flowable:
+  database-schema-update: true
+  async-executor-activate: false
+  history-level: full
+  check-process-definitions: false
+
+oa:
+  jwt:
+    # 与基础 yml 同名占位符（OA_JWT_SECRET），由启动脚本注入；此处不设默认值，保持 fail-fast
+    secret: ${OA_JWT_SECRET:}
+    expire-minutes: 720
+
+  # 本地只放行本机联调地址
+  cors:
+    permissive: false
+    allowed-origins: ""
+
+  # 附件存本机磁盘
+  storage:
+    type: local
+    local:
+      root: ${OA_STORAGE_ROOT:./data/attachments}
+
+  # Redis 关闭：登录限速与权限缓存走进程内实现
+  redis:
+    enabled: false
+    key-prefix: "oa:"
+
+  log:
+    dir: ${OA_LOG_DIR:./logs}
+
+# 接口文档默认关闭（不在 /api/** 前缀下，开了就是未认证可读，见基础 yml 的说明）
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+
+# 本地开发：业务日志开 DEBUG 方便排查；Flowable 保持 WARN 压噪音
+logging:
+  level:
+    root: INFO
+    com.hxj.oa: DEBUG
+    org.flowable: WARN
+    org.springframework.jdbc: INFO

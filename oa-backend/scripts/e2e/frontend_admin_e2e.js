@@ -23,7 +23,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
    为什么要把这个数写死在代码里：本项目出过一次「假绿灯」—— 上游某条断言依赖的接口被回退后
    抛错中断，导致其后 16 条断言（含整条审计留痕链路）**从未执行**，而末行照样打印
    "85/85 通过"。有了这个数，任何"少跑了"都会立刻变成红灯，而不是无声无息。 */
-const EXPECTED_TOTAL = 72;
+const EXPECTED_TOTAL = 75;
 
 const results = [];
 function check(name, ok, extra) {
@@ -642,6 +642,41 @@ async function closeDialogs(page) {
   check('★ 表单模板版本列表出现「生效」版本', tplInfo.rows > 0 && tplInfo.hasActive,
     '行数=' + tplInfo.rows);
   check('表单模板行有「查看」入口（草稿才显示 编辑/启用/删除）', tplInfo.hasView, '');
+
+  /* ---- 字段权限编辑界面（只打开验证渲染，不保存 —— 写回路由 verify_form_template_api 覆盖） ---- */
+  const fpEntry = await page.evaluate(() =>
+    [...document.querySelectorAll('.el-main .el-table button')].some(b => b.textContent.includes('字段权限')));
+  check('表单模板行有「字段权限」入口（全状态可用，后端不限制）', fpEntry, '');
+  if (fpEntry) {
+    await page.evaluate(() => {
+      const b = [...document.querySelectorAll('.el-main .el-table button')]
+        .find(x => x.textContent.includes('字段权限'));
+      if (b) b.click();
+    });
+    await sleep(1600);
+    const fpDlg = await page.evaluate(() => {
+      const dlg = [...document.querySelectorAll('.el-dialog')].find(d => d.textContent.includes('字段权限 · ') && d.offsetParent !== null);
+      if (!dlg) return { open: false };
+      return {
+        open: true,
+        fieldRows: dlg.querySelectorAll('.el-table__body tbody tr').length,
+        switches: dlg.querySelectorAll('.el-table .el-switch').length,
+        hasN1: [...dlg.querySelectorAll('.el-select')].length > 0,
+        hasAlert: !!dlg.querySelector('.el-alert')
+      };
+    });
+    check('★ 点击「字段权限」弹出编辑矩阵（按 schema 字段逐行渲染）',
+      fpDlg.open && fpDlg.fieldRows > 0 && fpDlg.switches >= fpDlg.fieldRows,
+      '打开=' + fpDlg.open + ' 字段行=' + fpDlg.fieldRows + ' 开关=' + fpDlg.switches);
+    check('对话框有节点选择器与缺省口径说明（* 优先级 / 未配置缺省）',
+      fpDlg.hasN1 && fpDlg.hasAlert, '');
+    await page.evaluate(() => {
+      const dlg = [...document.querySelectorAll('.el-dialog')].find(d => d.textContent.includes('字段权限 · ') && d.offsetParent !== null);
+      const cancel = dlg && [...dlg.querySelectorAll('button')].find(b => b.textContent.trim() === '取消');
+      if (cancel) cancel.click();
+    });
+    await sleep(600);
+  }
 
   /* ---- 审计日志：真实数据 + 模块筛选（只读查询，随便查） ---- */
   await clickMenu(page, '审计日志');

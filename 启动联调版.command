@@ -38,7 +38,17 @@ WEB_PID=""
 
 mkdir -p "$RUN_DIR"
 
-# ---------- 环境变量（.env） ----------
+# 运行环境：local（默认，零外部依赖）/ test（连测试环境 MySQL+Redis+OSS）
+# ⚠ profile 解析必须在 .env 加载之前，且 local 也要显式激活：
+#   local 的全部配置钉在 application-local.yml 里（数据源用 OA_LOCAL_* 占位符，
+#   与 .env 键名物理不同名，环境变量无从劫持）。没有它 local 就退化为基础
+#   application.yml，其 ${MYSQL_USER:root} 会吃进 .env 的测试库凭据。
+#   .env 是"外部环境凭据"，只属于 test profile；docker 部署自行读同一份文件，互不影响。
+OA_PROFILE="${OA_PROFILE:-local}"
+PROFILE_ARGS="--spring.profiles.active=$OA_PROFILE"
+echo "· 运行 profile：${OA_PROFILE}"
+
+# ---------- 环境变量（.env，仅非 local profile） ----------
 # 测试环境的数据库/Redis/OSS 凭据**一律不入仓库**（仓库是 public，写进去就等于公开泄露），
 # 统一由 .env 注入。docker 部署与本地联调**复用同一份文件**，从根上消除
 # 「本地跑得通、部署就报错」的配置漂移 —— 这类问题的排查成本往往比写代码还高。
@@ -49,8 +59,10 @@ if [ -z "$ENV_FILE" ]; then
     if [ -f "$cand" ]; then ENV_FILE="$cand"; break; fi
   done
 fi
-if [ -f "${ENV_FILE:-}" ]; then
-  echo "· 已加载环境变量：${ENV_FILE}"
+if [ "$OA_PROFILE" = "local" ]; then
+  # local 零外部依赖：即使文件存在也不加载，防止测试库凭据漏进本地数据源
+  [ -n "${ENV_FILE:-}" ] && [ -f "$ENV_FILE" ] && echo "· local profile：跳过 ${ENV_FILE}（外部凭据仅 test profile 使用）"
+elif [ -f "${ENV_FILE:-}" ]; then
   while IFS= read -r line || [ -n "$line" ]; do
     case "$line" in ''|'#'*) continue ;; esac
     line="${line#export }"
