@@ -23,7 +23,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
    为什么要把这个数写死在代码里：本项目出过一次「假绿灯」—— 上游某条断言依赖的接口被回退后
    抛错中断，导致其后 16 条断言（含整条审计留痕链路）**从未执行**，而末行照样打印
    "85/85 通过"。有了这个数，任何"少跑了"都会立刻变成红灯，而不是无声无息。 */
-const EXPECTED_TOTAL = 51;
+const EXPECTED_TOTAL = 61;
 
 const results = [];
 function check(name, ok, extra) {
@@ -512,6 +512,86 @@ async function closeDialogs(page) {
     && sql('SELECT COUNT(*) FROM seal_apply WHERE return_status<>0') === '0',
     'record=' + sql('SELECT COUNT(*) FROM seal_record')
     + ' 非待用印=' + sql('SELECT COUNT(*) FROM seal_apply WHERE return_status<>0'));
+
+  console.log('\n=== 7. 委托 / 批量审批 / 超时升级 的可视化操作 ===');
+  await page.reload({ waitUntil: 'networkidle2' });
+  await sleep(2600);
+
+  /* ---- 我的委托：走一遍**真实闭环**（新建 → 生效中 → 撤销 → 清理）。
+     这些接口此前只有后端没有界面；这里用界面真操作一遍，并在收尾**只删自己创建的那条**。 ---- */
+  await clickMenu(page, '我的委托');
+  await sleep(1800);
+  const delegTitle = await page.evaluate(() => {
+    const h = document.querySelector('.el-main h2');
+    return h ? h.textContent.trim() : '';
+  });
+  check('「我的委托」页可进入', delegTitle === '我的委托', delegTitle);
+
+  await clickButtonByText(page, '新建委托', '.el-main');
+  await sleep(1200);
+  const openedDlg = await page.evaluate(() => {
+    const d = [...document.querySelectorAll('.el-dialog')].filter(x => x.getClientRects().length).pop();
+    if (!d) return null;
+    return {
+      title: (d.querySelector('.el-dialog__title') || {}).textContent || '',
+      labels: [...d.querySelectorAll('.el-form-item__label')].map(x => x.textContent.trim())
+    };
+  });
+  check('「新建委托」弹窗字段齐全（受托人/起止时间/范围/说明）',
+    !!openedDlg && openedDlg.title.indexOf('委托') >= 0
+    && openedDlg.labels.some(l => l.indexOf('受托人') >= 0)
+    && openedDlg.labels.some(l => l.indexOf('生效开始') >= 0)
+    && openedDlg.labels.some(l => l.indexOf('说明') >= 0),
+    openedDlg ? openedDlg.labels.join('/') : '(未打开)');
+
+  const pickedDelegate = await pickSelect(page, '受托人（代办人）', '林经理');
+  check('能选中受托人', !!pickedDelegate, pickedDelegate || '(没选上)');
+
+  await clickButtonByText(page, '保存', '.el-dialog');
+  await sleep(2000);
+  const newDelegId = sql("SELECT id FROM flow_delegation WHERE deleted=0 ORDER BY id DESC LIMIT 1");
+  check('★ 通过界面真的建出了委托（已落库）', Number(newDelegId || 0) > 0, 'id=' + newDelegId);
+
+  const mineRows = await page.$$eval('.el-main .el-table__body tbody tr', trs => trs.map(t => t.textContent));
+  check('★ 委托出现在「我设置的」列表里且状态为「生效中」',
+    mineRows.some(t => t.indexOf('生效中') >= 0), '行数=' + mineRows.length);
+
+  await clickButtonByText(page, '撤销', '.el-main');
+  await sleep(900);
+  await page.evaluate(() => {
+    const box = document.querySelector('.el-message-box');
+    if (!box) return;
+    const b = [...box.querySelectorAll('.el-button')].find(x => /确定|确认/.test(x.textContent));
+    if (b) b.click();
+  });
+  await sleep(1800);
+  check('★ 撤销后后端状态变为「已撤销」',
+    sql('SELECT status FROM flow_delegation WHERE id=' + newDelegId) === '0',
+    'status=' + sql('SELECT status FROM flow_delegation WHERE id=' + newDelegId));
+
+  // 收尾：**只删本次创建的 id**，不整表删（那会动别人的数据）
+  sql('DELETE FROM flow_delegation WHERE id=' + newDelegId);
+  check('收尾：本次创建的委托已物理删除',
+    sql('SELECT COUNT(*) FROM flow_delegation WHERE deleted=0') === '0',
+    '剩余=' + sql('SELECT COUNT(*) FROM flow_delegation WHERE deleted=0'));
+
+  /* ---- 待我审批：批量通过的入口控件（真正批掉的闭环由接口级用例覆盖） ---- */
+  await clickMenu(page, '待我审批');
+  await sleep(1800);
+  const approveCtl = await page.evaluate(() => ({
+    selectionCol: !!document.querySelector('.el-table__header .el-checkbox'),
+    headBtns: [...document.querySelectorAll('.page-head button')].map(b => b.textContent.trim())
+  }));
+  check('待我审批页有「多选」列', approveCtl.selectionCol, '表头按钮=' + approveCtl.headBtns.join('/'));
+  check('待我审批页有「批量通过」按钮',
+    approveCtl.headBtns.some(t => t.indexOf('批量通过') >= 0), approveCtl.headBtns.join('/'));
+
+  /* ---- 流程管理：超时升级入口（**不点**，它会全公司扫描） ---- */
+  await clickMenu(page, '流程管理');
+  await sleep(1800);
+  const flowBtns = await page.$$eval('.page-head button', bs => bs.map(b => b.textContent.trim()));
+  check('流程管理页有「执行超时升级盘点」按钮',
+    flowBtns.some(t => t.indexOf('超时升级') >= 0), flowBtns.join('/'));
 
   console.log('\n=== 7. 控制台 ===');
   const realErrs = errs.filter(e => !/favicon/.test(e));
