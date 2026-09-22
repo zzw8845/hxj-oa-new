@@ -70,27 +70,15 @@ spring:
           max-wait: 2s
         shutdown-timeout: 200ms
 
-flowable:
-  # 【与本地默认值不同】测试库表结构由 sql/init_database.sql 预建，见下方说明。
-  # 但 Flowable 的 schema update 是幂等且向前兼容的（先比对版本号，只建缺失的表），
-  # 首次部署时保留 true 可自愈"忘了跑建库脚本里 ACT_* 那一段"这类问题；
-  # 确认部署稳定后可改为 false 换取更干净的启动日志。
-  database-schema-update: true
-  async-executor-activate: false
-  history-level: full
-  check-process-definitions: false
+# Flowable 段已收敛到基础 application.yml（2026-09-22）：数值完全一致，唯一定义处=base。
+# 部署稳定后想把 schema-update 改 false 换干净启动日志，去 base 改。
 
 oa:
   # 测试服务器必须显式注入；docker-compose 从 .env 读取，绝不使用内置默认值
+  # （注意与 base 的 ${OA_JWT_SECRET:} 语义不同：这里**无默认值**，不注入即启动失败）
   jwt:
     secret: ${OA_JWT_SECRET}
     expire-minutes: 720
-
-  # 前端与后端同源（同一个 jar 提供 /oa.html），正常访问不走 CORS。
-  # 若另起独立前端域名，把地址加进 OA_CORS_ALLOWED_ORIGINS（逗号分隔）即可，无需改代码。
-  cors:
-    permissive: false
-    allowed-origins: ${OA_CORS_ALLOWED_ORIGINS:}
 
   # 附件走 OSS；本地磁盘路径在容器里是易失的，蓝绿切换还会分成两份
   storage:
@@ -108,18 +96,9 @@ oa:
   log:
     dir: ${OA_LOG_DIR:/logs}
 
-# 接口文档：**默认关闭**，需要排查时在 .env 里显式置 true 再重启。
-#
-# 【为什么默认必须是 false】`/v3/api-docs` 的输出是**完整接口契约**（实测 77KB，
-# 列出全部路径与参数），而它**不在 `/api/**` 前缀下**，因此 AuthInterceptor 的
-# `.addPathPatterns("/api/**")` 根本拦不到它 —— 也就是说它一旦被打开就是**未认证可读**，
-# 白名单里没有它也挡不住。此前默认值写成 `true`，等于把安全加固批刚关掉的暴露面又开回来。
-# 排查完请改回 false：契约暴露属于"平时没用、出事致命"的那类开关。
-springdoc:
-  api-docs:
-    enabled: ${OA_OPENAPI_ENABLED:false}
-  swagger-ui:
-    enabled: ${OA_OPENAPI_ENABLED:false}
+# springdoc 段已收敛到基础 application.yml（2026-09-22）：表达式与默认值逐字相同
+# （${OA_OPENAPI_ENABLED:false}），.env 里的开关对 test profile 依然生效——经 base 读取。
+# 安全背景（77KB 完整接口契约未认证可读的教训）见 base 的 springdoc 注释。
 
 logging:
   level:
