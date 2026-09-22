@@ -1,6 +1,10 @@
 # -*- coding: utf-8 -*-
 """
-交叉面自检：委托 × 超时升级 × 批量审批 同时作用于同一批待办。
+交叉面自检：三组"新老功能交界处"的组合。
+
+  A. 委托 × 超时升级 × 批量审批（都动"谁看得见、谁批得动"）
+  B. 用印 × 表单模板（模板改版会不会影响在途单据的表单版本快照）
+  C. 登出 × 批量审批（token 吊销后旧 token 是否立刻失效）
 
 为什么单独做这一轮：这三个功能互不依赖，**各自单测全过**，
 但它们动的是同一件事 —— "这条待办谁看得见、谁批得动"。
@@ -26,7 +30,7 @@ DB = 'haixiajin_oa'
 
 APPLICANT = 'zhaocs'
 DELEGATE = 'linjl'
-EXPECTED_TOTAL = 17
+EXPECTED_TOTAL = 30
 
 PASS, FAIL = [], []
 fixture = []
@@ -250,10 +254,98 @@ check('再造一张夹具待办', bool(task2), 'taskId=%s' % (task2 or '')[:8])
 check('★ 撤销后 B 不再看到新待办（授权随委托一起失效）',
       not [t for t in todos_of(delegate_tk) if t.get('taskId') == task2])
 
-# ---------------------------------------------------------------- 五、收尾
+# ---------------------------------------------------------------- 六、用印 × 表单模板
 print()
 print('=' * 72)
-print('五、收尾：物理清理')
+print('六、用印 × 表单模板：模板改版不影响在途单据的版本快照')
+print('=' * 72)
+
+DOC_TYPE = 1
+base_tpl = scalar("SELECT id FROM form_template WHERE doc_type_id=%d AND status=1 AND deleted=0 "
+                  "ORDER BY version DESC LIMIT 1" % DOC_TYPE)
+base_ver = scalar('SELECT version FROM form_template WHERE id=%s' % (base_tpl or 0))
+
+st, r = call('POST', '/api/documents', token=applicant, body={
+    'docTypeId': DOC_TYPE, 'title': 'E2E模板快照夹具', 'amount': 700, 'reason': 'E2E 模板快照夹具',
+    'formData': {'title': 'E2E模板快照夹具', 'amount': 700, 'payType': 'GOODS',
+                 'payeeName': '测试收款方', 'payeeAccount': '6222020000000000',
+                 'payeeBank': '测试银行', 'reason': 'E2E 模板快照夹具'}
+})
+doc3 = r.get('data') or {}
+doc3_id = doc3.get('id')
+if doc3_id:
+    call('POST', '/api/documents/%s/submit' % doc3_id, token=applicant)
+    fixture.append((doc3_id, doc3.get('docNo')))
+ver_snapshot = scalar('SELECT form_template_ver FROM document WHERE id=%s' % doc3_id)
+check('★ 在途单据记下了提交时刻的模板版本（%s）' % ver_snapshot,
+      bool(ver_snapshot) and ver_snapshot == base_ver,
+      '单据 form_template_ver=%s 生效模板 v=%s' % (ver_snapshot, base_ver))
+
+new_tpl_id = None
+schema = {'docType': 'DAILY_PAYMENT', 'layout': 'two-column', 'fields': [
+    {'key': 'title', 'type': 'text', 'label': '申请事项', 'colSpan': 2, 'required': True},
+    {'key': 'amount', 'type': 'money', 'label': '金额', 'colSpan': 1, 'required': True},
+    {'key': 'payType', 'type': 'select', 'label': '付款类型', 'colSpan': 1, 'required': True},
+    {'key': 'reason', 'type': 'textarea', 'label': '申请事由', 'colSpan': 2, 'required': True}]}
+st, r = call('POST', '/api/forms/templates', token=admin,
+             body={'docTypeId': DOC_TYPE, 'name': 'E2E 交互夹具模板', 'schema': schema})
+new_tpl_id = (r.get('data') or {}).get('id')
+check('新建模板草稿成功（用于触发一次"改版"）', bool(new_tpl_id), 'id=%s' % new_tpl_id)
+st, r = call('POST', '/api/forms/templates/%s/activate' % new_tpl_id, token=admin)
+check('启用新版本成功（原版本被自动废弃）', st == 200 and (r.get('data') or {}).get('status') == 1)
+
+check('★ 在途单据的模板版本快照**没有**被改版影响',
+      scalar('SELECT form_template_ver FROM document WHERE id=%s' % doc3_id) == ver_snapshot,
+      '仍为 %s（新版本 v=%s）' % (scalar('SELECT form_template_ver FROM document WHERE id=%s' % doc3_id),
+                              scalar('SELECT version FROM form_template WHERE id=%s' % new_tpl_id)))
+st, r = call('GET', '/api/documents/%s' % doc3_id, token=applicant)
+check('★ 改版后该单据详情仍能正常打开（快照没被破坏）',
+      st == 200 and r.get('code') == 0, 'HTTP %d' % st)
+check('新提交的单据才会用新版本（生效模板已是新版）',
+      scalar("SELECT id FROM form_template WHERE doc_type_id=%d AND status=1 AND deleted=0" % DOC_TYPE) == str(new_tpl_id),
+      '生效 id=%s' % scalar("SELECT id FROM form_template WHERE doc_type_id=%d AND status=1 AND deleted=0" % DOC_TYPE))
+
+# 还原：把原版本切回生效、物理删除夹具模板（与 verify_form_template_api 同一套做法）
+sql("UPDATE form_template SET status=0 WHERE id=%s" % base_tpl)
+sql("UPDATE form_template SET status=0 WHERE id=%s" % new_tpl_id)
+sql("UPDATE form_template SET status=1, effective_to=NULL WHERE id=%s" % base_tpl)
+sql('DELETE FROM form_field_permission WHERE template_id=%s' % new_tpl_id)
+sql('DELETE FROM form_template WHERE id=%s' % new_tpl_id)
+check('模板已还原（生效版本切回原版、夹具模板物理删除）',
+      scalar("SELECT id FROM form_template WHERE doc_type_id=%d AND status=1 AND deleted=0" % DOC_TYPE) == str(base_tpl)
+      and scalar('SELECT COUNT(*) FROM form_template WHERE deleted=0') == '3',
+      '生效=%s 总数=%s' % (scalar("SELECT id FROM form_template WHERE doc_type_id=%d AND status=1 AND deleted=0" % DOC_TYPE),
+                        scalar('SELECT COUNT(*) FROM form_template WHERE deleted=0')))
+
+# ---------------------------------------------------------------- 七、登出 × 批量审批
+print()
+print('=' * 72)
+print('七、登出 × 批量审批：吊销后旧 token 立刻失效')
+print('=' * 72)
+
+st, r = call('POST', '/api/todos/batch-approve', token=delegate_tk,
+             body={'taskIds': ['not-a-real-task'], 'comment': '登出前'})
+check('登出前：批量接口可用（HTTP 200，逐条失败）',
+      st == 200 and r.get('code') == 0, 'HTTP %d' % st)
+
+st, r = call('POST', '/api/auth/logout', token=delegate_tk)
+check('登出成功', st == 200 and r.get('code') == 0, 'HTTP %d' % st)
+
+st, _ = call('POST', '/api/todos/batch-approve', token=delegate_tk,
+             body={'taskIds': ['not-a-real-task'], 'comment': '登出后'})
+check('★ 登出后旧 token 调批量审批 → 401（吊销覆盖所有 /api/** 接口）',
+      st == 401, 'HTTP %d' % st)
+st, _ = call('GET', '/api/todos', token=delegate_tk)
+check('★ 登出后旧 token 调待办列表 → 401', st == 401, 'HTTP %d' % st)
+st, _ = call('GET', '/api/documents?pageNum=1&pageSize=5', token=delegate_tk)
+check('★ 登出后旧 token 调单据列表 → 401', st == 401, 'HTTP %d' % st)
+st, _ = call('GET', '/api/todos', token=admin)
+check('别人的登录不受影响（吊销是按 token 的，不是按用户的）', st == 200, 'HTTP %d' % st)
+
+# ---------------------------------------------------------------- 八、收尾
+print()
+print('=' * 72)
+print('八、收尾：物理清理')
 print('=' * 72)
 
 cleanup()
