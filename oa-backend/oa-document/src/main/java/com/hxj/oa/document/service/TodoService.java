@@ -12,12 +12,17 @@ import com.hxj.oa.document.mapper.AttachmentMapper;
 import com.hxj.oa.document.mapper.DocumentMapper;
 import com.hxj.oa.document.mapper.DocumentTypeMapper;
 import com.hxj.oa.document.mapper.NotificationMapper;
+import com.hxj.oa.flow.dto.DelegationVO;
 import com.hxj.oa.flow.dto.ApprovalRequest;
 import com.hxj.oa.flow.dto.TodoVO;
 import com.hxj.oa.flow.entity.FlowConfigNode;
 import com.hxj.oa.flow.entity.FlowInstanceNode;
 import com.hxj.oa.flow.mapper.FlowInstanceNodeMapper;
+import com.hxj.oa.flow.service.DelegationService;
 import com.hxj.oa.flow.service.FlowRuntimeService;
+import java.util.LinkedHashMap;
+import java.util.Comparator;
+import org.springframework.util.StringUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -43,13 +48,36 @@ public class TodoService {
     private final NotificationMapper notificationMapper;
     private final AttachmentMapper attachmentMapper;
     private final FlowRuntimeService flowRuntimeService;
+    private final DelegationService delegationService;
 
     /** 我的待办 */
     public List<TodoVO> myTodo(LoginUser user, int limit) {
-        List<FlowInstanceNode> nodes = instanceNodeMapper.selectTodoByAssignee(user.getUserId());
-        if (nodes.isEmpty()) {
+        /* 待办 = 「我承办的」+ 「别人委托给我代办的」。
+           两条来源合并到一张有序表里，顺带记下"这条是替谁办的"。
+           委托的判定与审批放行共用 DelegationService，保证"看得见"与"批得动"同源。 */
+        Map<Long, FlowInstanceNode> merged = new LinkedHashMap<>();
+        Map<Long, Long> onBehalfNodeIds = new HashMap<>();          // nodeId -> 委托人
+        Map<Long, DelegationVO> delegationByDelegator = new HashMap<>();
+        for (FlowInstanceNode n : instanceNodeMapper.selectTodoByAssignee(user.getUserId())) {
+            merged.put(n.getId(), n);
+        }
+        for (DelegationVO d : delegationService.activeToMe(user.getUserId())) {
+            delegationByDelegator.put(d.getDelegatorId(), d);
+            for (FlowInstanceNode n : instanceNodeMapper.selectTodoByAssignee(d.getDelegatorId())) {
+                if (merged.containsKey(n.getId())) {
+                    continue;                                  // 自己的待办优先，不重复计入
+                }
+                merged.put(n.getId(), n);
+                onBehalfNodeIds.put(n.getId(), d.getDelegatorId());
+            }
+        }
+        if (merged.isEmpty()) {
             return List.of();
         }
+        // 合并后按创建时间倒序（原先的库查询就是这个顺序，别让委托的插入打乱它）
+        List<FlowInstanceNode> nodes = new ArrayList<>(merged.values());
+        nodes.sort(Comparator.comparing(FlowInstanceNode::getCreatedAt,
+                Comparator.nullsLast(Comparator.reverseOrder())));
         List<TodoVO> result = new ArrayList<>();
         Map<Long, String> docTypeNames = new HashMap<>();
         int count = 0;
@@ -94,6 +122,19 @@ public class TodoService {
             vo.setNodeStatus(n.getStatus());
             vo.setDeadline(n.getDeadline());
             vo.setOverdue(n.getDeadline() != null && n.getDeadline().isBefore(LocalDateTime.now()));
+
+            // 代办标记：委托限定了业务类别时不匹配就不展示 ——
+            // **口径必须与审批放行一致**，否则会出现"看得见却批不了"（或反之）这种最难排查的状态。
+            Long delegatorId = onBehalfNodeIds.get(n.getId());
+            if (delegatorId != null) {
+                DelegationVO d = delegationByDelegator.get(delegatorId);
+                if (d != null && StringUtils.hasText(d.getBizCategory())
+                        && !d.getBizCategory().equalsIgnoreCase(doc.getBusinessCategory())) {
+                    continue;
+                }
+                vo.setAssigneeId(n.getAssigneeId());
+                vo.setOnBehalfOf(d == null ? null : d.getDelegatorName());
+            }
 
             FlowConfigNode cfgNode = findConfigNode(doc.getDocTypeId(), n.getNodeKey());
             vo.setAllowCountersign(cfgNode != null && cfgNode.getAllowCountersign() != null && cfgNode.getAllowCountersign() == 1);

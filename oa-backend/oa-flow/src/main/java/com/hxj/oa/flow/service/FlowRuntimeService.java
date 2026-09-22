@@ -54,6 +54,7 @@ public class FlowRuntimeService {
     private final FlowInstanceMapper instanceMapper;
     private final FlowInstanceNodeMapper instanceNodeMapper;
     private final ApplicationEventPublisher eventPublisher;
+    private final DelegationService delegationService;
 
     // ============================================================ 启动
 
@@ -74,6 +75,7 @@ public class FlowRuntimeService {
         inst.setFlowConfigVersion(config.getVersion());
         inst.setStatus(1);
         inst.setBusinessKey(req.getDocNo());
+        inst.setBizCategory(req.getBizCategory());
         inst.setStartedAt(LocalDateTime.now());
         instanceMapper.insert(inst);
 
@@ -377,7 +379,15 @@ public class FlowRuntimeService {
         return inst;
     }
 
-    /** 当前用户必须是该任务的办理人或候选人 */
+    /**
+     * 当前用户必须是该任务的办理人 / 候选人 / 或被委托的代办人。
+     *
+     * <p>委托放行的判定与"待办是否可见"共用同一份数据（{@link DelegationService}），
+     * 两条路径必须同源：一边看得见、另一边批不了（或反之）是最难排查的一类问题。
+     *
+     * <p>类别用的是**流程实例上的快照**而不是调用方传参 —— 传参一旦漏传就会把
+     * "只代某类单据"静默放宽成"代全部"，而这是权限范畴的事，不能有静默放宽的余地。
+     */
     private void assertAssignee(Task task, LoginUser user) {
         String uid = String.valueOf(user.getUserId());
         if (uid.equals(task.getAssignee()) || user.hasRole("ADMIN")) {
@@ -385,9 +395,23 @@ public class FlowRuntimeService {
         }
         List<IdentityLink> links = taskService.getIdentityLinksForTask(task.getId());
         boolean candidate = links != null && links.stream().anyMatch(l -> uid.equals(l.getUserId()));
-        if (!candidate) {
-            throw BizException.forbidden("您不是该节点的处理人，无权操作");
+        if (candidate) {
+            return;
         }
+        // 代办的判定：本任务的办理人是否把审批委托给了我（且在有效期内、类别匹配）
+        FlowInstance inst = requireInstance(task.getProcessInstanceId());
+        Long assigneeId = null;
+        try {
+            assigneeId = task.getAssignee() == null ? null : Long.valueOf(task.getAssignee());
+        } catch (NumberFormatException ignored) {
+            // 候选人模式（assignee 为空）下不会有委托关系，直接视为无委托
+        }
+        if (delegationService.canActFor(assigneeId, user.getUserId(), inst.getBizCategory())) {
+            log.info("委托放行 docNo={} nodeKey={} 代办人={} 原承办人={}",
+                    inst.getBusinessKey(), task.getTaskDefinitionKey(), user.getRealName(), assigneeId);
+            return;
+        }
+        throw BizException.forbidden("您不是该节点的处理人，无权操作");
     }
 
     private FlowInstanceNode currentNodeRecord(String taskId) {

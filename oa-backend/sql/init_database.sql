@@ -495,6 +495,7 @@ CREATE TABLE IF NOT EXISTS `flow_instance` (
   -- ↓ Flowable 运行实例绑定（业务表 ↔ 引擎 ACT_RU_* 表的唯一桥接键）
   `proc_inst_id`        VARCHAR(64)  NULL                    COMMENT 'Flowable 流程实例ID',
   `business_key`        VARCHAR(64)  NULL                    COMMENT 'Flowable 业务键（= document.doc_no，引擎侧反查单据）',
+  `biz_category` VARCHAR(32)  NULL                       COMMENT '业务类别快照（审批委托的类别匹配要用；不存的话授权侧拿不到类别）',
   `started_at`          DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '开始时间',
   `ended_at`            DATETIME     NULL                    COMMENT '结束时间',
   `created_at`          DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
@@ -656,6 +657,32 @@ CREATE TABLE IF NOT EXISTS `notification` (
   KEY `idx_notify_receiver` (`receiver_id`, `is_read`, `created_at`),
   KEY `idx_notify_biz` (`biz_type`, `biz_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='通知';
+
+-- 28. 审批委托（我不在时由谁代办）----------------------------------------------
+-- 生效方式是「待办可见 + 审批放行」，**不改写流程的指派结果**：
+-- 节点的 assignee 仍是原承办人，流程历史里"谁审的"不会被换人；
+-- 受托人凭这张表获得"看见并处理该待办"的资格。
+-- 这样做的代价要清楚：委托**不追溯**已有待办之外的历史记录，
+-- 但它避免了"指派被改写后，历史记录里承办人含义变味"这类更难解释的问题。
+CREATE TABLE IF NOT EXISTS `flow_delegation` (
+  `id`            BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `company_id`    BIGINT UNSIGNED NOT NULL                COMMENT '公司ID',
+  `delegator_id`  BIGINT UNSIGNED NOT NULL                COMMENT '委托人（原承办人）',
+  `delegate_id`   BIGINT UNSIGNED NOT NULL                COMMENT '受托人（代办人）',
+  `biz_category`  VARCHAR(32)  NULL                       COMMENT '限定单据业务类别；NULL=全部',
+  `start_at`      DATETIME     NOT NULL                   COMMENT '生效开始',
+  `end_at`        DATETIME     NOT NULL                   COMMENT '生效结束',
+  `status`        TINYINT      NOT NULL DEFAULT 1         COMMENT '1生效 0已撤销',
+  `remark`        VARCHAR(255) NULL                       COMMENT '说明（如"出差两周"）',
+  `created_at`    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updated_at`    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `created_by`    BIGINT UNSIGNED NULL                    COMMENT '创建人ID',
+  `updated_by`    BIGINT UNSIGNED NULL                    COMMENT '更新人ID',
+  `deleted`       TINYINT      NOT NULL DEFAULT 0         COMMENT '逻辑删除 0正常 1删除',
+  PRIMARY KEY (`id`),
+  KEY `idx_deleg_delegate`  (`delegate_id`, `status`, `start_at`, `end_at`),
+  KEY `idx_deleg_delegator` (`delegator_id`, `status`, `start_at`, `end_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='审批委托';
 
 SET FOREIGN_KEY_CHECKS = 1;
 

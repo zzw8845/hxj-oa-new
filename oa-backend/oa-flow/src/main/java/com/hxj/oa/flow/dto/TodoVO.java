@@ -29,6 +29,12 @@ public class TodoVO {
     /** 是否已超时 */
     private boolean overdue;
     private LocalDateTime submittedAt;
+
+    /* ---- 审批委托：受托人视角 ---- */
+    /** 该待办原本的承办人（代办的场景下与当前登录用户不同） */
+    private Long assigneeId;
+    /** 代谁办理；null = 这是自己的待办 */
+    private String onBehalfOf;
     /** 是否允许加签 / 驳回 */
     private boolean allowCountersign;
     private boolean allowReject;
