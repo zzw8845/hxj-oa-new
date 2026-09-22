@@ -45,6 +45,20 @@ upstream oa_backend {
 # 都是可以被中间人直接读走的。所以这里不做"80 与 443 同时服务"，
 # 而是强制升级，避免有人图省事用 http:// 登录后长期沿用。
 # ---------------------------------------------------------------------------
+
+# 【2026-09-22 新增】Basic Auth 与应用 JWT 的共存规则（实测踩坑：第一版漏了冒号）。
+# 浏览器/脚本把 JWT 放在 Authorization: Bearer 里，与 Basic 用的是**同一个头**，二者只能取一。
+# 规则：/api/** 且带 Bearer 的请求关闭 Basic（/api/** 全部由应用 AuthInterceptor 的 JWT
+# 把关，登录端点也在 /api 前缀下）；其余请求（页面、静态资源、无 Bearer 的调用）一律
+# 要求站点 Basic。这样前端 XHR 零改动，扫描器拿不到站点口令就打不开登录页。
+# ⚠ 组合格式串里有分隔符冒号，正则必须写成 ^1:Bearer —— 两边不一致会静默永不匹配
+#   （症状：带 Bearer 的请求也全被 401，看起来像 map 根本没生效）。
+map $uri $oa_api_path { default 0; "~^/api/" 1; }
+map "$oa_api_path:$http_authorization" $oa_auth {
+    default "OA";
+    "~^1:Bearer " "off";
+}
+
 server {
     listen       80;
     server_name  @@SERVER_NAME@@;
@@ -72,6 +86,18 @@ server {
     ssl_protocols        TLSv1.2 TLSv1.3;
 
     charset utf-8;
+
+    # ---------------------------------------------------------------------------
+    # 【2026-09-22 新增】站点级 Basic Auth（443 全站生效；80 端口的 ACME 路径不受影响）
+    #   · 动机：测试库 9 个演示账号口令曾是 123456 且 admin 可从公网直接登录 ——
+    #     在应用层口令轮换之外再加一道站点闸门，把"扫描器+弱口令字典"挡在 nginx。
+    #   · 口令文件在宿主 /opt/docker/nginx/https/oa-site.htpasswd（容器内 /opt/https/），
+    #     生成：printf 'pass' | openssl passwd -apr1 -stdin >> 该文件（追加=可多账号）
+    #   · 凭据同时写入 .env 的 OA_SITE_BASIC（user:pass），verify_deployed.sh /
+    #     watchdog.sh 的探测请求依赖它，**改口令必须同步改 .env**，否则告警全变假阳性。
+    # ---------------------------------------------------------------------------
+    auth_basic $oa_auth;
+    auth_basic_user_file /opt/https/oa-site.htpasswd;
 
     # 【必须与后端对齐】后端 spring.servlet.multipart.max-request-size=60MB。
     # 这里若小于它，一个 60MB 的多附件提交会被 nginx 直接以 413 拒掉，
