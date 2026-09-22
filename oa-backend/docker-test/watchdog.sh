@@ -45,11 +45,8 @@ HOST_IP="${HOST_IP:-127.0.0.1}"
 # 结果是拿本地文件内容当响应来判断 —— 会得出完全错误的结论。
 # cron 的工作目录不确定，这类依赖 cwd 的写法在定时任务里尤其危险。
 CURL=(curl -s -m 8 --noproxy '*')
-# 2026-09-22 起站点启用 nginx Basic Auth：探测必须带站点凭据（.env 的 OA_SITE_BASIC），
-# 否则健康探测永远 401，告警全是假阳性。用 if 而非 &&（本脚本 set -e，勿踩）。
-if [ -n "${OA_SITE_BASIC:-}" ]; then
-  CURL+=(-u "$OA_SITE_BASIC")
-fi
+# Basic Auth 曾于 2026-09-22 短暂启用、同日移除（实现见 git b316a84）。
+# 若将来重新启用站点闸门：在此追加 CURL+=(-u "$OA_SITE_BASIC") 即可。
 
 DISK_WARN_PCT=20          # 根分区可用低于此值
 MEM_WARN_MB=400           # 可用内存低于此值（蓝绿发布要同时跑两个实例）

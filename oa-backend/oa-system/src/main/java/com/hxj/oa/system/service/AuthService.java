@@ -84,9 +84,42 @@ public class AuthService {
         resp.setExpiresIn(jwtUtils.getExpireMillis() / 1000);
         resp.setUser(loginUser);
         resp.setMenus(loadMenus(user.getId()));
+        // 首登强制改密：管理员创建账号/重置口令时 pwd_reset_flag=1（UserAdminService），
+        // 前端据此弹不可跳过的改密框。服务端只负责如实告知，不在这里拦 ——
+        // 拦截会破坏「带 token 的 API 调用」这一层（脚本/自动化也要能登录）。
+        resp.setMustChangePassword(user.getPwdResetFlag() != null && user.getPwdResetFlag() == 1);
         log.info("用户登录成功 userId={} account={} roles={} scope={}",
                 user.getId(), user.getAccount(), loginUser.getRoleCodes(), loginUser.getDataScope());
         return resp;
+    }
+
+    /**
+     * 用户自助修改密码。
+     *
+     * <p>与管理员重置（{@code UserAdminService#update}）的三点区别：
+     * 必须验旧密码；新密码不得与旧密码相同（防「强制改密」被原样填一遍绕过）；
+     * 成功后 pwd_reset_flag 归零（首登强制的闸门就在这里打开）。
+     * 当前 token 不作废：改密不影响权限快照内容，让旧 token 自然到期即可。
+     */
+    @org.springframework.transaction.annotation.Transactional(rollbackFor = Exception.class)
+    public void changePassword(Long userId, String oldPassword, String newPassword) {
+        SysUser user = userMapper.selectById(userId);
+        if (user == null) {
+            throw BizException.notFound("用户不存在");
+        }
+        if (!passwordEncoder.matches(oldPassword, user.getPassword())) {
+            // 与登录同口径：不区分「旧密码错」，避免给撞库者额外信号
+            throw BizException.of("原密码不正确");
+        }
+        if (passwordEncoder.matches(newPassword, user.getPassword())) {
+            throw BizException.of("新密码不能与原密码相同");
+        }
+        SysUser upd = new SysUser();
+        upd.setId(userId);
+        upd.setPassword(passwordEncoder.encode(newPassword));
+        upd.setPwdResetFlag(0);
+        userMapper.updateById(upd);
+        log.info("用户自助修改密码 userId={} account={}", userId, user.getAccount());
     }
 
     /**

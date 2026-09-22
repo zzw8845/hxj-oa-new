@@ -43,6 +43,19 @@ public class AuthController {
         return R.ok(UserContext.require());
     }
 
+    /**
+     * 用户自助修改密码（区别于管理员的 {@code PUT /api/users/{id}} 重置）。
+     *
+     * <p>在 /api/** 拦截链内：必须持有效 token 才能调 —— 「本人」这个身份由 token 保证。
+     * 旧密码错误 / 新密码与旧相同会在服务端明确拒绝（见 {@link AuthService#changePassword}）。
+     */
+    @PutMapping("/password")
+    @Audit(module = "auth", action = "changePassword")
+    public R<Void> changePassword(@Valid @RequestBody com.hxj.oa.system.dto.ChangePasswordReq req) {
+        authService.changePassword(UserContext.require().getUserId(), req.getOldPassword(), req.getNewPassword());
+        return R.ok(null, "密码已修改");
+    }
+
     @GetMapping("/menus")
     public R<List<LoginResp.MenuItem>> menus() {
         return R.ok(authService.loadMenus(UserContext.require().getUserId()));

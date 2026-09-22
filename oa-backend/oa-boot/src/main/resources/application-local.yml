@@ -1,39 +1,21 @@
 # ===========================================================================
 # 本地演示 profile（spring.profiles.active=local）
 #
-# 【为什么必须存在这个文件】
-#   此前 local 就是基础 application.yml：数据源写成 ${MYSQL_USER:root}/${MYSQL_PASSWORD:}。
-#   这占位符与 docker-test/.env 的键名**同名**——.env 是为服务器部署创建的，
-#   一旦它出现在 oa-backend/docker-test/.env，本地启动加载后 MYSQL_USER/MYSQL_PASSWORD
-#   作为环境变量的优先级高于 yml 默认值 → 本地连库变成「root + 测试库密码」
-#   → `Access denied for user 'root'@'localhost' (using password: YES)`，
-#   而 TCP/端口看起来一切正常，极易误判成 MySQL 问题。
+# 【职责】把「零外部依赖」钉死在本文件：本机 MySQL + 进程内限速/缓存 + 本地磁盘附件。
+#   一切外部凭据（docker-test/.env）只属于 test profile——启动脚本对 local 不加载 .env。
 #
-# 【本文件的隔离手段（两层）】
-#   1. profile 专属文件对同一属性的声明优先于基础 application.yml，
-#      基础文件里的 ${MYSQL_USER:root} 占位符**不再参与求值**；
-#   2. 本文件自己的占位符改用 OA_LOCAL_ 前缀——与 .env 的全部键名物理不同名，
-#      环境变量想劫持也无从下手。
+# 【与基础 application.yml 的分工】
+#   数据源的默认值已在基础文件里（OA_DB_* 占位符，默认=本机演示库），本文件**不再重复**
+#   声明 datasource——两处各写一份必然漂移。隔离靠两条：
+#   1. 启动脚本：local profile 不加载 .env（外部凭据进不来）；
+#   2. 键名契约：基础配置只用 OA_DB_*，与 .env 的 MYSQL_* 物理不同名——即使有人手动
+#      source 了 .env，环境变量也劫持不了本地数据源。
+#   （历史教训：基础配置曾用 ${MYSQL_USER:root}，.env 建立后测试库凭据漏进本地启动，
+#    报 Access denied for 'root'@'localhost'，TCP/端口看起来一切正常，极易误判。）
 #
-# 【local 的设计目标】零外部依赖：本机 MySQL（root 免密）+ 进程内限速/缓存 +
-#   本地磁盘附件存储。一切外部凭据（.env）只属于 test profile。
+# 【需要换本机库时】不必改本文件，用环境变量覆盖：OA_DB_HOST / OA_DB_PORT /
+#   OA_DB_NAME / OA_DB_USER / OA_DB_PASSWORD。
 # ===========================================================================
-
-spring:
-  datasource:
-    driver-class-name: com.mysql.cj.jdbc.Driver
-    # 本地演示库：init_database.sql + seed_data.sql 建出来的 haixiajin_oa（46 张演示单据）
-    url: jdbc:mysql://${OA_LOCAL_DB_HOST:127.0.0.1}:${OA_LOCAL_DB_PORT:3306}/${OA_LOCAL_DB_NAME:haixiajin_oa}?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true&rewriteBatchedStatements=true
-    # 本机 root 免密；确有需要时用 OA_LOCAL_DB_USER / OA_LOCAL_DB_PASSWORD 覆盖
-    username: ${OA_LOCAL_DB_USER:root}
-    password: ${OA_LOCAL_DB_PASSWORD:}
-    hikari:
-      maximum-pool-size: 20
-      minimum-idle: 5
-      connection-timeout: 30000
-      idle-timeout: 600000
-      max-lifetime: 1800000
-      pool-name: OaHikariPool
 
 # ---------------------------------------------------------------------------
 # Flowable：与基础 yml 相同（显式写一遍，让本文件自洽可读，不必翻基础文件对账）
@@ -50,12 +32,12 @@ oa:
     secret: ${OA_JWT_SECRET:}
     expire-minutes: 720
 
-  # 本地只放行本机联调地址
+  # 本地只放行本机联调地址（显式置空：防 OA_CORS_ALLOWED_ORIGINS 之类环境变量漏进来）
   cors:
     permissive: false
     allowed-origins: ""
 
-  # 附件存本机磁盘
+  # 附件存本机磁盘（显式钉死 local，不读 OA_STORAGE_TYPE）
   storage:
     type: local
     local:

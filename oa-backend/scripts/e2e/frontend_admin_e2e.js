@@ -23,7 +23,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
    为什么要把这个数写死在代码里：本项目出过一次「假绿灯」—— 上游某条断言依赖的接口被回退后
    抛错中断，导致其后 16 条断言（含整条审计留痕链路）**从未执行**，而末行照样打印
    "85/85 通过"。有了这个数，任何"少跑了"都会立刻变成红灯，而不是无声无息。 */
-const EXPECTED_TOTAL = 75;
+const EXPECTED_TOTAL = 78;
 
 const results = [];
 function check(name, ok, extra) {
@@ -596,6 +596,33 @@ async function closeDialogs(page) {
   console.log('\n=== 7. 主数据 / 表单模板 / 审计日志（三块补齐的可视化界面） ===');
   await page.reload({ waitUntil: 'networkidle2' });
   await sleep(2600);
+
+  /* ---- 修改密码入口（只开/关验证渲染；改密写路由由本地 API 回路测试覆盖，
+          这里绝不能真改 —— 改了演示库基线的 123456，全量 E2E 都会崩） ---- */
+  const pwdBtn = await page.evaluate(() =>
+    [...document.querySelectorAll('.top-actions button')].some(b => (b.textContent || '').includes('钥')));
+  check('顶栏有「修改密码」入口（钥 按钮）', pwdBtn, '');
+  if (pwdBtn) {
+    await page.evaluate(() => {
+      const b = [...document.querySelectorAll('.top-actions button')].find(x => (x.textContent || '').includes('钥'));
+      if (b) b.click();
+    });
+    await sleep(900);
+    const pwdDlg = await page.evaluate(() => {
+      const dlg = [...document.querySelectorAll('.el-dialog')].find(d => d.textContent.includes('修改密码') && d.offsetParent !== null);
+      return dlg ? { open: true, inputs: dlg.querySelectorAll('input[type=password]').length,
+        cancellable: [...dlg.querySelectorAll('button')].some(b => b.textContent.trim() === '取消') } : { open: false };
+    });
+    check('「修改密码」对话框打开（含 当前/新/确认 三个密码框）',
+      pwdDlg.open && pwdDlg.inputs === 3, '打开=' + pwdDlg.open + ' 密码框=' + pwdDlg.inputs);
+    check('普通入口可取消（非强制模式）', pwdDlg.cancellable, '');
+    await page.evaluate(() => {
+      const dlg = [...document.querySelectorAll('.el-dialog')].find(d => d.textContent.includes('修改密码') && d.offsetParent !== null);
+      const c = dlg && [...dlg.querySelectorAll('button')].find(b => b.textContent.trim() === '取消');
+      if (c) c.click();
+    });
+    await sleep(500);
+  }
 
   /* ---- 主数据：三个 tab 都要有真实数据。**全程只读** —— 部门/岗位/字典是
      演示库基线的一部分（post=8 等），写操作的闭环由 verify_master_data_api 覆盖。 ---- */

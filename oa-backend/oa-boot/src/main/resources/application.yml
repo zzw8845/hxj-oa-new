@@ -23,9 +23,15 @@ spring:
 
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://127.0.0.1:3306/haixiajin_oa?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true&rewriteBatchedStatements=true
-    username: ${MYSQL_USER:root}
-    password: ${MYSQL_PASSWORD:}
+    # 【占位符命名契约，改前必读】
+    #   · 基础/local 配置统一用 OA_DB_*（默认值=本机演示库，直连即可跑）；
+    #   · test profile（application-test.yml）用 MYSQL_*——那是 docker-test/.env 的既有键名契约；
+    #   · 历史教训：基础配置曾用 ${MYSQL_USER:root}，而 .env 恰好有同名键 → 本地启动
+    #     吃进测试库凭据，报 Access denied（详见 application-local.yml 头注释与 2026-09-22 日志）。
+    #     基础配置永远不要使用 .env 里出现过的键名。
+    url: jdbc:mysql://${OA_DB_HOST:127.0.0.1}:${OA_DB_PORT:3306}/${OA_DB_NAME:haixiajin_oa}?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true&rewriteBatchedStatements=true
+    username: ${OA_DB_USER:root}
+    password: ${OA_DB_PASSWORD:}
     hikari:
       maximum-pool-size: 20
       minimum-idle: 5
