@@ -1,6 +1,5 @@
 package com.hxj.oa.document.controller;
 
-import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.hxj.oa.common.annotation.Audit;
 import com.hxj.oa.common.api.PageResult;
 import com.hxj.oa.common.api.R;
@@ -10,10 +9,10 @@ import com.hxj.oa.document.dto.DocumentDetailVO;
 import com.hxj.oa.document.dto.DocumentQuery;
 import com.hxj.oa.document.dto.DocumentStatsVO;
 import com.hxj.oa.document.entity.Document;
-import com.hxj.oa.document.entity.DocumentType;
-import com.hxj.oa.document.mapper.DocumentTypeMapper;
+import com.hxj.oa.document.dto.DocumentTypeVO;
 import com.hxj.oa.document.dto.LedgerExportQuery;
 import com.hxj.oa.document.service.DocumentService;
+import com.hxj.oa.document.service.DocumentTypeAdminService;
 import com.hxj.oa.document.service.LedgerExportService;
 import com.hxj.oa.common.security.RequirePerm;
 import jakarta.validation.Valid;
@@ -34,17 +33,19 @@ import java.util.List;
 public class DocumentController {
 
     private final DocumentService documentService;
-    private final DocumentTypeMapper docTypeMapper;
+    private final DocumentTypeAdminService docTypeAdminService;
     private final LedgerExportService ledgerExportService;
 
-    /** 单据类型清单（前端左侧菜单的核心数据源） */
+    /**
+     * 单据类型清单（前端左侧菜单的核心数据源）。
+     *
+     * <p>返回 {@link DocumentTypeVO}：比实体多一个后端下发的 {@code categoryLabel}，
+     * 前端业务类型标签一律以此为准，不再维护「DAILY→日常付款」这类写死映射。
+     */
     @GetMapping("/types")
-    public R<List<DocumentType>> types() {
+    public R<List<DocumentTypeVO>> types() {
         Long companyId = UserContext.require().getCompanyId();
-        return R.ok(docTypeMapper.selectList(Wrappers.<DocumentType>lambdaQuery()
-                .eq(DocumentType::getStatus, 1)
-                .and(w -> w.eq(DocumentType::getCompanyId, companyId).or().isNull(DocumentType::getCompanyId))
-                .orderByAsc(DocumentType::getSortNo)));
+        return R.ok(docTypeAdminService.listEnabled(companyId));
     }
 
     /** 保存草稿 */

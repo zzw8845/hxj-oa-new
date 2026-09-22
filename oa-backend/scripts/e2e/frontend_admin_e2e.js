@@ -624,8 +624,8 @@ async function closeDialogs(page) {
     await sleep(500);
   }
 
-  /* ---- 主数据：三个 tab 都要有真实数据。**全程只读** —— 部门/岗位/字典是
-     演示库基线的一部分（post=8 等），写操作的闭环由 verify_master_data_api 覆盖。 ---- */
+  /* ---- 主数据：四个 tab 都要有真实数据。**全程只读** —— 部门/岗位/字典/单据类型是
+     演示库基线的一部分（post=8 等），写操作的闭环由 verify_master_data_api / verify_doc_type_admin 覆盖。 ---- */
   await clickMenu(page, '主数据');
   await sleep(2000);
   const mdHead = await page.evaluate(() => ({
@@ -633,8 +633,8 @@ async function closeDialogs(page) {
     tabs: [...document.querySelectorAll('.el-tabs__item')].map(t => t.textContent.trim()),
     treeNodes: [...document.querySelectorAll('.el-tree .el-tree-node__content')].length
   }));
-  check('「主数据」页可进入（含 部门/岗位/数据字典 三个 tab）',
-    mdHead.h2 === '主数据' && mdHead.tabs.length === 3, 'tabs=' + mdHead.tabs.join('/'));
+  check('「主数据」页可进入（含 部门/岗位/数据字典/单据类型 四个 tab）',
+    mdHead.h2 === '主数据' && mdHead.tabs.length === 4 && mdHead.tabs.includes('单据类型'), 'tabs=' + mdHead.tabs.join('/'));
   check('★ 部门树渲染出真实节点', mdHead.treeNodes > 0, '节点数=' + mdHead.treeNodes);
   check('主数据页有「新增一级部门」入口（admin 有 system:dept）',
     await page.evaluate(() => [...document.querySelectorAll('.el-main button')].some(b => b.textContent.includes('新增一级部门'))), '');

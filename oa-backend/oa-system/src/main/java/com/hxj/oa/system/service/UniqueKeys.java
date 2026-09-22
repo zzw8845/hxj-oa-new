@@ -14,13 +14,13 @@ import org.springframework.util.StringUtils;
  * <p>做法：逻辑删除前，把唯一键字段改写成「原名#D{id}」。
  * 这样既让位给将来的同值记录，又保留可追溯的审计痕迹（id 可回查原对象）。
  *
- * <p>放在同包的包级类里而不是各自实现一份，是为了避免两个 Service
- * 出现行为不一致的孪生拷贝。
+ * <p>公开为 public 供 oa-system 之外复用（如 oa-document 的单据类型删除）——
+ * 仍然全项目只此一份实现，禁止各模块再写孪生拷贝。
  */
-final class UniqueKeys {
+public final class UniqueKeys {
 
     /** 拼接后长度不超过 maxLen，超长时截断原值前缀，后缀（#D + id）一定保留。 */
-    static String release(String value, Long id, int maxLen) {
+    public static String release(String value, Long id, int maxLen) {
         if (!StringUtils.hasText(value)) {
             return value;
         }
