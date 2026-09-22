@@ -3,6 +3,7 @@ package com.hxj.oa;
 import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 
 /**
@@ -18,6 +19,9 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
         "com.hxj.oa.document.mapper"
 })
 @EnableTransactionManagement
+// 超时升级的定时盘点需要它；@Scheduled 方法自身按 oa.flow.escalation.enabled 决定是否真的执行，
+// 所以开启它不会在"需求未确认"时产生任何副作用。
+@EnableScheduling
 public class OaApplication {
 
     public static void main(String[] args) {

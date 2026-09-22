@@ -95,6 +95,24 @@ oa:
   # 部署到服务器且前端另起域名时，把域名写进 OA_CORS_ALLOWED_ORIGINS（逗号分隔），无需改代码。
   cors:
     permissive: ${OA_CORS_PERMISSIVE:false}
+
+  # ---------------------------------------------------------------------------
+  # 超时升级：节点超过处理时限后，把上级部门负责人「加签」进来一起推。
+  #
+  # ⚠ 需求尚未确认（用户："目前还不知道有无这个需求"）⇒ **默认关闭**：
+  #    没这个需求时，它不会真的去打扰任何人（不会加签、不会发通知）。
+  #    打开：OA_FLOW_ESCALATION_ENABLED=true（或改这里的默认值）。
+  # 手动触发 POST /api/flows/escalation/run（需 system:flow）**不受此开关限制** ——
+  #    它是运维的显式动作，也是验证用例做确定性检查的入口。
+  # 生效方式是「加签」而不是「改派」：不改写节点 assignee，
+  #    原承办人保留，流程历史里"谁该审"不会变味。
+  # ---------------------------------------------------------------------------
+  flow:
+    escalation:
+      enabled: ${OA_FLOW_ESCALATION_ENABLED:false}
+      # 定时盘点间隔与首次延迟（毫秒）
+      interval-ms: ${OA_FLOW_ESCALATION_INTERVAL_MS:600000}
+      initial-delay-ms: ${OA_FLOW_ESCALATION_INITIAL_DELAY_MS:60000}
     allowed-origins: ${OA_CORS_ALLOWED_ORIGINS:}
 
   # ---------------------------------------------------------------------------
