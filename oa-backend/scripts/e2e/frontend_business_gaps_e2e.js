@@ -322,7 +322,8 @@ function overdueNodeCountSql() {
     check('已部署版本里首页已无写死的「5 项审批」', served.indexOf('5 项审批') < 0);
     check('已部署版本里导出台账按钮已接 exportLedger',
       served.indexOf('@click="exportLedger"') >= 0);
-    check('已部署版本里台账日期筛选已接线', served.indexOf('&& inArchiveRange(d);') >= 0);
+    check('已部署版本里台账日期筛选已接线（服务端 updatedAt 范围）',
+      served.indexOf('prm.updatedAtFrom') >= 0 && served.indexOf('@change="onArchiveFilterChange"') >= 0);
 
     const tkAdmin = await login('admin');
     const tkHuang = await login('huangxm');

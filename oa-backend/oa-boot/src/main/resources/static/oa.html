@@ -24,11 +24,11 @@ body{background:linear-gradient(135deg,#f4faff 0,#edf7fe 45%,#f8fbff 100%);color
 <el-container class="shell"><el-aside width="228px" class="aside"><div class="logo"><i>峡</i><div><b>海峡金</b><span>OA 内控审批中心</span></div></div><el-menu :default-active="page" background-color="#172036" text-color="#aeb8cf" active-text-color="#fff" @select="page=$event"><el-menu-item index="home"><span class="mi">⌂</span>首页</el-menu-item><el-menu-item index="work"><span class="mi">▦</span>工作台<el-badge :value="unreadCount" :max="99" :hidden="!unreadCount" class="menu-badge"></el-badge></el-menu-item><el-menu-item index="board"><span class="mi">▥</span>工作看板</el-menu-item><div class="menu-label">业务管理</div><el-menu-item index="forms"><span class="mi">▤</span>全部表单</el-menu-item><el-menu-item index="approve"><span class="mi">✓</span>审批中心<el-badge :value="todos.length" :max="99" :hidden="!todos.length" class="menu-badge"></el-badge></el-menu-item><el-menu-item index="archive"><span class="mi">≡</span>台账档案</el-menu-item><el-menu-item index="seal"><span class="mi">▣</span>用印台账</el-menu-item><el-menu-item index="delegation"><span class="mi">⇄</span>我的委托</el-menu-item><div class="menu-label">系统管理</div><el-menu-item index="permission"><span class="mi">♙</span>权限管理</el-menu-item><el-menu-item index="flow"><span class="mi">▷</span>流程管理</el-menu-item><el-menu-item index="risk"><span class="mi">△</span>风险预警</el-menu-item><el-menu-item index="masterdata" v-if="can('system:dept') || can('system:dict')"><span class="mi">⌗</span>主数据</el-menu-item><el-menu-item index="formtpl" v-if="can('system:form')"><span class="mi">✎</span>表单模板</el-menu-item><el-menu-item index="audit" v-if="can('system:audit')"><span class="mi">☰</span>审计日志</el-menu-item></el-menu><div class="aside-foot"><i></i>系统运行正常<span>数据更新于 10:28</span></div></el-aside>
 <el-container><el-header class="topbar"><div><h1>{{pageNames[page]}}</h1><el-breadcrumb separator="/"><el-breadcrumb-item>审批中心</el-breadcrumb-item><el-breadcrumb-item>{{pageNames[page]}}</el-breadcrumb-item></el-breadcrumb></div><div class="top-actions"><el-button circle>⌕</el-button><el-badge :value="unreadCount" :max="99" :hidden="!unreadCount" @click="openNotify" style="cursor:pointer"><el-button circle title="通知中心">♧</el-button></el-badge><el-avatar shape="square">林</el-avatar><div class="who"><b>林安然</b><span>{{role}}</span></div><el-select v-model="role" size="small" style="width:112px"><el-option v-for="r in roles" :key="r" :label="r" :value="r"></el-option></el-select></div></el-header><el-main>
 <template v-if="page==='home'"><section class="hero"><div><span>2026年8月26日 · 星期三</span><h2>早上好，林安然</h2><p>今日有 <b>{{todoCount}} 项审批</b>待处理，{{riskOverview.overdue}} 项风险预警需要关注。</p><el-button type="primary" plain @click="openSubmit('员工报销')">＋ 发起报销</el-button><el-button class="glass" @click="openSubmit('日常付款')">＋ 付款申请</el-button></div><el-progress type="circle" :percentage="96" color="#fff"><template #default><b class="percent">96%</b><small>流程合规率</small></template></el-progress></section><div class="stats"><el-card v-for="s in stats" :key="s.name" shadow="never"><i :class="s.color">{{s.icon}}</i><div><span>{{s.name}}</span><b>{{s.value}}</b><small>{{s.note}}</small></div></el-card></div><div class="grid2"><el-card shadow="never"><template #header><div class="card-title"><div><b>待办审批</b><span>优先处理临近超时的申请</span></div><el-button link type="primary" @click="page='approve'">查看全部 →</el-button></div></template><div class="todo" v-for="d in documents.slice(0,4)" :key="d.id" @click="openDetail(d)"><i>{{d.type[0]}}</i><div><b>{{d.title}}</b><span>{{d.applicant}} · {{d.department}} · {{d.current}}</span></div><strong>{{money(d.amount)}}<small>{{d.updated}}</small></strong></div></el-card><el-card shadow="never"><template #header><div class="card-title"><div><b>流程透明度</b><span>所有节点均可穿透查看前置资料</span></div><el-tag type="success">100% 留痕</el-tag></div></template><div class="transparency"><div class="shield">✓</div><h3>前置流程完整可见</h3><p>审批人可查看申请表、历史附件、全部前置节点意见和操作时间。</p><el-button type="primary" plain @click="page='approve'">进入审批中心</el-button></div></el-card></div></template>
-<template v-else-if="page==='work'"><div class="page-head"><div><h2>工作台</h2><p>按业务区域发起申请，常用单据一键提交</p></div></div><div class="work-zones"><el-card shadow="never" class="zone daily"><template #header><div class="zone-title"><i>日</i><div><b>日常提交</b><span>个人日常费用与行政类申请</span></div><el-button type="primary" @click="openSubmit('员工报销')">新建报销</el-button></div></template><div class="quick-docs"><button v-for="q in dailyQuick" @click="quickSubmit(q,'报销申请单')"><i>{{q[0]}}</i><b>{{q}}</b><span>快捷提交 →</span></button></div></el-card><el-card shadow="never" class="zone business"><template #header><div class="zone-title"><i>业</i><div><b>业务单据提交</b><span>付款、供应商及经营业务申请</span></div><el-button type="primary" @click="openSubmit('日常付款')">新建付款</el-button></div></template><div class="quick-docs"><button v-for="q in businessQuick" @click="quickSubmit(q,'付款申请单')"><i>{{q[0]}}</i><b>{{q}}</b><span>快捷提交 →</span></button></div></el-card></div><el-card shadow="never"><template #header><div class="card-title"><div><b>我已发起的单据</b><span>点击查看全流程，或复制历史单据再次提交</span></div><el-input v-model="keyword" clearable placeholder="搜索单号或事项" style="width:260px" @input="onDocsKeywordInput" @clear="onDocsKeywordInput"></el-input></div></template><el-table :data="myDocuments" @row-click="openDetail" class="click-table"><el-table-column prop="id" label="单据编号" width="165"></el-table-column><el-table-column prop="title" label="申请事项" min-width="210"></el-table-column><el-table-column prop="type" label="类型" width="110"></el-table-column><el-table-column label="金额" width="130"><template #default="s">{{money(s.row.amount)}}</template></el-table-column><el-table-column prop="current" label="当前节点" width="130"></el-table-column><el-table-column label="状态" width="110"><template #default="s"><el-tag :type="tagType(s.row.status)">{{s.row.status}}</el-tag></template></el-table-column><el-table-column label="操作" width="180"><template #default="s"><el-button link type="primary" @click.stop="openDetail(s.row)">查看全流程</el-button><el-button link @click.stop="repeatSubmit(s.row)">再次提交</el-button></template></el-table-column></el-table></el-card></template>
+<template v-else-if="page==='work'"><div class="page-head"><div><h2>工作台</h2><p>按业务区域发起申请，常用单据一键提交</p></div></div><div class="work-zones"><el-card shadow="never" class="zone daily"><template #header><div class="zone-title"><i>日</i><div><b>日常提交</b><span>个人日常费用与行政类申请</span></div><el-button type="primary" @click="openSubmit('员工报销')">新建报销</el-button></div></template><div class="quick-docs"><button v-for="q in dailyQuick" @click="quickSubmit(q,'报销申请单')"><i>{{q[0]}}</i><b>{{q}}</b><span>快捷提交 →</span></button></div></el-card><el-card shadow="never" class="zone business"><template #header><div class="zone-title"><i>业</i><div><b>业务单据提交</b><span>付款、供应商及经营业务申请</span></div><el-button type="primary" @click="openSubmit('日常付款')">新建付款</el-button></div></template><div class="quick-docs"><button v-for="q in businessQuick" @click="quickSubmit(q,'付款申请单')"><i>{{q[0]}}</i><b>{{q}}</b><span>快捷提交 →</span></button></div></el-card></div><el-card shadow="never"><template #header><div class="card-title"><div><b>我已发起的单据</b><span>点击查看全流程，或复制历史单据再次提交</span></div><el-input v-model="keyword" clearable placeholder="搜索单号或事项" style="width:260px" @input="onDocsKeywordInput" @clear="onDocsKeywordInput"></el-input></div></template><el-table :data="myDocuments" @row-click="openDetail" class="click-table"><el-table-column prop="id" label="单据编号" width="165"></el-table-column><el-table-column prop="title" label="申请事项" min-width="210"></el-table-column><el-table-column prop="type" label="类型" width="110"></el-table-column><el-table-column label="金额" width="130"><template #default="s">{{money(s.row.amount)}}</template></el-table-column><el-table-column prop="current" label="当前节点" width="130"></el-table-column><el-table-column label="状态" width="110"><template #default="s"><el-tag :type="tagType(s.row.status)">{{s.row.status}}</el-tag></template></el-table-column><el-table-column label="操作" width="180"><template #default="s"><el-button link type="primary" @click.stop="openDetail(s.row)">查看全流程</el-button><el-button link @click.stop="repeatSubmit(s.row)">再次提交</el-button></template></el-table-column></el-table><el-pagination style="margin-top:14px;display:flex;justify-content:flex-end" background layout="total, sizes, prev, pager, next" :total="myTotal" :current-page="myPage" :page-size="myPageSize" :page-sizes="[10,20,50]" @current-change="myPageChange" @size-change="mySizeChange"></el-pagination></el-card></template>
 <template v-else-if="page==='board'"><div class="page-head"><div><h2>工作看板</h2><p>审批进度、效能与风险实时总览</p></div><el-date-picker v-model="boardDate" type="daterange" range-separator="至"></el-date-picker></div><div class="stats"><el-card v-for="s in boardStats" shadow="never"><div><span>{{s.name}}</span><b>{{s.value}}</b><small>{{s.note}}</small></div></el-card></div><div class="grid2"><el-card shadow="never"><template #header><b>各节点处理效率</b></template><div class="eff-row" v-for="e in efficiency"><span>{{e.name}}</span><el-progress :percentage="e.p" :color="e.color"></el-progress><b>{{e.time}}</b></div></el-card><el-card shadow="never"><template #header><b>单据状态分布</b></template><div class="status-grid"><div v-for="s in statusBoard"><b>{{s[1]}}</b><span>{{s[0]}}</span></div></div></el-card></div></template>
-<template v-else-if="page==='forms'||page==='approve'"><div class="page-head"><div><h2>{{listMode==='warning'?'风险单据':pageNames[page]}}</h2><p>{{listMode==='warning'?'展示系统识别出的高金额及异常关注单据':page==='forms'?'超级管理员可查看、提交和审批所有表单':'审批人可查看前置流程全部表单信息、附件与审批记录'}}</p></div><el-button v-if="page==='forms'" type="primary" @click="openSubmit('日常付款')">＋ 新建申请</el-button><el-button v-if="page==='approve'" type="primary" :disabled="!batchSelected.length" :loading="batchApproving" @click="batchApprove">批量通过{{batchSelected.length ? '（' + batchSelected.length + '）' : ''}}</el-button></div><el-card shadow="never"><div class="filters"><el-input v-model="keyword" clearable placeholder="搜索单号、申请人或事项" @input="onDocsKeywordInput" @clear="onDocsKeywordInput"></el-input><el-select v-model="statusFilter"><el-option label="全部状态" value="全部"></el-option><el-option v-for="x in ['待审批','审批中','已通过','已驳回']" :label="x" :value="x"></el-option></el-select></div><el-table :data="filteredDocs" @row-click="openDetail" @selection-change="onTodoSelect" class="click-table"><el-table-column v-if="page==='approve'" type="selection" width="46"></el-table-column><el-table-column prop="id" label="申请单号" width="165"></el-table-column><el-table-column prop="title" label="申请事项" min-width="190"></el-table-column><el-table-column label="申请人/部门" width="150"><template #default="s">{{s.row.applicant}}<small class="cell-sub">{{s.row.department}}</small></template></el-table-column><el-table-column label="金额" width="130"><template #default="s">{{money(s.row.amount)}}</template></el-table-column><el-table-column label="当前节点" width="170"><template #default="s">{{s.row.current}}<el-tag v-if="s.row.onBehalfOf" size="small" type="warning" effect="plain" style="margin-left:4px">代{{s.row.onBehalfOf}}</el-tag><el-tag v-else-if="s.row.viaCandidate" size="small" type="info" effect="plain" style="margin-left:4px">候选</el-tag></template></el-table-column><el-table-column label="状态" width="100"><template #default="s"><el-tag :type="tagType(s.row.status)">{{s.row.status}}</el-tag></template></el-table-column><el-table-column label="操作" width="170"><template #default="s"><el-button link type="primary" @click.stop="openDetail(s.row)">{{page==='approve'?'进入审批':'查看全流程'}}</el-button></template></el-table-column></el-table></el-card></template>
-<template v-else-if="page==='archive'"><div class="page-head"><div><h2>台账档案</h2><p>仅归档全部审批通过的单据，支持多条件组合查询</p></div><el-button v-if="can('document:export')" :loading="exporting" @click="exportLedger">导出台账</el-button></div><el-card shadow="never"><div class="archive-filter"><el-input v-model="archiveApplicant" clearable placeholder="申请人"></el-input><el-select v-model="archiveDepartment" clearable placeholder="申请部门"><el-option v-for="d in departments" :label="d" :value="d"></el-option></el-select><el-input v-model="archiveCode" clearable placeholder="单据编号"></el-input><el-date-picker v-model="archiveDate" type="daterange" range-separator="至" start-placeholder="开始时间" end-placeholder="结束时间"></el-date-picker></div><el-table :data="archiveDocs" @row-click="openDetail" class="click-table"><el-table-column prop="id" label="单据编号" width="170"></el-table-column><el-table-column prop="title" label="申请事项" min-width="210"></el-table-column><el-table-column prop="applicant" label="申请人" width="100"></el-table-column><el-table-column prop="department" label="申请部门" width="120"></el-table-column><el-table-column label="金额" width="130"><template #default="s">{{money(s.row.amount)}}</template></el-table-column><el-table-column prop="updated" label="归档时间" width="120"></el-table-column><el-table-column label="状态" width="100"><template #default><el-tag type="success">已通过</el-tag></template></el-table-column><el-table-column label="操作" width="110"><template #default="s"><el-button link type="primary" @click.stop="openDetail(s.row)">查看档案</el-button></template></el-table-column></el-table></el-card></template>
-<template v-else-if="page==='seal'"><div class="page-head"><div><h2>用印台账</h2><p>印章使用与归还闭环：待用印 → 已用印 → 已归还，每一次动作都留痕可查</p></div><el-button type="primary" plain @click="refreshSeals">刷新</el-button></div><el-card shadow="never"><div style="display:flex;align-items:center;gap:12px;margin-bottom:12px"><el-select v-model="sealTypeFilter" placeholder="用章类型" clearable style="width:150px" @change="refreshSeals"><el-option v-for="o in sealOptions" :key="o.dictCode" :label="o.dictLabel" :value="o.dictCode"></el-option></el-select><el-select v-model="sealStatusFilter" placeholder="归还状态" clearable style="width:150px" @change="refreshSeals"><el-option label="待用印" :value="0"></el-option><el-option label="已用印" :value="1"></el-option><el-option label="已归还" :value="2"></el-option></el-select><span style="font-size:12px;color:var(--muted)">共 {{sealTotal}} 条</span></div><el-table :data="sealRows" empty-text="暂无用印记录（需用印类单据走完审批后方可登记）"><el-table-column prop="docNo" label="单据编号" width="165"></el-table-column><el-table-column prop="sealProject" label="用印项目" min-width="200"></el-table-column><el-table-column prop="applicantName" label="申请人" width="90"></el-table-column><el-table-column prop="deptName" label="用印部门" width="120"></el-table-column><el-table-column prop="sealTypeName" label="用章类型" width="110"></el-table-column><el-table-column label="状态" width="100"><template #default="s"><el-tag :type="s.row.returnStatus===2?'success':(s.row.returnStatus===1?'warning':'info')">{{s.row.returnStatusText}}</el-tag></template></el-table-column><el-table-column label="用印时间" width="150"><template #default="s">{{(s.row.sealTime||'').replace('T',' ')}}</template></el-table-column><el-table-column label="归还时间" width="150"><template #default="s">{{(s.row.returnAt||'').replace('T',' ')}}</template></el-table-column><el-table-column label="操作" width="180"><template #default="s"><el-button v-if="s.row.returnStatus===0" link type="primary" @click="sealUse(s.row)">登记用印</el-button><el-button v-if="s.row.returnStatus===1" link type="primary" @click="sealReturn(s.row)">归还</el-button><span v-if="s.row.returnStatus===2" style="font-size:12px;color:var(--muted)">闭环已完成</span></template></el-table-column></el-table></el-card></template>
+<template v-else-if="page==='forms'||page==='approve'"><div class="page-head"><div><h2>{{listMode==='warning'?'风险单据':pageNames[page]}}</h2><p>{{listMode==='warning'?'展示系统识别出的高金额及异常关注单据':page==='forms'?'超级管理员可查看、提交和审批所有表单':'审批人可查看前置流程全部表单信息、附件与审批记录'}}</p></div><el-button v-if="page==='forms'" type="primary" @click="openSubmit('日常付款')">＋ 新建申请</el-button><el-button v-if="page==='approve'" type="primary" :disabled="!batchSelected.length" :loading="batchApproving" @click="batchApprove">批量通过{{batchSelected.length ? '（' + batchSelected.length + '）' : ''}}</el-button></div><el-card shadow="never"><div class="filters"><el-input v-model="keyword" clearable placeholder="搜索单号、申请人或事项" @input="onDocsKeywordInput" @clear="onDocsKeywordInput"></el-input><el-select v-model="statusFilter" @change="onDocFilterChange"><el-option label="全部状态" value="全部"></el-option><el-option v-for="x in ['待审批','审批中','已通过','已驳回']" :label="x" :value="x"></el-option></el-select></div><el-table :data="filteredDocs" @row-click="openDetail" @selection-change="onTodoSelect" class="click-table"><el-table-column v-if="page==='approve'" type="selection" width="46"></el-table-column><el-table-column prop="id" label="申请单号" width="165"></el-table-column><el-table-column prop="title" label="申请事项" min-width="190"></el-table-column><el-table-column label="申请人/部门" width="150"><template #default="s">{{s.row.applicant}}<small class="cell-sub">{{s.row.department}}</small></template></el-table-column><el-table-column label="金额" width="130"><template #default="s">{{money(s.row.amount)}}</template></el-table-column><el-table-column label="当前节点" width="170"><template #default="s">{{s.row.current}}<el-tag v-if="s.row.onBehalfOf" size="small" type="warning" effect="plain" style="margin-left:4px">代{{s.row.onBehalfOf}}</el-tag><el-tag v-else-if="s.row.viaCandidate" size="small" type="info" effect="plain" style="margin-left:4px">候选</el-tag></template></el-table-column><el-table-column label="状态" width="100"><template #default="s"><el-tag :type="tagType(s.row.status)">{{s.row.status}}</el-tag></template></el-table-column><el-table-column label="操作" width="170"><template #default="s"><el-button link type="primary" @click.stop="openDetail(s.row)">{{page==='approve'?'进入审批':'查看全流程'}}</el-button></template></el-table-column></el-table><el-pagination v-if="page==='forms'" style="margin-top:14px;display:flex;justify-content:flex-end" background layout="total, sizes, prev, pager, next" :total="docListTotal" :current-page="docListPage" :page-size="docListPageSize" :page-sizes="[20,50,100]" @current-change="docListPageChange" @size-change="docListSizeChange"></el-pagination></el-card></template>
+<template v-else-if="page==='archive'"><div class="page-head"><div><h2>台账档案</h2><p>仅归档全部审批通过的单据，支持多条件组合查询</p></div><el-button v-if="can('document:export')" :loading="exporting" @click="exportLedger">导出台账</el-button></div><el-card shadow="never"><div class="archive-filter"><el-input v-model="archiveApplicant" clearable placeholder="申请人" @input="onArchiveInput" @clear="onArchiveFilterChange"></el-input><el-select v-model="archiveDepartment" clearable placeholder="申请部门" @change="onArchiveFilterChange"><el-option v-for="d in departments" :label="d" :value="d"></el-option></el-select><el-input v-model="archiveCode" clearable placeholder="单据编号" @input="onArchiveInput" @clear="onArchiveFilterChange"></el-input><el-date-picker v-model="archiveDate" type="daterange" range-separator="至" start-placeholder="开始时间" end-placeholder="结束时间" value-format="YYYY-MM-DD" @change="onArchiveFilterChange"></el-date-picker></div><el-table :data="archiveDocs" @row-click="openDetail" class="click-table"><el-table-column prop="id" label="单据编号" width="170"></el-table-column><el-table-column prop="title" label="申请事项" min-width="210"></el-table-column><el-table-column prop="applicant" label="申请人" width="100"></el-table-column><el-table-column prop="department" label="申请部门" width="120"></el-table-column><el-table-column label="金额" width="130"><template #default="s">{{money(s.row.amount)}}</template></el-table-column><el-table-column prop="updated" label="归档时间" width="120"></el-table-column><el-table-column label="状态" width="100"><template #default><el-tag type="success">已通过</el-tag></template></el-table-column><el-table-column label="操作" width="110"><template #default="s"><el-button link type="primary" @click.stop="openDetail(s.row)">查看档案</el-button></template></el-table-column></el-table><el-pagination style="margin-top:14px;display:flex;justify-content:flex-end" background layout="total, sizes, prev, pager, next" :total="archiveTotal" :current-page="archivePage" :page-size="archivePageSize" :page-sizes="[20,50,100]" @current-change="archivePageChange" @size-change="archiveSizeChange"></el-pagination></el-card></template>
+<template v-else-if="page==='seal'"><div class="page-head"><div><h2>用印台账</h2><p>印章使用与归还闭环：待用印 → 已用印 → 已归还，每一次动作都留痕可查</p></div><el-button type="primary" plain @click="refreshSeals">刷新</el-button></div><el-card shadow="never"><div style="display:flex;align-items:center;gap:12px;margin-bottom:12px"><el-select v-model="sealTypeFilter" placeholder="用章类型" clearable style="width:150px" @change="onSealFilterChange"><el-option v-for="o in sealOptions" :key="o.dictCode" :label="o.dictLabel" :value="o.dictCode"></el-option></el-select><el-select v-model="sealStatusFilter" placeholder="归还状态" clearable style="width:150px" @change="onSealFilterChange"><el-option label="待用印" :value="0"></el-option><el-option label="已用印" :value="1"></el-option><el-option label="已归还" :value="2"></el-option></el-select><span style="font-size:12px;color:var(--muted)">共 {{sealTotal}} 条</span></div><el-table :data="sealRows" empty-text="暂无用印记录（需用印类单据走完审批后方可登记）"><el-table-column prop="docNo" label="单据编号" width="165"></el-table-column><el-table-column prop="sealProject" label="用印项目" min-width="200"></el-table-column><el-table-column prop="applicantName" label="申请人" width="90"></el-table-column><el-table-column prop="deptName" label="用印部门" width="120"></el-table-column><el-table-column prop="sealTypeName" label="用章类型" width="110"></el-table-column><el-table-column label="状态" width="100"><template #default="s"><el-tag :type="s.row.returnStatus===2?'success':(s.row.returnStatus===1?'warning':'info')">{{s.row.returnStatusText}}</el-tag></template></el-table-column><el-table-column label="用印时间" width="150"><template #default="s">{{(s.row.sealTime||'').replace('T',' ')}}</template></el-table-column><el-table-column label="归还时间" width="150"><template #default="s">{{(s.row.returnAt||'').replace('T',' ')}}</template></el-table-column><el-table-column label="操作" width="180"><template #default="s"><el-button v-if="s.row.returnStatus===0" link type="primary" @click="sealUse(s.row)">登记用印</el-button><el-button v-if="s.row.returnStatus===1" link type="primary" @click="sealReturn(s.row)">归还</el-button><span v-if="s.row.returnStatus===2" style="font-size:12px;color:var(--muted)">闭环已完成</span></template></el-table-column></el-table><el-pagination style="margin-top:14px;display:flex;justify-content:flex-end" background layout="total, sizes, prev, pager, next" :total="sealTotal" :current-page="sealPage" :page-size="sealPageSize" :page-sizes="[20,50]" @current-change="sealPageChange" @size-change="sealSizeChange"></el-pagination></el-card></template>
 <template v-else-if="page==='delegation'"><div class="page-head"><div><h2>我的委托</h2><p>我不在时由谁代办：委托生效期间，受托人能看见并处理我的待办（流程记录里仍记原承办人）</p></div><el-button type="primary" @click="newDelegation">＋ 新建委托</el-button></div><el-card shadow="never"><el-table :data="delegationsMine" empty-text="还没有设置委托"><el-table-column prop="delegateName" label="受托人" width="110"></el-table-column><el-table-column label="生效期间" min-width="270"><template #default="s">{{(s.row.startAt||'').replace('T',' ')}} ~ {{(s.row.endAt||'').replace('T',' ')}}</template></el-table-column><el-table-column prop="bizCategoryText" label="限定范围" width="120"></el-table-column><el-table-column label="状态" width="120"><template #default="s"><el-tag :type="s.row.status===1 && s.row.active ? 'success' : 'info'">{{s.row.status!==1 ? '已撤销' : (s.row.active ? '生效中' : '未到/已过期')}}</el-tag></template></el-table-column><el-table-column prop="remark" label="说明" min-width="140"></el-table-column><el-table-column label="操作" width="90"><template #default="s"><el-button v-if="s.row.status===1" link type="danger" @click="cancelDelegation(s.row)">撤销</el-button><span v-else style="font-size:12px;color:var(--muted)">—</span></template></el-table-column></el-table><div style="margin:16px 0 8px"><b style="font-size:13px">别人委托给我的</b></div><el-table :data="delegationsToMe" empty-text="暂时没有人委托你代办"><el-table-column prop="delegatorName" label="委托人" width="110"></el-table-column><el-table-column label="生效期间" min-width="270"><template #default="s">{{(s.row.startAt||'').replace('T',' ')}} ~ {{(s.row.endAt||'').replace('T',' ')}}</template></el-table-column><el-table-column prop="bizCategoryText" label="限定范围" width="120"></el-table-column><el-table-column label="状态" width="120"><template #default="s"><el-tag :type="s.row.status===1 && s.row.active ? 'success' : 'info'">{{s.row.status!==1 ? '已撤销' : (s.row.active ? '生效中' : '未到/已过期')}}</el-tag></template></el-table-column></el-card></template>
 <template v-else-if="page==='masterdata'"><div class="page-head"><div><h2>主数据</h2><p>部门 / 岗位 / 数据字典的维护入口；写操作留痕于审计日志，引用中的记录删除会被后端守卫拒绝</p></div></div><el-card shadow="never"><el-tabs v-model="mdTab"><el-tab-pane label="部门" name="dept"><div style="margin-bottom:12px"><el-button v-if="can('system:dept')" type="primary" size="small" @click="newDept(null)">＋ 新增一级部门</el-button><span v-else style="font-size:12px;color:var(--muted)">只读（无 system:dept 权限）</span></div><el-tree :data="deptRows" node-key="id" default-expand-all :expand-on-click-node="false"><template #default="{ data }"><span style="flex:1;display:flex;align-items:center;gap:8px"><b style="font-size:13px">{{data.name}}</b><small style="color:var(--muted)">{{data.code}}{{data.leaderName ? ' · 负责人 ' + data.leaderName : ''}}</small><template v-if="can('system:dept')"><el-button link type="primary" size="small" @click="newDept(data.id)">＋子部门</el-button><el-button link size="small" @click="editDept(data)">编辑</el-button><el-button link type="danger" size="small" @click="removeDept(data)">删除</el-button></template></span></template></el-tree></el-tab-pane><el-tab-pane label="岗位" name="post"><div style="margin-bottom:12px"><el-button v-if="can('system:dept')" type="primary" size="small" @click="newPost">＋ 新增岗位</el-button></div><el-table :data="postRows" size="small"><el-table-column prop="name" label="岗位名称" min-width="160"></el-table-column><el-table-column prop="code" label="编码" width="160"></el-table-column><el-table-column prop="sortNo" label="排序" width="80"></el-table-column><el-table-column label="状态" width="90"><template #default="s"><el-tag :type="s.row.status===1 ? 'success' : 'info'" size="small">{{s.row.status===1 ? '启用' : '停用'}}</el-tag></template></el-table-column><el-table-column v-if="can('system:dept')" label="操作" width="130"><template #default="s"><el-button link size="small" @click="editPost(s.row)">编辑</el-button><el-button link type="danger" size="small" @click="removePost(s.row)">删除</el-button></template></el-table-column></el-table></el-tab-pane><el-tab-pane label="数据字典" name="dict"><div class="filters"><el-select v-model="dictTypeSel" placeholder="选择字典类型" style="width:220px" @change="refreshDictRows"><el-option v-for="t in dictTypes" :key="t" :label="t" :value="t"></el-option></el-select><el-button v-if="can('system:dict')" type="primary" size="small" :disabled="!dictTypeSel" @click="newDict">＋ 新增字典项</el-button></div><el-table :data="dictRows" size="small"><el-table-column prop="dictCode" label="编码" width="160"></el-table-column><el-table-column prop="dictLabel" label="标签" min-width="180"></el-table-column><el-table-column prop="sortNo" label="排序" width="80"></el-table-column><el-table-column label="状态" width="90"><template #default="s"><el-tag :type="s.row.status===1 ? 'success' : 'info'" size="small">{{s.row.status===1 ? '启用' : '停用'}}</el-tag></template></el-table-column><el-table-column v-if="can('system:dict')" label="操作" width="130"><template #default="s"><el-button link size="small" @click="editDict(s.row)">编辑</el-button><el-button link type="danger" size="small" @click="removeDict(s.row)">删除</el-button></template></el-table-column></el-table></el-tab-pane></el-tabs></el-card></template>
 <template v-else-if="page==='formtpl'"><div class="page-head"><div><h2>表单模板</h2><p>每类单据的表单由模板 schema 驱动；生效版本只读，要改必须新建版本（在途单据不受影响）</p></div><div style="display:flex;gap:10px;align-items:center"><el-select v-model="tplDocTypeId" placeholder="选择单据类型" style="width:200px" @change="refreshTpl"><el-option v-for="t in documentTypes" :key="t.id" :label="t.name" :value="t.id"></el-option></el-select><el-button type="primary" :disabled="!tplDocTypeId" @click="newTplVersion">＋ 新建版本</el-button></div></div><el-card shadow="never"><el-table :data="tplRows" v-loading="tplBusy" empty-text="请先选择单据类型"><el-table-column prop="version" label="版本" width="80"></el-table-column><el-table-column prop="name" label="模板名称" min-width="200"></el-table-column><el-table-column label="状态" width="100"><template #default="s"><el-tag :type="s.row.status===1 ? 'success' : (s.row.status===0 ? 'info' : 'danger')" size="small">{{s.row.status===1 ? '生效' : (s.row.status===0 ? '草稿' : '废弃')}}</el-tag></template></el-table-column><el-table-column label="生效期间" min-width="230"><template #default="s">{{(s.row.effectiveFrom||'').replace('T',' ').slice(0,16) || '—'}} ~ {{(s.row.effectiveTo||'').replace('T',' ').slice(0,16) || '今'}}</template></el-table-column><el-table-column label="操作" width="240"><template #default="s"><el-button link size="small" @click="viewTpl(s.row)">查看</el-button><template v-if="s.row.status===0"><el-button link size="small" @click="editTpl(s.row)">编辑</el-button><el-button link type="success" size="small" @click="activateTpl(s.row)">启用</el-button><el-button link type="danger" size="small" @click="removeTpl(s.row)">删除</el-button></template></template></el-table-column></el-table></el-card></template>
@@ -913,12 +913,107 @@ createApp({setup(){
     documents.value = (res.records || []).map(toDoc);
     totalDocs.value = res.total || documents.value.length;
   };
+  /* ================= 服务端分页（#42 收口，2026-09-22 用户拍板要做） =================
+     三张单据列表（全部表单 / 台账档案 / 工作台我的申请）各自独立拉数 + 条件下推 + 分页。
+     ⚠ 看板聚合（boardStats/效能/趋势/关联单候选）仍用全量 documents —— 刻意不复用
+     分页后的列表数据，否则看板数字会变成"当前页的统计"。待办（审批中心）与风险预警
+     保持本地过滤：在办队列与进行中风险天然小量，为它们加分页属于为分页而分页。 */
+  const STATUS_CODE_MAP = {'待审批':1, '审批中':2, '已通过':3, '已驳回':4, '已撤回':5, '已归档':6};
+  const docListPage = ref(1), docListPageSize = ref(20), docListTotal = ref(0);
+  const docListRows = ref([]);
+  const docListParams = function(){
+    const prm = {
+      pageNum: docListPage.value, pageSize: docListPageSize.value,
+      keyword: (keyword.value || '').trim() || undefined
+    };
+    /* listMode（工作台快捷视图）优先：它表达的是状态子集，单值 statusFilter 表达不了 */
+    if (listMode.value === 'rejected') prm.statusList = '4';
+    else if (listMode.value === 'done') prm.statusList = '3,6';
+    else if (listMode.value === 'approve') prm.statusList = '1,2';
+    else if (listMode.value === 'warning') prm.amountFrom = 20000;
+    else if (statusFilter.value !== '全部' && STATUS_CODE_MAP[statusFilter.value]){
+      prm.statusList = String(STATUS_CODE_MAP[statusFilter.value]);
+    }
+    return prm;
+  };
+  const refreshDocList = async function(){
+    try {
+      const res = await api.docs(docListParams());
+      docListRows.value = (res.records || []).map(toDoc);
+      docListTotal.value = res.total || docListRows.value.length;
+    } catch(e){ docListRows.value = []; docListTotal.value = 0; }
+  };
+  const onDocFilterChange = function(){ docListPage.value = 1; refreshDocList(); };
+  const docListPageChange = function(pg){ docListPage.value = pg; refreshDocList(); };
+  const docListSizeChange = function(n){ docListPageSize.value = n; docListPage.value = 1; refreshDocList(); };
+
+  /* 台账档案：statusList=3,6 + 申请人/部门/单号/归档时间全部下推。
+     这就是当年 #42 卡住的点 —— 单值 status 表达不了"已通过+已归档"，
+     后端补了 statusList 之后这里才能做成真查询。 */
+  const archivePage = ref(1), archivePageSize = ref(20), archiveTotal = ref(0);
+  const fmtDay = function(v){
+    if (!v) return '';
+    if (v instanceof Date){
+      const pad = function(x){ return (x < 10 ? '0' : '') + x; };
+      return v.getFullYear() + '-' + pad(v.getMonth() + 1) + '-' + pad(v.getDate());
+    }
+    return String(v).slice(0, 10);
+  };
+  const refreshArchive = async function(){
+    try {
+      const prm = {
+        pageNum: archivePage.value, pageSize: archivePageSize.value,
+        statusList: '3,6',
+        applicant: (archiveApplicant.value || '').trim() || undefined,
+        department: archiveDepartment.value || undefined,
+        docNo: (archiveCode.value || '').trim() || undefined
+      };
+      const range = archiveDate.value;
+      if (Array.isArray(range) && range.length === 2 && range[0] && range[1]){
+        prm.updatedAtFrom = fmtDay(range[0]) + 'T00:00:00';
+        prm.updatedAtTo = fmtDay(range[1]) + 'T23:59:59';
+      }
+      const res = await api.docs(prm);
+      archiveDocs.value = (res.records || []).map(toDoc);
+      archiveTotal.value = res.total || archiveDocs.value.length;
+    } catch(e){ archiveDocs.value = []; archiveTotal.value = 0; }
+  };
+  let archiveTimer = null;
+  const onArchiveInput = function(){
+    if (archiveTimer) clearTimeout(archiveTimer);
+    archiveTimer = setTimeout(function(){ archivePage.value = 1; refreshArchive(); }, 350);
+  };
+  const onArchiveFilterChange = function(){ archivePage.value = 1; refreshArchive(); };
+  const archivePageChange = function(pg){ archivePage.value = pg; refreshArchive(); };
+  const archiveSizeChange = function(n){ archivePageSize.value = n; archivePage.value = 1; refreshArchive(); };
+
+  /* 工作台「我的申请」：scope=mine 由服务端过滤（原先从共享列表里再捞一遍自己，
+     捞到的其实是"上一张列表页加载的那批" —— 切过页之后范围就是错的）。 */
+  const myPage = ref(1), myPageSize = ref(10), myTotal = ref(0);
+  const refreshMine = async function(){
+    try {
+      const res = await api.docs({pageNum: myPage.value, pageSize: myPageSize.value, scope: 'mine'});
+      myDocuments.value = (res.records || []).map(toDoc);
+      myTotal.value = res.total || myDocuments.value.length;
+    } catch(e){ myDocuments.value = []; myTotal.value = 0; }
+  };
+  const myPageChange = function(pg){ myPage.value = pg; refreshMine(); };
+  const mySizeChange = function(n){ myPageSize.value = n; myPage.value = 1; refreshMine(); };
+
+  /* 撤回/提交/审批等动作后按"当前所在列表"刷新，而不是永远刷全量缓存 */
+  const refreshActiveDocList = function(){
+    if (page.value === 'forms') return refreshDocList();
+    if (page.value === 'archive') return refreshArchive();
+    if (page.value === 'work') return refreshMine();
+    return refreshDocs();
+  };
+
   let docsKwTimer = null;
   /* 关键字变化后重新到后端取数（防抖 350ms）。
      不防抖的话每敲一个字符打一次接口；输入"张三"就是两次无用请求。 */
   const onDocsKeywordInput = function(){
     if (docsKwTimer) clearTimeout(docsKwTimer);
-    docsKwTimer = setTimeout(function(){ refreshDocs(); }, 350);
+    docsKwTimer = setTimeout(function(){ refreshDocs(); refreshDocList(); }, 350);
   };
   const refreshTodos = async function(){
     todos.value = (await api.todos()) || [];
@@ -1293,48 +1388,12 @@ createApp({setup(){
         return true;
       });
     }
-    // 这里**不再**做 keyword 过滤：服务端已按 keyword 取过数。
-    // 若在这里再筛一遍（而且筛的字段与后端不同：本地看 id/title/applicant，
-    // 后端看 title/doc_no/applicant_name），会出现"后端匹配到了、前端又把它筛掉"，
-    // 搜索结果与接口不一致，且极难自查。
-    return documents.value.filter(function(d){
-      if (statusFilter.value !== '全部' && d.status !== statusFilter.value) return false;
-      if (listMode.value === 'warning'  && d.amount < 20000) return false;
-      if (listMode.value === 'rejected' && d.statusCode !== 4) return false;
-      if (listMode.value === 'done' && d.statusCode !== 3 && d.statusCode !== 6) return false;
-      if (listMode.value === 'approve' && d.statusCode !== 1 && d.statusCode !== 2) return false;
-      return true;
-    });
+    // 全部表单页：条件（状态/快捷视图/关键字）已全部下推服务端，这里直接用分页结果。
+    // 本地再筛的话，筛的只是"当前页"，会得出"总共只有这几条"的错觉。
+    return docListRows.value;
   });
-  const myDocuments = computed(function(){
-    // keyword 已由服务端过滤，这里只按"我发起的"再收敛一次
-    return documents.value.filter(function(d){
-      return d.applicantId === currentUserId.value;
-    });
-  });
-  /* 台账时间范围：按「归档时间」(updatedAt) 筛 —— 与列表那一列、以及后端导出同一口径。
-     此前 archiveDate 绑了 v-model 却从没参与过滤，日期选择器是个死控件，
-     而页面文案写着「支持多条件组合查询」。 */
-  const inArchiveRange = function(d){
-    const range = archiveDate.value;
-    if (!Array.isArray(range) || range.length !== 2 || !range[0] || !range[1]) return true;
-    const t = toDate(d.updatedAt);
-    if (!t) return false;
-    const from = new Date(range[0]); from.setHours(0, 0, 0, 0);
-    const to = new Date(range[1]); to.setHours(23, 59, 59, 999);
-    return t >= from && t <= to;
-  };
-  const archiveDocs = computed(function(){
-    // 同上：keyword 不再在这里筛（服务端已筛）。台账页自己的单号/申请人/部门/日期条件
-    // 仍是本地过滤，作用在已加载的那一批上。
-    return documents.value.filter(function(d){
-      return (d.statusCode === 3 || d.statusCode === 6)
-        && (!archiveApplicant.value || d.applicant.indexOf(archiveApplicant.value) >= 0)
-        && (!archiveDepartment.value || d.department === archiveDepartment.value)
-        && (!archiveCode.value || d.id.indexOf(archiveCode.value) >= 0)
-        && inArchiveRange(d);
-    });
-  });
+  const myDocuments = ref([]); // 服务端 scope=mine + 分页，见 refreshMine
+  const archiveDocs = ref([]); // 服务端 statusList=3,6 + 申请人/部门/单号/归档时间，见 refreshArchive
   const applicantOptions = computed(function(){
     const s = {};
     documents.value.forEach(function(d){ s[d.applicant] = 1; });
@@ -1602,7 +1661,7 @@ createApp({setup(){
       submitForm.draftId = null;
       submitVisible.value = false;
       ElementPlus.ElMessage.success('单据 ' + created.docNo + ' 已提交审批');
-      await Promise.all([refreshDocs(), refreshTodos()]);
+      await Promise.all([refreshActiveDocList(), refreshTodos()]);
     } catch(e){
       ElementPlus.ElMessage.error('提交失败：' + e.message);
     } finally { loading.value = false; }
@@ -1673,7 +1732,7 @@ createApp({setup(){
       await api.approve({taskId:selected.value.pendingTaskId, action:'approve', comment:approvalComment.value || '同意'});
       ElementPlus.ElMessage.success('审批已通过');
       detailVisible.value = false;
-      await Promise.all([refreshDocs(), refreshTodos()]);
+      await Promise.all([refreshActiveDocList(), refreshTodos()]);
     } catch(e){ ElementPlus.ElMessage.error('审批失败：' + e.message); }
     finally { loading.value = false; }
   };
@@ -1687,7 +1746,7 @@ createApp({setup(){
                          comment:rejectForm.reason, rejectTo:target, materials:rejectForm.materials || null});
       rejectVisible.value = false; detailVisible.value = false;
       ElementPlus.ElMessage.success('已驳回至' + rejectForm.level);
-      await Promise.all([refreshDocs(), refreshTodos()]);
+      await Promise.all([refreshActiveDocList(), refreshTodos()]);
     } catch(e){ ElementPlus.ElMessage.error('驳回失败：' + e.message); }
     finally { loading.value = false; }
   };
@@ -1701,7 +1760,7 @@ createApp({setup(){
                          rejectTo:'START', materials:supplementForm.materials});
       supplementVisible.value = false; detailVisible.value = false;
       ElementPlus.ElMessage.success('已要求' + supplementForm.role + '补充材料');
-      await Promise.all([refreshDocs(), refreshTodos()]);
+      await Promise.all([refreshActiveDocList(), refreshTodos()]);
     } catch(e){ ElementPlus.ElMessage.error('操作失败：' + e.message); }
     finally { loading.value = false; }
   };
@@ -1727,7 +1786,7 @@ createApp({setup(){
       await api.withdrawDoc(target.docId);
       ElementPlus.ElMessage.success('已撤回');
       detailVisible.value = false;
-      await Promise.all([refreshDocs(), refreshTodos()]);
+      await Promise.all([refreshActiveDocList(), refreshTodos()]);
     } catch(e){ ElementPlus.ElMessage.error('撤回失败：' + e.message); }
     finally { loading.value = false; }
   };
@@ -1753,14 +1812,17 @@ createApp({setup(){
   /* ---------- 查询 / 跳转 ---------- */
   const runQuery = async function(){
     try {
-      await refreshDocs();
-      ElementPlus.ElMessage.success('查询完成，当前可见 ' + documents.value.length + ' 条（后端 total=' + totalDocs.value + '）');
+      docListPage.value = 1;
+      await refreshDocList();
+      ElementPlus.ElMessage.success('查询完成，本页 ' + docListRows.value.length + ' 条（后端 total=' + docListTotal.value + '）');
     } catch(e){ ElementPlus.ElMessage.error('查询失败：' + e.message); }
   };
   const openStat = function(key){
     listMode.value = key; keyword.value = '';
-    page.value = key === 'approve' ? 'approve' : 'forms';
     statusFilter.value = key === 'done' ? '已通过' : key === 'rejected' ? '已驳回' : '全部';
+    page.value = key === 'approve' ? 'approve' : 'forms';
+    /* 已在 forms 页时 page watcher 不会触发，必须显式按新条件重拉 */
+    if (page.value === 'forms') onDocFilterChange();
   };
 
   /* ---------- 管理端写操作：已接入真实后端 ---------- */
@@ -1831,11 +1893,12 @@ createApp({setup(){
      守卫放在拉取函数里：没权限的账号不会白打一次必然 403 的请求，
      界面上也就不会多出一条无意义的失败请求。 */
   const sealRows = ref([]), sealTotal = ref(0), sealTypeFilter = ref(null), sealStatusFilter = ref(null);
+  const sealPage = ref(1), sealPageSize = ref(20);
   const refreshSeals = async function(){
     if (!can('document:approve:seal')) { sealRows.value = []; sealTotal.value = 0; return; }
     try {
       const res = await api.sealLedger({
-        pageNum: 1, pageSize: 50,
+        pageNum: sealPage.value, pageSize: sealPageSize.value,
         sealType: sealTypeFilter.value || undefined,
         returnStatus: (sealStatusFilter.value === null || sealStatusFilter.value === undefined || sealStatusFilter.value === '')
           ? undefined : sealStatusFilter.value
@@ -1844,6 +1907,9 @@ createApp({setup(){
       sealTotal.value = (res && res.total) ? res.total : sealRows.value.length;
     } catch(e){ sealRows.value = []; sealTotal.value = 0; }
   };
+  const onSealFilterChange = function(){ sealPage.value = 1; refreshSeals(); };
+  const sealPageChange = function(pg){ sealPage.value = pg; refreshSeals(); };
+  const sealSizeChange = function(n){ sealPageSize.value = n; sealPage.value = 1; refreshSeals(); };
   const sealUse = async function(row){
     try {
       await api.sealUse({ documentId: row.documentId, remark: '界面登记用印' });
@@ -1889,7 +1955,7 @@ createApp({setup(){
           '批量通过结果', {dangerouslyUseHTMLString:true});
       }
       batchSelected.value = [];
-      await (page.value === 'approve' ? refreshTodos() : refreshDocs());
+      await (page.value === 'approve' ? refreshTodos() : refreshActiveDocList());
     } catch(e){
       ElementPlus.ElMessage.error(e.message || '批量通过失败');
     } finally { batchApproving.value = false; }
@@ -2388,7 +2454,20 @@ createApp({setup(){
     await nextTick();
     const main = document.querySelector('.el-main');
     if (main) main.classList.toggle('approval-page', v === 'approve');
-    if (v === 'approve' || v === 'forms' || v === 'archive' || v === 'board' || v === 'home'){
+    if (v === 'forms'){
+      docListPage.value = 1;
+      refreshDocList().catch(function(){});
+      refreshDocs().catch(function(){}); // documents 缓存仍供看板聚合/关联单候选使用
+    }
+    if (v === 'archive'){
+      archivePage.value = 1;
+      refreshArchive().catch(function(){});
+    }
+    if (v === 'work'){
+      myPage.value = 1;
+      refreshMine().catch(function(){});
+    }
+    if (v === 'approve' || v === 'board' || v === 'home'){
       refreshDocs().catch(function(){});
     }
     if (v === 'home' || v === 'board' || v === 'approve'){
@@ -2451,7 +2530,12 @@ createApp({setup(){
            tplEditor, newTplVersion, editTpl, saveTpl, activateTpl, removeTpl,
            auditRows, auditTotal, auditBusy, auditPage, auditPageSize, auditFilters,
            refreshAudit, auditSearch, auditPageChange, auditSizeChange, auditReset,
-           dynamicFields, dynamicValues, dynamicReady, pingOk, pingText, ping, corsBlocked, altUrl,
+           dynamicFields, dynamicValues, dynamicReady,
+           docListPage, docListPageSize, docListTotal, onDocFilterChange, docListPageChange, docListSizeChange,
+           archivePage, archivePageSize, archiveTotal, onArchiveInput, onArchiveFilterChange,
+           archivePageChange, archiveSizeChange,
+           myPage, myPageSize, myTotal, myPageChange, mySizeChange,
+           sealPage, sealPageSize, sealPageChange, sealSizeChange, pingOk, pingText, ping, corsBlocked, altUrl,
     greeting, todayText, roleText, scopeText, todoCount, rejectTargets,
     page, role, keyword, statusFilter, businessTypeFilter, docTypeFilter, applicantFilter, listMode,
     submitVisible, detailVisible, selected, detailTab, approvalComment, boardDate, archiveApplicant,

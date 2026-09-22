@@ -218,6 +218,27 @@ public class DocumentService {
         if (q.getStatus() != null) {
             qw.eq("status", q.getStatus());
         }
+        if (q.getStatusList() != null && !q.getStatusList().isEmpty()) {
+            // 多值状态：台账(3,6)、快捷视图(1,2 / 4 / 3,6)。全部下推后前端才能真分页
+            qw.in("status", q.getStatusList());
+        }
+        if (q.getApplicant() != null && !q.getApplicant().isBlank()) {
+            qw.like("applicant_name", q.getApplicant().trim());
+        }
+        if (q.getDepartment() != null && !q.getDepartment().isBlank()) {
+            // 页面下拉给的是部门名，精确等值
+            qw.eq("dept_name", q.getDepartment().trim());
+        }
+        if (q.getDocNo() != null && !q.getDocNo().isBlank()) {
+            // 台账"单据编号"必须只匹配 doc_no —— 走 keyword 会连标题/申请人一起命中
+            qw.like("doc_no", q.getDocNo().trim());
+        }
+        if (q.getUpdatedAtFrom() != null) {
+            qw.ge("updated_at", q.getUpdatedAtFrom());
+        }
+        if (q.getUpdatedAtTo() != null) {
+            qw.le("updated_at", q.getUpdatedAtTo());
+        }
         if (q.getKeyword() != null && !q.getKeyword().isBlank()) {
             // 必须覆盖 applicant_name：界面的搜索框写的是「搜索单号、申请人或事项」，
             // 只匹配 title/doc_no 的话用户按人名搜会得到"空结果"，而界面不会提示
