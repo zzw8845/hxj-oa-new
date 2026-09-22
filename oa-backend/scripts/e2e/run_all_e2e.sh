@@ -55,7 +55,7 @@ SUITES="
 frontend_admin_e2e:43
 frontend_attachment_e2e:56
 frontend_dashboard_e2e:44
-frontend_final_gaps_e2e:60
+frontend_final_gaps_e2e:65
 frontend_business_gaps_e2e:79
 "
 

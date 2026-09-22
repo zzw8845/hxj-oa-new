@@ -213,7 +213,13 @@ public class DocumentService {
             qw.eq("status", q.getStatus());
         }
         if (q.getKeyword() != null && !q.getKeyword().isBlank()) {
-            qw.and(w -> w.like("title", q.getKeyword()).or().like("doc_no", q.getKeyword()));
+            // 必须覆盖 applicant_name：界面的搜索框写的是「搜索单号、申请人或事项」，
+            // 只匹配 title/doc_no 的话用户按人名搜会得到"空结果"，而界面不会提示
+            // "其实我没搜申请人" —— 这会让人以为单据不存在。
+            String kw = q.getKeyword().trim();
+            qw.and(w -> w.like("title", kw)
+                    .or().like("doc_no", kw)
+                    .or().like("applicant_name", kw));
         }
         if (q.getAmountFrom() != null) {
             qw.ge("amount", q.getAmountFrom());

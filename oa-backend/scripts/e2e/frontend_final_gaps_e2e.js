@@ -33,7 +33,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
    为什么要把这个数写死在代码里：本项目出过一次「假绿灯」—— 上游某条断言依赖的接口被回退后
    抛错中断，导致其后 16 条断言（含整条审计留痕链路）**从未执行**，而末行照样打印
    "85/85 通过"。有了这个数，任何"少跑了"都会立刻变成红灯，而不是无声无息。 */
-const EXPECTED_TOTAL = 60;
+const EXPECTED_TOTAL = 65;
 
 const results = [];
 function check(name, ok, extra) {
@@ -231,6 +231,13 @@ const BIZ_TEXT = { DAILY: '日常付款', BIZ: '业务付款', REIMBURSE: '员�
     executablePath: EXEC, headless: true, args: ['--no-sandbox', '--disable-dev-shm-usage']
   });
   const page = await browser.newPage();
+  // 记录 /api 请求：用来证明单据列表的搜索是**发到后端**的，
+  // 而不是在前端已加载的那一批（最多 200 条）里本地筛。
+  const apiCalls = [];
+  page.on('request', r => {
+    const u = r.url() || '';
+    if (u.indexOf('/api/') >= 0) apiCalls.push(u);
+  });
   await page.setViewport({ width: 1680, height: 1050 });
 
   const netErrors = [];
@@ -489,6 +496,73 @@ const BIZ_TEXT = { DAILY: '日常付款', BIZ: '业务付款', REIMBURSE: '员�
     const rowsBiz = await readApproveRows(page);
     check('  选「用印申请」能筛出结果（业务类型筛选真的生效）',
       rowsBiz.length > 0, '行数=' + rowsBiz.length);
+
+    /* ================= 四·补、单据列表搜索走后端 =================
+       此前后端**已经支持** pageNum/pageSize/keyword，但前端固定 pageSize:500 一次拉完、
+       再在前端过滤；而后端对 pageSize 的上限是 200 ⇒ 实际只拿到前 200 条，
+       搜索也只是在这 200 条里搜。超过 200 条后按单号/申请人搜会得到"空结果"，
+       界面还不提示"只搜了前 200 条"，看起来就像那张单不存在。
+       现在 keyword 交给 /api/documents，过滤发生在 SQL 里、搜的是全库。
+
+       【为什么要切回黄小明】上一节用的是周综合（部门范围）。若拿黄小明的单号去搜，
+       在周综合的范围下**本来就该搜不到** —— 那是行级数据范围在正常工作，不是缺陷。
+       所以这里切到一个"本人范围内确实有单据"的账号，并且**用它自己列表里的单号**去搜，
+       这样断言只检验"搜索走到了后端且命中"，不会误伤数据范围逻辑。 */
+    section('四·补、单据列表：搜索走服务端（而不是在前端已加载的那一批里筛）');
+    const g3 = await loginViaGate(page, 'huangxm');
+    if (!g3.ok) throw new Error('切回黄小明失败，本节断言无意义：' + g3.reason);
+    await clickMenu(page, '全部表单');
+    await sleep(1700);
+
+    const docKwSel = 'input[placeholder^="搜索单号、申请人"]';
+    const hasDocKw = await page.$(docKwSel);
+    check('「全部表单」页有搜索框', !!hasDocKw);
+
+    if (hasDocKw) {
+      const rowsBefore = await page.$$eval('.el-table__body tbody tr', els => els.length).catch(() => 0);
+      // 取当前列表第一行的单号，截前 6 位作为搜索词（一定是本账号范围内的）
+      const sampleNo = await page.$$eval('.el-table__body tbody tr', trs => {
+        const t = (trs[0] || {}).textContent || '';
+        const m = t.match(/[A-Z]{2}\d{8,}/);
+        return m ? m[0] : '';
+      }).catch(() => '');
+      const kw = sampleNo ? sampleNo.slice(0, 6) : '';
+      check('从当前列表取到一个可搜的单号片段（保证落在本账号数据范围内）',
+        !!kw, '样例单号=' + sampleNo + ' → 关键词=' + kw);
+
+      const callsBefore = apiCalls.filter(u => u.indexOf('/api/documents?') >= 0 && u.indexOf('keyword=') >= 0).length;
+      if (kw) {
+        await page.$eval(docKwSel, function (el, v) {
+          el.value = v;
+          el.dispatchEvent(new Event('input', { bubbles: true }));
+        }, kw).catch(function () {});
+        await sleep(1700);
+      }
+      const callsAfter = apiCalls.filter(u => u.indexOf('/api/documents?') >= 0 && u.indexOf('keyword=') >= 0);
+      check('★ 输入关键字后确实请求了带 keyword 的 /api/documents（搜索走后端）',
+        callsAfter.length > callsBefore,
+        '带 keyword 的请求 ' + callsBefore + ' → ' + callsAfter.length
+        + (callsAfter.length ? '，末条=' + callsAfter[callsAfter.length - 1].slice(-60) : ''));
+
+      const rowsSearch = await page.$$eval('.el-table__body tbody tr', els => els.length).catch(() => 0);
+      check('★ 搜到了结果（搜索作用于全库而不是"已加载的那一批"）',
+        rowsSearch > 0 && rowsSearch <= rowsBefore,
+        '行数=' + rowsSearch + '（搜索前=' + rowsBefore + '）');
+
+      await page.$eval(docKwSel, function (el) {
+        el.value = '';
+        el.dispatchEvent(new Event('input', { bubbles: true }));
+      }).catch(function () {});
+      await sleep(1700);
+      const rowsBack = await page.$$eval('.el-table__body tbody tr', els => els.length).catch(() => 0);
+      check('清空关键字后列表恢复（否则后续收尾断言都在过滤态上跑）',
+        rowsBack > 0 && rowsBack >= rowsBefore, '行数=' + rowsBack + '（搜索前=' + rowsBefore + '）');
+    } else {
+      check('（跳过）没有搜索框', false);
+      check('（跳过）没有搜索框', false);
+      check('（跳过）没有搜索框', false);
+      check('（跳过）没有搜索框', false);
+    }
 
     /* ================= 五、收尾：数据卫生 ================= */
     section('五、收尾：演示数据未被污染');
