@@ -41,8 +41,10 @@ body{background:linear-gradient(135deg,#f4faff 0,#edf7fe 45%,#f8fbff 100%);color
 <el-dialog v-model="deptDialog.visible" :title="deptDialog.form.id ? '编辑部门' : '新增部门'" width="480px" append-to-body><el-form label-position="top"><div class="form2"><el-form-item label="部门名称"><el-input v-model="deptDialog.form.name" placeholder="如：财务部"></el-input></el-form-item><el-form-item label="部门编码"><el-input v-model="deptDialog.form.code" placeholder="如：FIN"></el-input></el-form-item></div><el-form-item label="上级部门（不选 = 一级部门）"><el-select v-model="deptDialog.form.parentId" clearable filterable style="width:100%"><el-option v-for="d in mdDeptFlat" :key="d.id" :label="d.label" :value="d.id" :disabled="deptDialog.form.id === d.id"></el-option></el-select></el-form-item><el-form-item label="负责人"><el-select v-model="deptDialog.form.leaderId" clearable filterable style="width:100%"><el-option v-for="u in people" :key="u.id" :label="u.name" :value="u.id"></el-option></el-select></el-form-item><div class="form2"><el-form-item label="排序"><el-input-number v-model="deptDialog.form.sortNo" :controls="false" style="width:100%"></el-input-number></el-form-item><el-form-item label="状态"><el-switch v-model="deptDialog.form.status" :active-value="1" :inactive-value="0"></el-switch></el-form-item></div></el-form><template #footer><el-button @click="deptDialog.visible=false">取消</el-button><el-button type="primary" :loading="deptDialog.saving" @click="saveDept">保存</el-button></template></el-dialog><el-dialog v-model="postDialog.visible" :title="postDialog.form.id ? '编辑岗位' : '新增岗位'" width="480px" append-to-body><el-form label-position="top"><div class="form2"><el-form-item label="岗位名称"><el-input v-model="postDialog.form.name"></el-input></el-form-item><el-form-item label="岗位编码"><el-input v-model="postDialog.form.code"></el-input></el-form-item><el-form-item label="排序"><el-input-number v-model="postDialog.form.sortNo" :controls="false" style="width:100%"></el-input-number></el-form-item><el-form-item label="状态"><el-switch v-model="postDialog.form.status" :active-value="1" :inactive-value="0"></el-switch></el-form-item></div></el-form><template #footer><el-button @click="postDialog.visible=false">取消</el-button><el-button type="primary" :loading="postDialog.saving" @click="savePost">保存</el-button></template></el-dialog><el-dialog v-model="dictDialog.visible" :title="dictDialog.form.id ? '编辑字典项' : '新增字典项'" width="480px" append-to-body><el-form label-position="top"><div class="form2"><el-form-item label="字典类型"><el-input v-model="dictDialog.form.dictType" placeholder="如：pay_type"></el-input></el-form-item><el-form-item label="编码"><el-input v-model="dictDialog.form.dictCode" placeholder="如：OFFICIAL"></el-input></el-form-item><el-form-item label="标签"><el-input v-model="dictDialog.form.dictLabel" placeholder="如：公章"></el-input></el-form-item><el-form-item label="排序"><el-input-number v-model="dictDialog.form.sortNo" :controls="false" style="width:100%"></el-input-number></el-form-item></div><el-form-item label="状态"><el-switch v-model="dictDialog.form.status" :active-value="1" :inactive-value="0"></el-switch></el-form-item></el-form><template #footer><el-button @click="dictDialog.visible=false">取消</el-button><el-button type="primary" :loading="dictDialog.saving" @click="saveDict">保存</el-button></template></el-dialog><el-dialog v-model="tplDetailVisible" :title="tplDetailTitle" width="720px" append-to-body><pre style="max-height:60vh;overflow:auto;font-size:12px;background:#f7f8fc;padding:14px;border-radius:8px;white-space:pre-wrap">{{tplDetailText}}</pre></el-dialog><el-dialog v-model="tplEditor.visible" :title="tplEditor.id ? '编辑模板草稿' : '新建模板版本'" width="720px" append-to-body><el-form label-position="top"><el-form-item label="模板名称"><el-input v-model="tplEditor.name" placeholder="如：日常付款申请单"></el-input></el-form-item><el-form-item label="schema（JSON；生效版本的修改会被拒绝，必须新建版本）"><el-input v-model="tplEditor.schemaText" type="textarea" :rows="14" style="font-family:monospace"></el-input><div style="margin-top:8px"><el-button type="primary" plain @click="openDesigner">🎨 可视化设计器（拖拽编排，生成后仍需保存草稿）</el-button><span style="font-size:12px;color:var(--muted);margin-left:8px">直接改 JSON 也行，两者可混用</span></div></el-form-item></el-form><template #footer><el-button @click="tplEditor.visible=false">取消</el-button><el-button type="primary" :loading="tplEditor.saving" @click="saveTpl">保存草稿</el-button></template></el-dialog><el-dialog v-model="fpDialog.visible" :title="'字段权限 · ' + fpDialog.tplName" width="720px" append-to-body destroy-on-close><el-alert title="按「节点 × 字段」配置可见/可编辑；节点选 * 表示对所有节点生效，具体节点（如 n3）的配置优先于 *。未配置的字段缺省为：发起节点（n1）可编辑，其余节点只读可见。保存为全量覆盖：未在下方列出节点上的原有配置会保留。" type="info" :closable="false" style="margin-bottom:12px"></el-alert><div style="display:flex;gap:10px;align-items:center;margin-bottom:10px"><span style="font-size:13px">配置节点：</span><el-select v-model="fpDialog.currentNode" filterable allow-create default-first-option style="width:220px" placeholder="选择或输入节点标识" @change="fpNodeChanged"><el-option v-for="n in fpDialog.nodeOptions" :key="n" :label="n === '*' ? '*（所有节点）' : (n === 'n1' ? 'n1（发起节点）' : n)" :value="n"></el-option></el-select><span style="font-size:12px;color:var(--muted)">共 {{fpDialog.fields.length}} 个 schema 字段</span></div><el-table :data="fpRows" size="small" max-height="420"><el-table-column label="字段" min-width="220"><template #default="s"><b style="font-size:13px">{{s.row.label}}</b><small class="cell-sub" style="margin-left:6px">{{s.row.key}}</small></template></el-table-column><el-table-column label="可见" width="110"><template #default="s"><el-switch v-model="s.row.visible"></el-switch></template></el-table-column><el-table-column label="可编辑" width="110"><template #default="s"><el-switch v-model="s.row.editable" :disabled="!s.row.visible"></el-switch></template></el-table-column></el-table><template #footer><el-button @click="fpDialog.visible=false">取消</el-button><el-button type="primary" :loading="fpDialog.saving" @click="saveFieldPerm">保存权限</el-button></template></el-dialog><el-drawer v-model="detailVisible" size="760px" :with-header="false"><template v-if="selected"><div class="drawer-head"><div><el-tag>{{selected.type}}</el-tag><h2>{{selected.title}}</h2><span>{{selected.id}} · {{selected.applicant}} · {{selected.department}}</span></div><el-button circle @click="detailVisible=false">×</el-button></div><el-alert title="流程信息完全可见" description="当前审批人可查看申请表、全部前置附件、历史审批意见与操作时间。" type="success" :closable="false" show-icon></el-alert><el-descriptions :column="3" border class="desc"><el-descriptions-item label="申请金额">{{money(selected.amount)}}</el-descriptions-item><el-descriptions-item label="当前节点">{{selected.current}}</el-descriptions-item><el-descriptions-item label="状态"><el-tag :type="tagType(selected.status)">{{selected.status}}</el-tag></el-descriptions-item><el-descriptions-item label="申请事由" :span="3">{{selected.reason}}</el-descriptions-item></el-descriptions><el-tabs v-model="detailTab"><el-tab-pane label="全流程" name="flow"><div class="flow-list"><div v-for="(n,i) in selected.nodes" :class="['flow-node',n.state]"><div class="node-dot">{{n.state==='done'?'✓':i+1}}</div><div class="node-body"><div><b>{{n.name}}</b><el-tag size="small" :type="n.state==='done'?'success':n.state==='current'?'warning':'info'">{{n.state==='done'?'已完成':n.state==='current'?'处理中':'待处理'}}</el-tag><span>{{n.time}}</span></div><p v-if="n.person">审批人：{{n.person}}</p><p v-if="n.comment">审批意见：{{n.comment}}</p><div v-if="n.files?.length" class="node-files"><el-button v-for="f in n.files" size="small" plain>▧ {{f}}</el-button></div><small v-if="i>0">可查看前 {{i}} 个节点的全部信息与附件</small></div></div></div></el-tab-pane><el-tab-pane :label="`附件资料 (${allFiles.length})`" name="files"><el-empty v-if="!allFiles.length" description="暂无附件" :image-size="70"></el-empty><div class="file-card" v-for="f in allFiles" :key="f.id"><i>▧</i><div><b>{{f.name}}</b><span>{{f.node}} · {{f.uploader}} · {{f.time}} · {{f.sizeText}}</span></div><el-button link type="primary" v-if="f.previewable" @click="previewAttachment(f.id)">预览</el-button><el-button link @click="downloadAttachment(f.id)">下载</el-button><el-button link type="danger" v-if="canDeleteFile(f)" @click="removeAttachment(f.id)">删除</el-button></div></el-tab-pane><el-tab-pane :label="'关联单据 (' + ((selected.links||[]).length) + ')'" name="links"><el-empty v-if="!selected.links||!selected.links.length" description="未关联前置单据" :image-size="70"></el-empty><div class="file-card" v-for="l in selected.links" :key="l.id"><i>⇄</i><div><b>{{l.linkedDocNo||('#'+l.linkedId)}} · {{l.linkedTitle||'关联单据已不存在'}}</b><span>{{l.linkType==='prev_doc'?'前置单据':(l.linkType||'关联')}}</span></div></div></el-tab-pane><el-tab-pane label="申请表信息" name="form"><el-descriptions :column="2" border><el-descriptions-item label="申请人">{{selected.applicant}}</el-descriptions-item><el-descriptions-item label="所属部门">{{selected.department}}</el-descriptions-item><el-descriptions-item label="单据类型">{{selected.type}}</el-descriptions-item><el-descriptions-item label="申请金额">{{money(selected.amount)}}</el-descriptions-item><el-descriptions-item label="申请事项" :span="2">{{selected.title}}</el-descriptions-item><el-descriptions-item label="申请事由" :span="2">{{selected.reason}}</el-descriptions-item></el-descriptions></el-tab-pane></el-tabs><div v-if="canApprove" class="approval-action"><h3>当前节点审批</h3><el-upload action="#" :auto-upload="false" :limit="3" :on-change="onVoucherChange" :on-remove="onVoucherChange"><el-button>＋ 上传{{selected.current}}凭证{{selected.requireAttachment?'（必填）':''}}</el-button><template #tip><span style="font-size:11px;color:#909399" v-if="selected.requireAttachment">该节点办理必须上传凭证，否则无法通过</span></template></el-upload><el-input v-model="approvalComment" type="textarea" placeholder="请输入审批意见"></el-input><div><el-button type="danger" plain @click="reject">驳回</el-button><el-button type="primary" @click="approve">通过审批</el-button></div></div></template></el-drawer>
 </div><script src="https://cdn.jsdelivr.net/npm/vue@3.5.22/dist/vue.global.prod.js"></script><script src="https://cdn.jsdelivr.net/npm/element-plus@2.11.5/dist/index.full.min.js"></script><script src="https://cdn.jsdelivr.net/npm/element-plus@2.11.5/dist/locale/zh-cn.min.js"></script><script>
 document.querySelector('#app').insertAdjacentHTML('beforeend',`<el-dialog v-model="linkVisible" :title="linkMode==='daily'?'关联前置单据':'关联合同或前置审批'" width="780px" append-to-body><el-alert :title="linkMode==='daily'?'可按单据编号、单据名称或提交人查询':'可按合同编号、单据名称或提交人查询'" type="info" :closable="false" show-icon></el-alert><div class="link-search"><el-input v-model="linkKeyword" clearable :placeholder="linkMode==='daily'?'输入单据编号、名称或提交人':'输入合同编号、单据名称或提交人'"><template #prepend>⌕</template></el-input><el-button type="primary">查询</el-button></div><el-table :data="filteredLinks" highlight-current-row><el-table-column v-if="linkMode==='daily'" prop="code" label="单据编号" width="160"></el-table-column><el-table-column v-else prop="contract" label="合同编号" width="160"></el-table-column><el-table-column prop="name" label="单据名称" min-width="210"></el-table-column><el-table-column label="提交人信息" min-width="170"><template #default="s"><b>{{s.row.applicant}}</b><small class="cell-sub">{{s.row.department}}</small></template></el-table-column><el-table-column label="操作" width="90"><template #default="s"><el-button link type="primary" @click="chooseLink(s.row)">选择关联</el-button></template></el-table-column></el-table><template #footer><el-button @click="linkVisible=false">取消</el-button></template></el-dialog>`);
-document.querySelector('#app').insertAdjacentHTML('beforeend',`<el-dialog v-model="flowVisible" :title="editingFlow?.isNew?'新增审批流程':'修改审批流程'" width="640px" append-to-body><template v-if="editingFlow"><el-form label-position="top" class="flow-editor"><div class="form2"><el-form-item label="流程名称"><el-input v-model="editingFlow.type" :disabled="!editingFlow.isNew" placeholder="例如：采购申请单"></el-input></el-form-item><el-form-item label="关联单据类型"><el-select v-model="editingFlow.docTypeId" placeholder="该流程服务的单据类型" style="width:100%"><el-option v-for="d in documentTypes" :key="d.id" :label="d.name" :value="d.id"></el-option></el-select></el-form-item></div><el-form-item label="审批节点（按审批顺序选择，可输入新节点）"><el-select v-model="editingFlow.nodes" multiple filterable allow-create default-first-option style="width:100%" placeholder="按审批顺序选择节点"><el-option v-for="n in nodeTemplateList" :key="n.name" :label="n.name" :value="n.name"><span>{{n.name}}</span><span style="float:right;color:#909399;font-size:12px;margin-left:16px">{{n.ruleLabel}}</span></el-option></el-select><el-alert title="保存后会生成新版本并自动部署；已在审批中的单据仍走原版本，不受影响。" type="info" :closable="false" style="margin-top:10px"></el-alert></el-form-item></el-form></template><template #footer><el-button v-if="!editingFlow?.isNew" type="danger" plain @click="removeFlow">废弃流程</el-button><el-button @click="flowVisible=false">取消</el-button><el-button type="primary" :loading="personSaving" @click="saveFlow">保存并部署</el-button></template></el-dialog>`);
+document.querySelector('#app').insertAdjacentHTML('beforeend',`<el-dialog v-model="flowVisible" :title="editingFlow?.isNew?'新增审批流程':'修改审批流程'" width="880px" append-to-body><template v-if="editingFlow"><el-form label-position="top" class="flow-editor"><div class="form2"><el-form-item label="流程名称"><el-input v-model="editingFlow.type" :disabled="!editingFlow.isNew" placeholder="例如：采购申请单"></el-input></el-form-item><el-form-item label="关联单据类型"><el-select v-model="editingFlow.docTypeId" placeholder="该流程服务的单据类型" style="width:100%"><el-option v-for="d in documentTypes" :key="d.id" :label="d.name" :value="d.id"></el-option></el-select></el-form-item></div><el-form-item label="审批节点（按顺序从上到下执行，可在中间插入条件分支）"><div class="node-rows"><div v-for="(row,ri) in editingFlow.rows" :key="row.uid" class="node-row" :class="{'is-gw':row.nodeType===3}"><div class="node-row-main"><span class="node-seq">{{ri+1}}</span><el-input v-if="row.nodeType===3" v-model="row.name" style="width:250px" placeholder="条件分支名称，如 金额分支"></el-input><el-select v-else v-model="row.name" filterable allow-create default-first-option placeholder="选择或输入节点名" style="width:250px" @change="nodeRowChanged(row)"><el-option v-for="n in nodeTemplateList" :key="n.name" :label="n.name" :value="n.name"><span>{{n.name}}</span><span style="float:right;color:#909399;font-size:12px;margin-left:16px">{{n.ruleLabel}}</span></el-option></el-select><el-tag :type="row.nodeType===3?'warning':'info'" effect="plain">{{nodeRowTypeLabel(row)}}</el-tag><div class="node-row-ops"><el-button link :disabled="ri===0" @click="moveNodeRow(ri,-1)">上移</el-button><el-button link :disabled="ri===editingFlow.rows.length-1" @click="moveNodeRow(ri,1)">下移</el-button><el-button link type="danger" @click="removeNodeRow(ri)">删除</el-button></div></div><div v-if="row.nodeType===3" class="branch-box"><div class="branch-head">分支条件：自上而下匹配，第一条成立的生效；「否则」建议放最后</div><div v-for="(b,bi) in row.branches" :key="bi" class="branch-row"><el-switch v-model="b.defaultBranch" active-text="否则" inactive-text="条件" inline-prompt style="flex:none" @change="branchKindChanged(row,b)"></el-switch><el-input v-model="b.expr" :disabled="b.defaultBranch" :placeholder="b.defaultBranch ? '否则：上面条件都不成立时走这里' : '如 doc.amount >= 20000（字段须以 doc. 开头）'" style="flex:1"></el-input><span class="branch-arrow">→</span><el-select v-model="b.targetUid" placeholder="目标节点" style="width:180px"><el-option v-for="t in branchTargets(ri)" :key="t.uid" :label="t.label" :value="t.uid"></el-option></el-select><el-button link type="danger" @click="removeBranch(row,bi)">删除</el-button></div><div class="branch-ops"><el-button link type="primary" @click="addBranch(row,ri)">＋ 添加条件</el-button><el-button link type="primary" @click="addBranch(row,ri,true)">＋ 添加「否则」</el-button><span class="branch-hint">{{branchHint(row,ri)}}</span></div></div></div></div><div class="node-add"><el-button plain @click="addNodeRow()">＋ 添加节点</el-button><el-button plain type="warning" @click="addGatewayRow()">＋ 添加条件分支</el-button></div><el-alert title="保存后会生成新版本并自动部署；已在审批中的单据仍走原版本，不受影响。" type="info" :closable="false" style="margin-top:10px"></el-alert></el-form-item></el-form></template><template #footer><el-button v-if="!editingFlow?.isNew" type="danger" plain @click="removeFlow">废弃流程</el-button><el-button @click="flowVisible=false">取消</el-button><el-button type="primary" :loading="personSaving" @click="saveFlow">保存并部署</el-button></template></el-dialog>`);
 document.querySelector('#app').insertAdjacentHTML('beforeend',`<el-dialog v-model="roleVisible" :title="editingRole?.isNew?'新增角色':'配置角色权限'" width="680px" append-to-body><template v-if="editingRole"><el-form label-position="top"><div class="form2"><el-form-item label="角色名称"><el-input v-model="editingRole.name" :disabled="!editingRole.isNew"></el-input></el-form-item><el-form-item label="对应部门"><el-select v-model="editingRole.deptId" clearable placeholder="不选=全公司" style="width:100%"><el-option v-for="d in deptOptions" :key="d.id" :label="d.name" :value="d.id"></el-option></el-select></el-form-item><el-form-item label="对应岗位"><el-select v-model="editingRole.post" filterable allow-create default-first-option style="width:100%"><el-option v-for="p in ['系统管理员','部门负责人岗','财务核算岗','内控合规岗','资金出纳岗','总经办审批岗','印章管理岗']" :label="p" :value="p"></el-option></el-select></el-form-item><el-form-item label="数据范围"><el-select v-model="editingRole.scopeType" style="width:100%"><el-option v-for="s in scopeOptions" :key="s.value" :label="s.label" :value="s.value"></el-option></el-select></el-form-item></div><el-form-item label="权限配置（来自后端权限点目录；保存后该角色成员需重新登录才生效）"><el-checkbox-group v-model="editingRole.permCodes"><el-checkbox v-for="p in allPermissions" :key="p.code" :label="p.code">{{p.name}}</el-checkbox></el-checkbox-group></el-form-item></el-form></template><template #footer><el-button v-if="!editingRole?.isNew" type="danger" plain @click="removeRole">删除角色</el-button><el-button @click="roleVisible=false">取消</el-button><el-button type="primary" :loading="personSaving" @click="saveRole">保存角色</el-button></template></el-dialog>`);
+/* 流程节点行编辑器：一屏看清「谁在谁之前」，条件分支就地展开 */
+document.head.insertAdjacentHTML('beforeend',`<style>.node-rows{display:flex;flex-direction:column;gap:10px;width:100%}.node-row{border:1px solid #e8ecf3;border-radius:10px;padding:10px 12px;background:#fafbfe}.node-row.is-gw{background:#fffaf0;border-color:#f2e0bd}.node-row-main{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.node-seq{width:22px;height:22px;flex:none;border-radius:50%;background:#e9eaff;color:#5961df;font-size:11px;font-weight:700;display:grid;place-items:center}.node-row-ops{margin-left:auto;display:flex;align-items:center;gap:2px}.branch-box{margin:10px 0 2px 30px;padding:10px 12px;border-radius:9px;background:#fff;border:1px dashed #dfe6f2}.branch-head{font-size:11px;color:#7e879b;margin-bottom:8px}.branch-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}.branch-arrow{color:#8db8d6;flex:none}.branch-ops{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.branch-hint{font-size:10px;color:#7e879b}.node-add{display:flex;gap:10px;margin-top:12px}</style>`);
 document.head.insertAdjacentHTML('beforeend',`<style>.notify-list{max-height:calc(100vh - 200px);overflow:auto}.notify-item{position:relative;padding:12px 14px;border:1px solid #ebeef5;border-radius:10px;margin-bottom:10px;cursor:pointer;background:#fff;transition:background .15s}.notify-item:hover{background:#f5f7fa}.notify-item.is-unread{border-left:3px solid #f56c6c}.notify-item.is-read{opacity:.72}.notify-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px}.notify-head b{font-size:14px;color:#1f2d3d}.notify-head span{font-size:12px;color:#909399;white-space:nowrap}.notify-item p{margin:6px 0 0;font-size:13px;color:#5a6a7a;line-height:1.5}</style>`);
 document.querySelector('#app').insertAdjacentHTML('beforeend',`<el-drawer v-model="notifyVisible" title="通知中心" size="520px" append-to-body><div v-loading="notifyLoading" class="notify-list"><el-empty v-if="!notifyList.length" description="暂无通知" :image-size="80"></el-empty><div v-for="n in notifyList" :key="n.id" :class="['notify-item', n.isRead ? 'is-read' : 'is-unread']" @click="markNotifyRead(n)"><div class="notify-head"><b>{{n.title}}</b><span>{{n.time}}</span></div><p>{{n.content}}</p><el-tag v-if="!n.isRead" size="small" type="danger" effect="plain">未读</el-tag></div></div><el-pagination v-if="notifyTotal > 20" small layout="prev, pager, next" :current-page="1" :page-size="20" :total="notifyTotal" @current-change="changeNotifyPage"></el-pagination><template #footer><el-button @click="notifyVisible=false">关闭</el-button><el-button type="primary" :loading="notifyLoading" @click="markAllNotifyRead">全部已读</el-button></template></el-drawer>`);
 /* 调整员工角色（行内入口） */
@@ -683,6 +685,13 @@ createApp({setup(){
   const flowConfigList = ref([]), dictMap = reactive({});
   const documents = ref([]), todos = ref([]), doneList = ref([]);
   const totalDocs = ref(0), serverFlowNodes = reactive({});
+  /* 流程详情的完整缓存（nodes + assignees + conditionExpr）。
+     以前只缓存节点名，于是"编辑流程"只能把名字重新提交，服务端只能按名字重新解析
+     —— 结果是定制的指派规则被模板库默认值覆盖、条件分支直接消失。
+     要保住结构，就必须把类型/规则/分支一起拿回来。 */
+  const serverFlowDetail = reactive({});
+  /* 节点行的稳定标识：分支目标是按行定位的，行一移动就不能再用下标当坐标 */
+  let flowRowSeq = 0;
   const departments = ref([]), people = ref([]), roleConfigs = ref([]), flowConfigs = ref([]);
   /* 人员管理表格的**服务端**分页数据。与 people（选人下拉用的全量）分开：
      表格若也用全量，搜索就只能在已加载的那一批人里搜 —— 搜不全且不给任何提示。 */
@@ -1161,7 +1170,8 @@ createApp({setup(){
         const d = await api.flowDetail(f.id);
         const nodes = ((d && d.nodes) || []).slice().sort(function(a,b){ return (a.seqNo||0)-(b.seqNo||0); });
         serverFlowNodes[f.id] = nodes.map(function(n){ return n.nodeName || n.nodeKey; });
-      } catch(e){ serverFlowNodes[f.id] = []; }
+        serverFlowDetail[f.id] = {nodes: nodes, assignees: (d && d.assignees) || {}};
+      } catch(e){ serverFlowNodes[f.id] = []; serverFlowDetail[f.id] = {nodes:[], assignees:{}}; }
     }));
     flowConfigs.value = flowConfigList.value.map(function(f){
       return {id:f.id, type:f.name,
@@ -2742,14 +2752,209 @@ createApp({setup(){
     } catch(e){}
   };
 
+  /* ---------- 流程编辑器：节点行 + 条件分支 ----------
+     为什么把「节点名多选」换成「有序节点行」：多选只能表达一条直线，条件分支
+     （nodeType=3）根本无处安放；而且提交的是纯名字数组，服务端只能按名字重新解析，
+     定制的指派规则与分支会被模板库默认值覆盖 —— 一次"改个流程名"就能静默毁掉结构。
+     现在提交的是结构化 nodeItems，规则与分支原样回传。
+
+     分支目标用 **行 uid** 而不是下标：行可以上移/下移/删除，
+     任何以下标为坐标的写法都会在移动后悄悄指到隔壁节点。 */
+  const GW = 3, START_NODE = 5;
+  const newFlowRow = function(name, nodeType){
+    return {uid:'r' + (++flowRowSeq), name:name || '', nodeType:nodeType,
+            ruleType:null, ruleValue:null, fromServer:false, branches:[]};
+  };
+  const serverDetailOf = function(flowId){
+    const d = serverFlowDetail[flowId] || {nodes:[], assignees:{}};
+    return d;
+  };
+  /* 服务端节点 → 编辑行。nodeKey → 行 的映射用来还原分支目标（不能做算术：
+     种子数据的 nodeKey 是 gw1 这种语义名，不是 n{序号}）。 */
+  const flowRowsFromDetail = function(detail){
+    const nodes = (detail.nodes || []).slice();
+    const rows = nodes.map(function(n){
+      const rules = (detail.assignees || {})[n.id] || [];
+      const r0 = rules[0] || {};
+      const row = newFlowRow(n.nodeName, n.nodeType);
+      row.ruleType = r0.ruleType || null;
+      row.ruleValue = r0.ruleValue || null;
+      row.fromServer = true;
+      return row;
+    });
+    const byKey = {};
+    nodes.forEach(function(n,i){ byKey[n.nodeKey] = i; });
+    nodes.forEach(function(n,i){
+      if (n.nodeType !== GW) return;
+      let arr = [];
+      try { arr = JSON.parse(n.conditionExpr || '[]'); } catch(e){ arr = []; }
+      rows[i].branches = arr.map(function(b){
+        const pos = byKey[b.target];
+        return {expr: b.expr || '', defaultBranch: b.default === true,
+                targetUid: (pos === undefined || !rows[pos]) ? null : rows[pos].uid};
+      });
+    });
+    return rows;
+  };
+  const nodeRowTypeLabel = function(row){
+    if (row.nodeType === GW) return '条件分支';
+    const t = (nodeTemplateList.value || []).find(function(x){ return x.name === row.name; });
+    if (t && t.nodeType) return t.nodeTypeLabel || '审批';
+    if (row.nodeType === START_NODE) return '发起';
+    if (row.nodeType === 4) return '办理';
+    if (row.nodeType === 2) return '抄送';
+    if (row.nodeType === 1) return '审批';
+    return '待解析';
+  };
+  /* 换了节点名：清掉从服务端带下来的规则，让服务端按新名字重新解析。
+     不清的话会拿着旧节点的规则去配新节点 —— 那是最难发现的错配。 */
+  const nodeRowChanged = function(row){
+    const t = (nodeTemplateList.value || []).find(function(x){ return x.name === row.name; });
+    row.nodeType = (t && t.nodeType) ? t.nodeType : null;
+    row.ruleType = null;
+    row.ruleValue = null;
+    row.fromServer = false;
+  };
+  const addNodeRow = function(){
+    editingFlow.value.rows.push(newFlowRow('', null));
+  };
+  /* 加条件分支：同时补一个承接节点并把「否则」指向它。
+     否则新分支出来后没有去处，「紧跟节点必须被某条分支指向」这条校验会立刻报错，
+     用户会一脸茫然 —— 干脆一次给到位，并说明为什么多了一行。 */
+  const addGatewayRow = function(){
+    const rows = editingFlow.value.rows;
+    const gw = newFlowRow('条件分支', GW);
+    gw.branches = [{expr:'', defaultBranch:false, targetUid:null},
+                   {expr:'', defaultBranch:true, targetUid:null}];
+    rows.push(gw);
+    const sink = newFlowRow('', null);
+    rows.push(sink);
+    gw.branches[0].targetUid = sink.uid;
+    gw.branches[1].targetUid = sink.uid;
+    ElementPlus.ElMessage.info('已加入条件分支，并在它后面补了一个承接节点（「否则」的去处），请补全名称与条件');
+  };
+  const moveNodeRow = function(i, delta){
+    const rows = editingFlow.value.rows;
+    const j = i + delta;
+    if (j < 0 || j >= rows.length) return;
+    const tmp = rows[i]; rows[i] = rows[j]; rows[j] = tmp;
+  };
+  const removeNodeRow = function(i){
+    const rows = editingFlow.value.rows;
+    const gone = rows[i];
+    if (!gone) return;
+    /* 删掉的如果是某条分支的目标，要把那些分支的目标一并清空。
+       留着悬空 uid 的话前端校验会拦，但用户看到的是"莫名其妙没选目标"。 */
+    rows.forEach(function(r){
+      (r.branches || []).forEach(function(b){ if (b.targetUid === gone.uid) b.targetUid = null; });
+    });
+    rows.splice(i, 1);
+  };
+  const branchTargets = function(ri){
+    /* 只能指向本条件分支**之后**的节点：禁止回跳，等于从结构上排除死循环
+       （驳回退回是另一个机制，不该靠分支回跳实现） */
+    const rows = editingFlow.value.rows;
+    const out = [];
+    for (let i = ri + 1; i < rows.length; i++){
+      if (rows[i].nodeType === START_NODE) continue;
+      out.push({uid: rows[i].uid, label: (i + 1) + '. ' + (rows[i].name || '（未命名节点）')});
+    }
+    return out;
+  };
+  const addBranch = function(row, ri, asDefault){
+    if (asDefault && (row.branches || []).some(function(b){ return b.defaultBranch; })){
+      ElementPlus.ElMessage.warning('该条件分支已经有「否则」分支了');
+      return;
+    }
+    const targets = branchTargets(ri);
+    row.branches.push({expr:'', defaultBranch: !!asDefault,
+                       targetUid: targets.length ? targets[0].uid : null});
+  };
+  const removeBranch = function(row, bi){
+    row.branches.splice(bi, 1);
+  };
+  const branchKindChanged = function(row, b){
+    if (!b.defaultBranch) b.expr = '';
+  };
+  const branchHint = function(row, ri){
+    const rows = editingFlow.value.rows;
+    const next = rows.findIndex(function(r, i){ return i > ri && r.nodeType !== START_NODE; });
+    if (next < 0) return '下面还没有节点，分支没有去处，请先添加节点';
+    const nextName = rows[next].name || '（未命名节点）';
+    const covered = (row.branches || []).some(function(b){ return b.targetUid === rows[next].uid; });
+    if (!covered) return '下面紧跟的「' + nextName + '」必须被某条分支指向，否则流程无法部署';
+    /* 提示必须按「否则」分支**实际指向**的节点来说。
+       曾经写反过一次：只要紧跟节点被任何分支覆盖就提示"「否则」将走紧跟节点"，
+       而截图里的真实情况是条件分支去紧跟节点、「否则」跳到更后面。 */
+    const def = (row.branches || []).find(function(b){ return b.defaultBranch; });
+    if (!def) return '没配「否则」分支，未命中条件时会走下面的节点「' + nextName + '」（保存时自动补上）';
+    const idx = rows.findIndex(function(x){ return x.uid === def.targetUid; });
+    if (idx < 0) return '「否则」分支还没选目标节点';
+    return '「否则」走节点 ' + (idx + 1) + '. ' + (rows[idx].name || '（未命名节点）');
+  };
+  /* 前端先校验一遍（与服务端同一套规则）：让错误在点保存之前就看得见，
+     而不是等一次 400 之后再猜是哪一行的问题 */
+  const validateFlowRows = function(){
+    const rows = editingFlow.value.rows;
+    if (!rows.length) return '请至少添加一个审批或办理节点';
+    for (let i = 0; i < rows.length; i++){
+      const r = rows[i];
+      if (!String(r.name || '').trim()) return '第 ' + (i + 1) + ' 个节点还没填名称';
+      if (r.nodeType !== GW) continue;
+      if (!(r.branches || []).length) return '条件分支「' + r.name + '」至少要有一条分支条件';
+      let defs = 0;
+      for (const b of r.branches){
+        const idx = rows.findIndex(function(x){ return x.uid === b.targetUid; });
+        if (idx < 0) return '条件分支「' + r.name + '」有分支没选目标节点（或目标节点已被删除）';
+        if (idx <= i) return '条件分支「' + r.name + '」的分支只能指向它下面的节点';
+        if (b.defaultBranch){
+          defs++;
+        } else if (!String(b.expr || '').trim()){
+          return '条件分支「' + r.name + '」有分支没填条件表达式（否则分支请打开「否则」开关）';
+        }
+      }
+      if (defs > 1) return '条件分支「' + r.name + '」只能有一条「否则」分支';
+      const next = rows.findIndex(function(x, xi){ return xi > i && x.nodeType !== START_NODE; });
+      if (next < 0) return '条件分支「' + r.name + '」下面必须还有节点，否则分支没有去处';
+      if (!r.branches.some(function(b){ return b.targetUid === rows[next].uid; })){
+        return '条件分支「' + r.name + '」下面紧跟的「' + (rows[next].name || '（未命名节点）')
+             + '」必须被某条分支指向，否则流程无法部署';
+      }
+    }
+    const hasExecutable = rows.some(function(r){ return r.nodeType !== START_NODE; });
+    if (!hasExecutable) return '流程至少要有一个审批或办理节点（当前只配了发起节点）';
+    return null;
+  };
+  /* 行 → 提交体。位置号 = 行下标 + 1（服务端据此翻译成 nodeKey）。 */
+  const flowRowsToNodeItems = function(){
+    const rows = editingFlow.value.rows;
+    return rows.map(function(r){
+      const item = {nodeName: String(r.name || '').trim()};
+      if (r.nodeType === GW){
+        item.nodeType = GW;
+        item.branches = (r.branches || []).map(function(b){
+          const idx = rows.findIndex(function(x){ return x.uid === b.targetUid; });
+          return {expr: b.defaultBranch ? null : b.expr,
+                  target: idx >= 0 ? idx + 1 : null,
+                  defaultBranch: !!b.defaultBranch};
+        });
+      } else if (r.fromServer){
+        /* 服务端来的行：把类型与规则原样回传。
+           不回传的话服务端只能按名字重新解析，定制规则会被模板库默认值覆盖。 */
+        if (r.nodeType) item.nodeType = r.nodeType;
+        if (r.ruleType){ item.ruleType = r.ruleType; item.ruleValue = r.ruleValue; }
+      }
+      return item;
+    });
+  };
+
   const saveFlow = async function(){
     const f = editingFlow.value;
     if (!f.type){ ElementPlus.ElMessage.warning('流程名称不能为空'); return; }
     if (!f.docTypeId){ ElementPlus.ElMessage.warning('请选择该流程关联的单据类型'); return; }
-    if (!f.nodes || f.nodes.length < 2){
-      ElementPlus.ElMessage.warning('审批节点至少两个（含发起节点）'); return;
-    }
-    const body = {name:f.type, docTypeId:f.docTypeId, nodes:f.nodes};
+    const bad = validateFlowRows();
+    if (bad){ ElementPlus.ElMessage.warning(bad); return; }
+    const body = {name:f.type, docTypeId:f.docTypeId, nodeItems:flowRowsToNodeItems()};
     try {
       if (f.isNew){
         await adminCall(function(){ return api.createFlow(body); }, '流程已创建并部署');
@@ -2776,15 +2981,22 @@ createApp({setup(){
   };
 
   const editFlow = function(flow){
+    const detail = serverDetailOf(flow.id);
+    let rows = flowRowsFromDetail(detail);
+    if (!rows.length){
+      // 详情拿不到（网络/权限异常）时给一条最小可用骨架，而不是空白对话框
+      rows = [newFlowRow('发起人', START_NODE), newFlowRow('', null)];
+    }
     editingFlow.value = Object.assign({}, flow, {
-      nodes:(flow.nodes||[]).slice(),
+      rows: rows,
       docTypeId: flow.docTypeId || (documentTypes.value[0]||{}).id,
       isNew:false
     });
     flowVisible.value = true;
   };
   const newFlow  = function(){
-    editingFlow.value = {type:'', nodes:['发起人'], docTypeId:(documentTypes.value[0]||{}).id, isNew:true};
+    editingFlow.value = {type:'', rows:[newFlowRow('发起人', START_NODE), newFlowRow('', null)],
+                         docTypeId:(documentTypes.value[0]||{}).id, isNew:true};
     flowVisible.value = true;
   };
   const editRole = function(item){
@@ -2938,6 +3150,8 @@ createApp({setup(){
     riskOverview, riskStats, riskRows, refreshRisks, can, exporting, exportLedger,
     money, tagType, documentType, docTitle, docSubtitle, runQuery, openSubmit, quickSubmit, repeatSubmit,
     openStat, addPerson, openLink, chooseLink, editFlow, newFlow, saveFlow, editRole, newRole, saveRole,
+    nodeRowTypeLabel, nodeRowChanged, addNodeRow, addGatewayRow, moveNodeRow, removeNodeRow,
+    branchTargets, addBranch, removeBranch, branchKindChanged, branchHint,
     submitRequest, openDetail, approve, confirmReject, confirmSupplement, confirmSign, withdrawDoc,
     fmtDateTime, deptNameById
   };

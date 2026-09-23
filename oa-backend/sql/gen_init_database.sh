@@ -14,6 +14,12 @@ cd "$(dirname "$0")"
 
 TARGET_DB="hxj-oa"
 OUT="init_database.sql"
+# 先写临时文件，自检通过后再覆盖 OUT。
+# 为什么：本脚本最初是「先 > OUT 再自检」，自检失败虽然 exit 1，但**坏脚本已经落在磁盘上**。
+# 调用方（部署脚本/人手）只要没检查退出码，就会拿着缺表的建库脚本去建空库，
+# 表现是"能启动、一提交就报错"，且现场没有任何报错提示。先写 tmp 能让失败零残留。
+TMP="${OUT}.tmp"
+trap 'rm -f "$TMP"' EXIT
 
 [ -f schema.sql ]                 || { echo "✗ 缺少 schema.sql" >&2; exit 1; }
 [ -f flowable_schema_mysql.sql ]  || { echo "✗ 缺少 flowable_schema_mysql.sql" >&2; exit 1; }
@@ -30,7 +36,7 @@ OUT="init_database.sql"
 --     mysql -h <host> -P <port> -u<user> -p --default-character-set=utf8mb4 < init_database.sql
 --     （本机：mysql -uroot < init_database.sql）
 --
---   内容：① 建库  ② 27 张业务表  ③ 41 张 Flowable 引擎表（ACT_* / FLW_*）
+--   内容：① 建库  ② 29 张业务表  ③ 41 张 Flowable 引擎表（ACT_* / FLW_*）
 --
 --   【幂等】全部为 CREATE DATABASE/TABLE IF NOT EXISTS，重复执行不会报错，也不会动已有数据。
 --           但注意：它**不会**升级已存在的表结构。改了 schema 后要更新线上库，
@@ -64,7 +70,7 @@ HEADER
 
   cat <<'BIZ_HEADER'
 -- =============================================================================
--- 第 1 部分：业务表（27 张）
+-- 第 1 部分：业务表（29 张）
 --   来源：sql/schema.sql
 -- =============================================================================
 
@@ -92,11 +98,11 @@ BIZ_HEADER
 FLW_HEADER
 
   cat flowable_schema_mysql.sql
-} > "$OUT"
+} > "$TMP"
 
 # ------------------------------------------------------------------ 自检
 # 拼装脚本最容易出的错是"删漏半条语句"，而那种错误的报错位置在拼接后的文件里，
-# 与真实原因隔着几百行。这里把三个已知的失败模式直接做成断言。
+# 与真实原因隔着几百行。这里把已知的失败模式直接做成断言。
 fail=0
 check() { # check <说明> <期望值> <实际值>
   if [ "$2" != "$3" ]; then
@@ -107,19 +113,39 @@ check() { # check <说明> <期望值> <实际值>
   fi
 }
 
-db_count=$(grep -cE '^CREATE DATABASE' "$OUT" || true)
-legacy_count=$(grep -c 'haixiajin_oa' "$OUT" || true)
+db_count=$(grep -cE '^CREATE DATABASE' "$TMP" || true)
+legacy_count=$(grep -c 'haixiajin_oa' "$TMP" || true)
 # 建库语句自带一行 DEFAULT CHARACTER SET，所以正确值是 1。
 # 若来源文件里的续行没删干净，这里会变成 2 —— 那条孤立语句正是上一版生成器的真实故障。
-charset_count=$(grep -cE '^ +DEFAULT CHARACTER SET utf8mb4 COLLATE' "$OUT" || true)
-table_count=$(grep -ciE '^create table' "$OUT" || true)
+charset_count=$(grep -cE '^ +DEFAULT CHARACTER SET utf8mb4 COLLATE' "$TMP" || true)
+table_count=$(grep -ciE '^create table' "$TMP" || true)
 
 check "CREATE DATABASE 语句数" "1" "$db_count"
 check "遗留的旧库名 haixiajin_oa" "0" "$legacy_count"
 check "DEFAULT CHARACTER SET 行数（只应有本脚本自己的一行）" "1" "$charset_count"
-check "CREATE TABLE 总数（应为 27 业务 + 41 引擎 = 68）" "68" "$table_count"
+check "CREATE TABLE 总数（应为 29 业务 + 41 引擎 = 70）" "70" "$table_count"
 
-[ "$fail" = 0 ] || { echo "✗ 自检未通过，未产出可用脚本" >&2; exit 1; }
+# ---- 通用守卫：schema.sql 里的每一张表都必须出现在产出中 --------------------
+# 这条是为一次真实事故加的：flow_delegation / flow_escalation 当初是**手工补进
+# init_database.sql** 的（schema.sql 里没有），于是下一次重新生成本脚本时，
+# 它们被静默抹掉 —— 表数校验虽然也能拦住，但报的只是"68≠66"，
+# 看不出是哪两张表、也不提示"schema.sql 已不是全量事实"。
+# 逐表比对能直接点名缺了谁，把根因（来源文件不是权威事实）暴露在输出里。
+missing=""
+while IFS= read -r t; do
+  grep -q "CREATE TABLE IF NOT EXISTS \`${t}\`" "$TMP" || missing="${missing} ${t}"
+done < <(grep -oE '^CREATE TABLE IF NOT EXISTS `[A-Za-z_0-9]+`' schema.sql | sed 's/.*`\(.*\)`/\1/')
+if [ -n "$missing" ]; then
+  printf '✗ 以下表在 schema.sql 中存在、但未进入产出：%s\n' "$missing" >&2
+  printf '  多因来源文件与拼接逻辑不一致（例如表是手工补进生成物的，下次重构就丢）。\n' >&2
+  fail=1
+else
+  printf '  ✓ schema.sql 中的业务表已全部进入产出\n'
+fi
+
+[ "$fail" = 0 ] || { rm -f "$TMP"; echo "✗ 自检未通过，已丢弃 ${TMP}，${OUT} 保持原样" >&2; exit 1; }
+
+mv "$TMP" "$OUT"
 
 # 注意 ${OUT} 的写法：紧跟其后的 "（" 是全角括号，bash 会把它前面的字节
 # 一并当作变量名去解析，在 set -u 下直接报 "unbound variable"。

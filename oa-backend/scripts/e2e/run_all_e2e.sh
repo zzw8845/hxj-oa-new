@@ -52,7 +52,7 @@ echo "使用 node：${NODE}（$("$NODE" --version)）"
 
 # 套件:预期断言数 —— 改动套件时这里必须同步改，否则下面的核对会失败（故意的）
 SUITES="
-frontend_admin_e2e:80
+frontend_admin_e2e:88
 frontend_attachment_e2e:56
 frontend_dashboard_e2e:44
 frontend_final_gaps_e2e:65

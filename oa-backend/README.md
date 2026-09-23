@@ -35,11 +35,11 @@
 mysql -uroot -e "DROP DATABASE IF EXISTS haixiajin_oa; \
   CREATE DATABASE haixiajin_oa DEFAULT CHARSET utf8mb4 COLLATE utf8mb4_0900_ai_ci;"
 
-# ---- 2. 业务表（27 张）+ 种子数据 ----
+# ---- 2. 业务表（29 张）+ 种子数据 ----
 mysql -uroot haixiajin_oa < sql/schema.sql
 mysql -uroot haixiajin_oa < sql/seed_data.sql
 
-# ---- 3. Flowable 引擎表（39 张 ACT_*；必须先建，原因见「已知问题」）----
+# ---- 3. Flowable 引擎表（41 张 ACT_*；必须先建，原因见「已知问题」）----
 mysql -uroot haixiajin_oa < sql/flowable_schema_mysql.sql
 
 # ---- 4. 编译（务必用 JDK 17）----
@@ -160,9 +160,9 @@ oa-backend/
 ├── oa-document/    单据域：动态表单、单据发起与查询、审批动作、待办、用印
 ├── oa-boot/        启动层：装配、认证拦截器、全局异常、CORS、配置
 ├── sql/            建表与种子脚本
-│   ├── schema.sql                    业务表 27 张（含 Flowable 绑定列）
+│   ├── schema.sql                    业务表 29 张（含 Flowable 绑定列）
 │   ├── seed_data.sql                 组织架构 + 权限 + 3 种单据的完整配置
-│   ├── flowable_schema_mysql.sql     Flowable 引擎表 39 张（自动生成，勿手改）
+│   ├── flowable_schema_mysql.sql     Flowable 引擎表 41 张（自动生成，勿手改）
 │   ├── migration_20260918_flowable.sql  存量库幂等迁移
 │   ├── schema_partition.sql          audit_log 按月分区
 │   └── verify_assignee.sql           节点指派规则解析验证
@@ -250,7 +250,7 @@ Table 'haixiajin_oa.act_ge_property' doesn't exist
 
 **原因**：Flowable 7.0.0 把 `eventregistry` 改为用 Liquibase 管理 schema，而它的前置检查会先读 `ACT_GE_PROPERTY` 判断 common schema 是否就绪；当表不存在时判定逻辑走错分支，执行 `insert` 而不是建表。
 
-**解决**（本项目已采用）：先用 `sql/flowable_schema_mysql.sql` 预建 39 张引擎表，再启动应用。该脚本由 `scripts/gen_flowable_ddl.py` 从 Maven 依赖的官方 DDL 自动汇总，并按「建表 → 索引 → 数据」三段式重排（官方脚本中索引与建表混排，存在跨文件依赖，例如 `engine.sql` 会给 `variable.sql` 创建的表建索引）。
+**解决**（本项目已采用）：先用 `sql/flowable_schema_mysql.sql` 预建 41 张引擎表，再启动应用。该脚本由 `scripts/gen_flowable_ddl.py` 从 Maven 依赖的官方 DDL 自动汇总，并按「建表 → 索引 → 数据」三段式重排（官方脚本中索引与建表混排，存在跨文件依赖，例如 `engine.sql` 会给 `variable.sql` 创建的表建索引）。
 
 启动成功后 Liquibase 会自行补齐 `FLW_EVENT_*` 等表，属正常现象。
 

@@ -313,9 +313,17 @@ sql('DELETE FROM form_field_permission WHERE template_id=%s' % new_tpl_id)
 sql('DELETE FROM form_template WHERE id=%s' % new_tpl_id)
 check('模板已还原（生效版本切回原版、夹具模板物理删除）',
       scalar("SELECT id FROM form_template WHERE doc_type_id=%d AND status=1 AND deleted=0" % DOC_TYPE) == str(base_tpl)
-      and scalar('SELECT COUNT(*) FROM form_template WHERE deleted=0') == '3',
-      '生效=%s 总数=%s' % (scalar("SELECT id FROM form_template WHERE doc_type_id=%d AND status=1 AND deleted=0" % DOC_TYPE),
-                        scalar('SELECT COUNT(*) FROM form_template WHERE deleted=0')))
+      # 该单据类型下只应剩原版这一条：夹具模板若还在（哪怕是软删残留）这里立刻不等于 1
+      and scalar('SELECT COUNT(*) FROM form_template WHERE doc_type_id=%d AND deleted=0' % DOC_TYPE) == '1'
+      # 夹具行必须整行不存在（软删也拦下来）
+      and (not new_tpl_id or scalar('SELECT COUNT(*) FROM form_template WHERE id=%s' % new_tpl_id) == '0'),
+      # 以前这里写死「模板总数 == 3」。那是把"全局不许有别的模板"当成不变量了：
+      # 演示库里一旦有人（或别的用例）在其它单据类型下建模板，这条就会红，
+      # 而它真正要验的只是"自己建的夹具被物理删除、原版切回生效"。
+      '生效=%s 该类型模板数=%s 夹具行=%s'
+      % (scalar("SELECT id FROM form_template WHERE doc_type_id=%d AND status=1 AND deleted=0" % DOC_TYPE),
+         scalar('SELECT COUNT(*) FROM form_template WHERE doc_type_id=%d AND deleted=0' % DOC_TYPE),
+         scalar('SELECT COUNT(*) FROM form_template WHERE id=%s' % new_tpl_id) if new_tpl_id else 'n/a'))
 
 # ---------------------------------------------------------------- 七、登出 × 批量审批
 print()

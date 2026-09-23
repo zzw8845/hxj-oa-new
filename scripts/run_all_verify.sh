@@ -60,6 +60,8 @@ SUITES=(
   verify_delegation_api
   verify_escalation_api
   verify_flow_interaction
+  verify_flow_branch_admin
+  verify_doc_type_admin
 )
 
 # ------------------------------------------------------------------ 随机顺序
@@ -122,7 +124,7 @@ echo "==================== 汇总 ===================="
 echo "  用例：通过 $PASS_COUNT / $TOTAL_SUITES"
 if [ ${#FAILED[@]} -gt 0 ]; then
   echo "  失败清单："
-  for s in "${FAILED[@]}"; do echo "    - $s（日志 /tmp/verify_$s.log）"; done
+  for s in "${FAILED[@]}"; do echo "    - ${s}（日志 /tmp/verify_${s}.log）"; done
 fi
 if [ "$BASE_OK" = "1" ] && [ ${#FAILED[@]} -eq 0 ]; then
   echo "✓ 全部通过，且演示库基线前后一致"

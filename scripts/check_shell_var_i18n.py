@@ -34,7 +34,13 @@ BAD = re.compile(rb'\$([A-Za-z_][A-Za-z0-9_]*)(?=[^\x00-\x7f])')
 def script_files():
     seen = set()
     for pattern in ('*.sh', '*.command'):
-        for f in list(ROOT.glob(pattern)) + list((ROOT / 'oa-backend').rglob(pattern)):
+        # ⚠ 必须显式带上 scripts/ 这一层。以前只扫了根目录与 oa-backend/**，
+        #   于是 scripts/run_all_verify.sh 里 `$s（日志…` 这种写法一直没被拦到 ——
+        #   它只在"有用例失败"时才执行，平时看不出来，真出事时反而把汇总打印搞崩，
+        #   正好在最需要看失败清单的时候看不到失败清单。
+        for f in (list(ROOT.glob(pattern))
+                  + list((ROOT / 'scripts').rglob(pattern))
+                  + list((ROOT / 'oa-backend').rglob(pattern))):
             if any(p in SKIP_PARTS for p in f.parts):
                 continue
             if f not in seen and f.is_file():

@@ -39,7 +39,7 @@ echo "[2/6] 重建数据库 $DB"
   CREATE DATABASE \`$DB\` DEFAULT CHARSET utf8mb4 COLLATE utf8mb4_0900_ai_ci;"
 
 # ---- 2. 业务表 + 种子数据 ----
-echo "[3/6] 导入业务表结构（27 张）与种子数据"
+echo "[3/6] 导入业务表结构（29 张）与种子数据"
 "${MYSQL_CMD[@]}" "$DB" < sql/schema.sql
 "${MYSQL_CMD[@]}" "$DB" < sql/seed_data.sql
 

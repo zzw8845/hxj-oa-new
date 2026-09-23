@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -61,6 +62,22 @@ public class FlowNodeTemplate {
         private Boolean allowCountersign;
         /** 是否必须上传办理凭证：办理类节点（出纳付款回单、用印盖章件）默认为真 */
         private Boolean requireAttachment;
+        /**
+         * 条件分支节点已解析好的分支（target 已是最终 nodeKey）。
+         * 仅 {@code nodeType=3} 的节点会有值，其余节点为 null。
+         */
+        private List<Branch> branches;
+    }
+
+    /**
+     * 已解析的分支：{@code target} 是最终 nodeKey（如 n4），可以直接写进 condition_expr。
+     */
+    @Data
+    public static class Branch {
+        /** 条件表达式；「否则」分支为空 */
+        private String expr;
+        private String target;
+        private boolean defaultBranch;
     }
 
     private static final List<NodeTemplate> PRESETS = List.of(
@@ -120,6 +137,28 @@ public class FlowNodeTemplate {
     /** 供前端下拉渲染 */
     public List<NodeTemplate> templates() {
         return PRESETS.stream().map(this::deepCopy).toList();
+    }
+
+    /**
+     * 条件分支节点规格：<b>没有审批人，只有分支定义</b>。
+     *
+     * <p>单独开一个工厂而不是走 {@link #resolve(String)}，是因为网关在模板库里没有预设
+     * （它的名字是用户自由填的「金额分支」这类），走 resolve 会命中"未预设审批人规则"的
+     * 兜底分支、白刷一条 warn 日志，还会把一个永远解析不出人的空规则带进库里。
+     * 网关的正确语义就是"它不是任务节点"，所以在这里一次性说清楚。
+     */
+    public NodeTemplate gateway(String name) {
+        NodeTemplate t = new NodeTemplate();
+        t.setName(name);
+        t.setNodeType(TYPE_GATEWAY);
+        t.setNodeTypeLabel(nodeTypeLabel(TYPE_GATEWAY));
+        t.setRuleType(null);
+        t.setRuleValue(null);
+        t.setRuleLabel("条件分支：按条件走不同节点，本身不产生审批任务");
+        t.setSlaHours(0d);
+        t.setAllowCountersign(false);
+        t.setRequireAttachment(false);
+        return t;
     }
 
     /**
@@ -221,6 +260,18 @@ public class FlowNodeTemplate {
         t.setSlaHours(src.getSlaHours());
         t.setAllowCountersign(src.getAllowCountersign());
         t.setRequireAttachment(src.getRequireAttachment());
+        if (src.getBranches() != null) {
+            // 深拷一份：模板库里的常量对象绝不能被调用方改到，否则一个流程的分支会串到另一条流程上
+            List<Branch> branches = new ArrayList<>(src.getBranches().size());
+            for (Branch b : src.getBranches()) {
+                Branch c = new Branch();
+                c.setExpr(b.getExpr());
+                c.setTarget(b.getTarget());
+                c.setDefaultBranch(b.isDefaultBranch());
+                branches.add(c);
+            }
+            t.setBranches(branches);
+        }
         return t;
     }
 }

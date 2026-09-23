@@ -322,7 +322,7 @@ CREATE TABLE IF NOT EXISTS `flow_config_node` (
   `node_name`        VARCHAR(64)  NOT NULL                   COMMENT '节点名称，如 直属部门负责人',
   `node_type`        TINYINT      NOT NULL DEFAULT 1         COMMENT '节点类型 1审批 2抄送 3条件网关 4办理 5发起',
   `seq_no`           INT          NOT NULL                   COMMENT '节点顺序号',
-  `condition_expr`   VARCHAR(512) NULL                       COMMENT '分支条件表达式（条件网关用），如 amount >= 20000',
+  `condition_expr`   VARCHAR(1024) NULL                      COMMENT '分支条件表达式（条件网关用）：JSON 数组，如 [{"expr":"doc.amount >= 20000","target":"n4"},{"default":true,"target":"n5"}]',
   `allow_countersign` TINYINT     NOT NULL DEFAULT 0         COMMENT '是否允许加签 1是 0否',
   `allow_reject`     TINYINT      NOT NULL DEFAULT 1         COMMENT '是否允许驳回 1是 0否',
   `require_attachment` TINYINT    NOT NULL DEFAULT 0         COMMENT '该节点办理是否必须上传凭证 1是 0否',
@@ -451,6 +451,10 @@ CREATE TABLE IF NOT EXISTS `flow_instance` (
   -- ↓ Flowable 运行实例绑定（业务表 ↔ 引擎 ACT_RU_* 表的唯一桥接键）
   `proc_inst_id`        VARCHAR(64)  NULL                    COMMENT 'Flowable 流程实例ID',
   `business_key`        VARCHAR(64)  NULL                    COMMENT 'Flowable 业务键（= document.doc_no，引擎侧反查单据）',
+  -- ↓ 类别快照：审批委托按类别匹配授权时要读它。不冗余存一份的话，授权侧（DelegationService）
+  --   就得反查 document → document_type 才能拿到类别，等于在第 5 条硬约束（行级权限只准一份实现）之外
+  --   又开一条"我能看见吗"的旁路。快照列是刻意冗余，不是可省的字段。
+  `biz_category`        VARCHAR(32)  NULL                    COMMENT '业务类别快照（审批委托的类别匹配要用）',
   `started_at`          DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '开始时间',
   `ended_at`            DATETIME     NULL                    COMMENT '结束时间',
   `created_at`          DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
@@ -612,5 +616,58 @@ CREATE TABLE IF NOT EXISTS `notification` (
   KEY `idx_notify_receiver` (`receiver_id`, `is_read`, `created_at`),
   KEY `idx_notify_biz` (`biz_type`, `biz_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='通知';
+
+-- 28. 审批委托（我不在时由谁代办）----------------------------------------------
+-- 生效方式是「待办可见 + 审批放行」，**不改写流程的指派结果**：
+-- 节点的 assignee 仍是原承办人，流程历史里"谁审的"不会被换人；
+-- 受托人凭这张表获得"看见并处理该待办"的资格。
+-- 这样做的代价要清楚：委托**不追溯**已有待办之外的历史记录，
+-- 但它避免了"指派被改写后，历史记录里承办人含义变味"这类更难解释的问题。
+CREATE TABLE IF NOT EXISTS `flow_delegation` (
+  `id`            BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `company_id`    BIGINT UNSIGNED NOT NULL                COMMENT '公司ID',
+  `delegator_id`  BIGINT UNSIGNED NOT NULL                COMMENT '委托人（原承办人）',
+  `delegate_id`   BIGINT UNSIGNED NOT NULL                COMMENT '受托人（代办人）',
+  `biz_category`  VARCHAR(32)  NULL                       COMMENT '限定单据业务类别；NULL=全部',
+  `start_at`      DATETIME     NOT NULL                   COMMENT '生效开始',
+  `end_at`        DATETIME     NOT NULL                   COMMENT '生效结束',
+  `status`        TINYINT      NOT NULL DEFAULT 1         COMMENT '1生效 0已撤销',
+  `remark`        VARCHAR(255) NULL                       COMMENT '说明（如"出差两周"）',
+  `created_at`    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updated_at`    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `created_by`    BIGINT UNSIGNED NULL                    COMMENT '创建人ID',
+  `updated_by`    BIGINT UNSIGNED NULL                    COMMENT '更新人ID',
+  `deleted`       TINYINT      NOT NULL DEFAULT 0         COMMENT '逻辑删除 0正常 1删除',
+  PRIMARY KEY (`id`),
+  KEY `idx_deleg_delegate`  (`delegate_id`, `status`, `start_at`, `end_at`),
+  KEY `idx_deleg_delegator` (`delegator_id`, `status`, `start_at`, `end_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='审批委托';
+
+-- 29. 超时升级台账（节点超时后把上级加签进来）----------------------------------
+-- `uk_escalation_node(node_id, deleted)` 是**幂等的结构性保证**：
+-- 一个节点最多一条升级记录，重复执行只会撞唯一键（代码把它当成"已升级过"处理），
+-- 比"先查再插"可靠 —— 后者在定时任务与手动触发并发时会重复升级。
+CREATE TABLE IF NOT EXISTS `flow_escalation` (
+  `id`               BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `company_id`       BIGINT UNSIGNED NULL                COMMENT '公司ID',
+  `document_id`      BIGINT UNSIGNED NOT NULL            COMMENT '单据ID',
+  `instance_id`      BIGINT UNSIGNED NULL                COMMENT '流程实例ID',
+  `node_id`          BIGINT UNSIGNED NOT NULL            COMMENT 'flow_instance_node.id（唯一键之一）',
+  `node_key`         VARCHAR(64)  NULL                   COMMENT '节点标识',
+  `node_name`        VARCHAR(64)  NULL                   COMMENT '节点名称',
+  `task_id`          VARCHAR(64)  NULL                   COMMENT '引擎任务ID',
+  `from_assignee_id` BIGINT UNSIGNED NULL                COMMENT '原承办人',
+  `to_assignee_id`   BIGINT UNSIGNED NULL                COMMENT '升级给谁（未找到上级时为空）',
+  `status`           TINYINT      NOT NULL DEFAULT 1     COMMENT '1已升级 0未找到上级负责人',
+  `reason`           VARCHAR(255) NULL                   COMMENT '说明/未升级原因',
+  `created_at`       DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updated_at`       DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `created_by`       BIGINT UNSIGNED NULL                COMMENT '创建人ID',
+  `updated_by`       BIGINT UNSIGNED NULL                COMMENT '更新人ID',
+  `deleted`          TINYINT      NOT NULL DEFAULT 0     COMMENT '逻辑删除 0正常 1删除',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_escalation_node` (`node_id`, `deleted`),
+  KEY `idx_escalation_doc` (`document_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='超时升级台账';
 
 SET FOREIGN_KEY_CHECKS = 1;

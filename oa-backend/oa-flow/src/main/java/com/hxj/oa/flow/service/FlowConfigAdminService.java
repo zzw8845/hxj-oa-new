@@ -3,6 +3,8 @@ package com.hxj.oa.flow.service;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.hxj.oa.common.exception.BizException;
 import com.hxj.oa.common.security.UserContext;
+import com.hxj.oa.common.util.JsonColumn;
+import com.hxj.oa.common.util.JsonUtils;
 import com.hxj.oa.flow.dto.FlowSaveReq;
 import com.hxj.oa.flow.entity.FlowConfig;
 import com.hxj.oa.flow.entity.FlowConfigNode;
@@ -21,6 +23,8 @@ import org.springframework.util.StringUtils;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -54,6 +58,12 @@ public class FlowConfigAdminService {
     private static final int STATUS_ACTIVE = 1;
     private static final int STATUS_RETIRED = 2;
     private static final int INSTANCE_RUNNING = 1;
+    /**
+     * condition_expr 列的容量上限（VARCHAR(1024)）。
+     * 在服务层先按上限拦一道，是为了把"塞不下"变成一个能看懂的业务提示，
+     * 而不是 MySQL 抛出来的 DataIntegrityViolation（用户看到的就是一句 500）。
+     */
+    private static final int CONDITION_EXPR_MAX_CHARS = 1000;
 
     private final FlowConfigMapper configMapper;
     private final FlowConfigNodeMapper nodeMapper;
@@ -90,11 +100,9 @@ public class FlowConfigAdminService {
             req.setName(old.getName());
         }
         if (req.getNodes() == null && req.getNodeItems() == null) {
-            // 只改了名称/分类，节点沿用当前版本的
-            req.setNodes(nodeMapper.selectList(Wrappers.<FlowConfigNode>lambdaQuery()
-                            .eq(FlowConfigNode::getFlowConfigId, id)
-                            .orderByAsc(FlowConfigNode::getSeqNo))
-                    .stream().map(FlowConfigNode::getNodeName).toList());
+            // 只改了名称/分类，节点沿用当前版本的：按"保留式"重建（含网关与分支），
+            // 绝不按名字重新解析 —— 那会把网关解析成审批节点、把分支和定制规则抹掉
+            req.setNodeItems(itemsFromExisting(id));
         }
         return createVersion(req, docTypeId);
     }
@@ -175,8 +183,9 @@ public class FlowConfigAdminService {
     /* ------------------------------------------------------------------ 内部 */
 
     private FlowConfig createVersion(FlowSaveReq req, Long docTypeId) {
-        List<FlowNodeTemplate.NodeTemplate> specs = toSpecs(req);
-        assertHasExecutableNode(specs);
+        Specs specs = toSpecs(req);
+        assertHasExecutableNode(specs.specs());
+        resolveGatewayBranches(specs);
 
         Long companyId = UserContext.currentCompanyId();
         int version = nextVersion(docTypeId);
@@ -199,7 +208,7 @@ public class FlowConfigAdminService {
         cfg.setCreatedBy(UserContext.currentUserId());
         configMapper.insert(cfg);
 
-        writeNodes(cfg.getId(), specs);
+        writeNodes(cfg.getId(), specs.specs());
         // 让后续新提交的单据走这条新链路
         configMapper.updateDocTypeFlowConfig(docTypeId, cfg.getId());
 
@@ -209,42 +218,290 @@ public class FlowConfigAdminService {
         return deployed;
     }
 
+    /**
+     * 结构化节点定义 + 「提交位置」的对应关系。
+     *
+     * <p>位置号（1 开始）是条件分支指向目标的唯一坐标，所以 items 与 specs
+     * <b>必须严格一一对应</b>（下标 i 的 item 解析出下标 i 的 spec）——
+     * 任何"过滤掉一个元素"的写法都会让分支指向隔壁节点，而且是静默的。
+     * 因此这里把两者绑在一个不可变载体里返回，而不是各自返回一个 List。
+     */
+    private record Specs(List<FlowSaveReq.NodeItem> items, List<FlowNodeTemplate.NodeTemplate> specs) {
+    }
+
     /** 节点规格：结构化 nodeItems 优先，否则按名称走模板库翻译 */
-    private List<FlowNodeTemplate.NodeTemplate> toSpecs(FlowSaveReq req) {
+    private Specs toSpecs(FlowSaveReq req) {
         if (req.getNodeItems() != null && !req.getNodeItems().isEmpty()) {
-            List<FlowNodeTemplate.NodeTemplate> out = new ArrayList<>();
+            List<FlowSaveReq.NodeItem> items = new ArrayList<>();
+            List<FlowNodeTemplate.NodeTemplate> specs = new ArrayList<>();
             for (FlowSaveReq.NodeItem item : req.getNodeItems()) {
                 if (item == null || !StringUtils.hasText(item.getNodeName())) {
                     continue;
                 }
-                FlowNodeTemplate.NodeTemplate t = nodeTemplate.resolve(item.getNodeName());
-                if (item.getNodeType() != null) {
-                    t.setNodeType(item.getNodeType());
-                }
-                if (StringUtils.hasText(item.getRuleType())) {
-                    t.setRuleType(item.getRuleType());
-                    t.setRuleValue(item.getRuleValue());
-                }
-                if (item.getSlaHours() != null) {
-                    t.setSlaHours(item.getSlaHours());
-                }
-                if (item.getAllowCountersign() != null) {
-                    t.setAllowCountersign(item.getAllowCountersign());
-                }
-                if (item.getRequireAttachment() != null) {
-                    t.setRequireAttachment(item.getRequireAttachment());
-                }
-                out.add(t);
+                items.add(item);
+                specs.add(toSpec(item));
             }
-            return out;
+            return new Specs(items, specs);
         }
         if (req.getNodes() == null || req.getNodes().isEmpty()) {
             throw BizException.of("审批节点不能为空，至少需要一个审批或办理节点");
         }
-        return req.getNodes().stream()
-                .filter(StringUtils::hasText)
-                .map(nodeTemplate::resolve)
-                .toList();
+        List<FlowSaveReq.NodeItem> items = new ArrayList<>();
+        List<FlowNodeTemplate.NodeTemplate> specs = new ArrayList<>();
+        for (String raw : req.getNodes()) {
+            if (!StringUtils.hasText(raw)) {
+                continue;
+            }
+            FlowSaveReq.NodeItem item = new FlowSaveReq.NodeItem();
+            item.setNodeName(raw);
+            items.add(item);
+            specs.add(nodeTemplate.resolve(raw));
+        }
+        return new Specs(items, specs);
+    }
+
+    /**
+     * 单个节点：显式 nodeType=3（条件分支）走网关工厂，其余走模板库翻译。
+     *
+     * <p>网关必须特判，不能"先按名字解析再改类型"——网关的名字（「金额分支」）
+     * 在模板库里没有预设，会命中"未解析出处理人"的兜底分支、白刷一条 warn，
+     * 还会把一个永远解析不出人的空规则带进规则表。
+     */
+    private FlowNodeTemplate.NodeTemplate toSpec(FlowSaveReq.NodeItem item) {
+        boolean gateway = item.getNodeType() != null && item.getNodeType() == FlowNodeTemplate.TYPE_GATEWAY;
+        FlowNodeTemplate.NodeTemplate t = gateway
+                ? nodeTemplate.gateway(item.getNodeName())
+                : nodeTemplate.resolve(item.getNodeName());
+        if (item.getNodeType() != null && !gateway) {
+            t.setNodeType(item.getNodeType());
+        }
+        if (!gateway && StringUtils.hasText(item.getRuleType())) {
+            t.setRuleType(item.getRuleType());
+            t.setRuleValue(item.getRuleValue());
+        }
+        if (item.getSlaHours() != null) {
+            t.setSlaHours(item.getSlaHours());
+        }
+        if (item.getAllowCountersign() != null) {
+            t.setAllowCountersign(item.getAllowCountersign());
+        }
+        if (item.getRequireAttachment() != null) {
+            t.setRequireAttachment(item.getRequireAttachment());
+        }
+        return t;
+    }
+
+    /* --------------------------------------------------------- 条件分支解析 */
+
+    /**
+     * 校验并解析全部条件分支，把客户端给的「位置号」翻译成最终 nodeKey（{@code n{seq}}）。
+     *
+     * <h3>规则与理由</h3>
+     * <ol>
+     *   <li><b>只有网关能配分支</b>：审批节点上的 conditionExpr 引擎根本不读，写了就是骗人。</li>
+     *   <li><b>网关后面必须还有节点</b>：分支没有去处时 BPMN 生成出来是断的。</li>
+     *   <li><b>只能指向网关之后的节点</b>：禁止回跳，等于从结构上排除了死循环——
+     *       驳回退回到指定节点是另一个机制（allowReject），不该靠分支回跳实现。</li>
+     *   <li><b>「否则」分支最多一条；一条都没有时自动补一条指向紧随节点</b>，
+     *       与 {@code BpmnGenerator} 的兜底行为保持一致，保证 else 永远有去处。</li>
+     *   <li><b>紧随其后的那个节点必须被某条分支指向</b>：这是最容易漏的一条——
+     *       网关之后的第一个节点，入边完全依赖分支（BpmnGenerator 在网关后会把
+     *       "上一条边"置空）。它若没被任何分支指向，生成的 BPMN 里这个 userTask
+     *       就没有 incoming sequenceFlow，部署时直接报错。宁可在这里拦下来并说清楚。</li>
+     * </ol>
+     */
+    private void resolveGatewayBranches(Specs s) {
+        List<FlowSaveReq.NodeItem> items = s.items();
+        List<FlowNodeTemplate.NodeTemplate> specs = s.specs();
+
+        for (int i = 0; i < specs.size(); i++) {
+            FlowNodeTemplate.NodeTemplate t = specs.get(i);
+            List<FlowSaveReq.BranchItem> given = items.get(i).getBranches();
+            boolean gateway = t.getNodeType() != null && t.getNodeType() == FlowNodeTemplate.TYPE_GATEWAY;
+
+            if (!gateway) {
+                if (given != null && !given.isEmpty()) {
+                    throw BizException.of("节点「%s」不是条件分支节点，不能配置分支条件", t.getName());
+                }
+                continue;
+            }
+            t.setBranches(buildBranches(t.getName(), given, specs, i + 1));
+        }
+    }
+
+    private List<FlowNodeTemplate.Branch> buildBranches(String name, List<FlowSaveReq.BranchItem> given,
+                                                        List<FlowNodeTemplate.NodeTemplate> specs, int gatewaySeq) {
+        int nextSeq = firstFlowSeqAfter(specs, gatewaySeq);
+        if (nextSeq == 0) {
+            throw BizException.of("条件分支「%s」后面必须至少还有一个审批或办理节点，否则分支没有去处", name);
+        }
+        if (given == null || given.isEmpty()) {
+            throw BizException.of("条件分支「%s」至少需要一条分支条件", name);
+        }
+
+        List<FlowNodeTemplate.Branch> out = new ArrayList<>();
+        boolean hasDefault = false;
+        for (FlowSaveReq.BranchItem b : given) {
+            if (b == null) {
+                continue;
+            }
+            Integer target = b.getTarget();
+            if (target == null) {
+                throw BizException.of("条件分支「%s」有一条分支没有选择目标节点", name);
+            }
+            if (target < 1 || target > specs.size()) {
+                throw BizException.of("条件分支「%s」的目标节点位置 %d 不存在（当前共 %d 个节点）",
+                        name, target, specs.size());
+            }
+            FlowNodeTemplate.NodeTemplate targetNode = specs.get(target - 1);
+            if (targetNode.getNodeType() != null && targetNode.getNodeType() == FlowNodeTemplate.TYPE_START) {
+                throw BizException.of("条件分支「%s」的分支不能指向发起节点「%s」", name, targetNode.getName());
+            }
+            if (target <= gatewaySeq) {
+                throw BizException.of("条件分支「%s」的分支只能指向它之后的节点，而「%s」在它之前（位置 %d）",
+                        name, targetNode.getName(), target);
+            }
+
+            if (Boolean.TRUE.equals(b.getDefaultBranch())) {
+                if (hasDefault) {
+                    throw BizException.of("条件分支「%s」只允许一条「否则」分支", name);
+                }
+                hasDefault = true;
+                out.add(branch(null, "n" + target, true));
+            } else {
+                String expr = b.getExpr() == null ? "" : b.getExpr().trim();
+                if (expr.isEmpty()) {
+                    throw BizException.of("条件分支「%s」有一条分支既没有条件表达式、也没有勾选「否则」", name);
+                }
+                try {
+                    ConditionExprValidator.validate(expr);
+                } catch (BizException e) {
+                    // 把"哪条分支的哪个条件"补进消息里，否则用户不知道该改哪一行
+                    throw BizException.of("条件分支「%s」的条件「%s」不合法：%s", name, expr, e.getMessage());
+                }
+                out.add(branch(expr, "n" + target, false));
+            }
+        }
+        if (out.isEmpty()) {
+            throw BizException.of("条件分支「%s」至少需要一条分支条件", name);
+        }
+        if (!hasDefault) {
+            out.add(branch(null, "n" + nextSeq, true));
+        }
+        String nextKey = "n" + nextSeq;
+        boolean coversNext = out.stream().anyMatch(x -> nextKey.equals(x.getTarget()));
+        if (!coversNext) {
+            throw BizException.of("条件分支「%s」后面紧跟的节点「%s」必须被某条分支指向，"
+                            + "否则该节点没有入边、流程无法部署（可把「否则」分支指向它）",
+                    name, specs.get(nextSeq - 1).getName());
+        }
+        return out;
+    }
+
+    /** 网关之后第一个非发起节点的位置号（1 开始）；后面没有节点则返回 0 */
+    private int firstFlowSeqAfter(List<FlowNodeTemplate.NodeTemplate> specs, int gatewaySeq) {
+        for (int i = gatewaySeq; i < specs.size(); i++) {
+            FlowNodeTemplate.NodeTemplate t = specs.get(i);
+            if (t.getNodeType() == null || t.getNodeType() != FlowNodeTemplate.TYPE_START) {
+                return i + 1;
+            }
+        }
+        return 0;
+    }
+
+    private FlowNodeTemplate.Branch branch(String expr, String target, boolean defaultBranch) {
+        FlowNodeTemplate.Branch b = new FlowNodeTemplate.Branch();
+        b.setExpr(expr);
+        b.setTarget(target);
+        b.setDefaultBranch(defaultBranch);
+        return b;
+    }
+
+    /**
+     * 序列化成 {@code BpmnGenerator} 认得的格式（键顺序固定，便于人工核对与 diff）：
+     * {@code [{"expr":"doc.amount >= 20000","target":"n4"},{"default":true,"target":"n5"}]}
+     */
+    private String branchesToJson(List<FlowNodeTemplate.Branch> branches) {
+        List<Map<String, Object>> arr = new ArrayList<>();
+        for (FlowNodeTemplate.Branch b : branches) {
+            Map<String, Object> m = new LinkedHashMap<>();
+            if (b.isDefaultBranch()) {
+                m.put("default", true);
+            } else {
+                m.put("expr", b.getExpr());
+            }
+            m.put("target", b.getTarget());
+            arr.add(m);
+        }
+        String json = JsonUtils.toJson(arr);
+        if (json.length() > CONDITION_EXPR_MAX_CHARS) {
+            throw BizException.of("条件分支的条件过长（序列化后 %d 个字符，上限 %d），"
+                    + "请精简条件或拆成两个条件分支节点", json.length(), CONDITION_EXPR_MAX_CHARS);
+        }
+        return json;
+    }
+
+    /** 把库里存的 condition_expr 还原成「位置号」形态的分支提交体 */
+    private List<FlowSaveReq.BranchItem> branchesToItems(String json, Map<String, Integer> positionByKey) {
+        List<FlowSaveReq.BranchItem> out = new ArrayList<>();
+        for (Map<String, Object> b : JsonColumn.toList(json)) {
+            boolean isDefault = Boolean.TRUE.equals(JsonColumn.toBool(b, "default"));
+            String target = JsonColumn.str(b, "target");
+            Integer position = target == null ? null : positionByKey.get(target);
+            if (position == null) {
+                // 存量数据被手工改过库、target 指向了不存在的节点。
+                // 这里必须报错而不是丢分支 —— 悄悄丢一条分支，等于把 else 悄悄挪走。
+                throw BizException.of("条件分支的存量目标节点「%s」在流程中不存在，请重新指定分支目标", target);
+            }
+            FlowSaveReq.BranchItem item = new FlowSaveReq.BranchItem();
+            item.setExpr(JsonColumn.str(b, "expr"));
+            item.setTarget(position);
+            item.setDefaultBranch(isDefault);
+            out.add(item);
+        }
+        return out;
+    }
+
+    /**
+     * 从库里既有节点拼出结构化提交体（保留 nodeType / 指派规则 / 条件分支）。
+     *
+     * <p>用在「只改名称、没提交节点」的修改请求上。以前这条路径是按节点<b>名字</b>
+     * 重新走模板库解析的，后果是：网关被解析成审批节点、条件分支与定制过的指派规则
+     * 全部消失 —— 一次改名就静默毁掉流程结构。改成保留式重建后，
+     * 任何"只改名字"的调用都不再动结构。
+     */
+    private List<FlowSaveReq.NodeItem> itemsFromExisting(Long flowConfigId) {
+        List<FlowConfigNode> nodes = nodeMapper.selectList(Wrappers.<FlowConfigNode>lambdaQuery()
+                .eq(FlowConfigNode::getFlowConfigId, flowConfigId)
+                .orderByAsc(FlowConfigNode::getSeqNo));
+        Map<String, Integer> positionByKey = new HashMap<>();
+        for (int i = 0; i < nodes.size(); i++) {
+            positionByKey.put(nodes.get(i).getNodeKey(), i + 1);
+        }
+
+        List<FlowSaveReq.NodeItem> items = new ArrayList<>();
+        for (FlowConfigNode n : nodes) {
+            FlowSaveReq.NodeItem item = new FlowSaveReq.NodeItem();
+            item.setNodeName(n.getNodeName());
+            item.setNodeType(n.getNodeType());
+            item.setSlaHours(n.getSlaHours() == null ? null : n.getSlaHours().doubleValue());
+            item.setAllowCountersign(n.getAllowCountersign() != null && n.getAllowCountersign() == 1);
+            item.setRequireAttachment(n.getRequireAttachment() != null && n.getRequireAttachment() == 1);
+            if (n.getNodeType() != null && n.getNodeType() == FlowNodeTemplate.TYPE_GATEWAY) {
+                item.setBranches(branchesToItems(n.getConditionExpr(), positionByKey));
+            } else {
+                FlowNodeAssignee rule = assigneeMapper.selectOne(Wrappers.<FlowNodeAssignee>lambdaQuery()
+                        .eq(FlowNodeAssignee::getNodeId, n.getId())
+                        .orderByAsc(FlowNodeAssignee::getSortNo)
+                        .last("LIMIT 1"));
+                if (rule != null) {
+                    item.setRuleType(rule.getRuleType());
+                    item.setRuleValue(rule.getRuleValue());
+                }
+            }
+            items.add(item);
+        }
+        return items;
     }
 
     /** 全是发起节点的流程没有意义 —— BPMN 生成出来会是 start → end */
@@ -274,6 +531,10 @@ public class FlowConfigAdminService {
                     ? s.getRequireAttachment()
                     : (n.getNodeType() != null && n.getNodeType() == FlowNodeTemplate.TYPE_HANDLE);
             n.setRequireAttachment(needAttach ? 1 : 0);
+            // 条件网关：把已解析好的分支落库（BpmnGenerator 从这里读，生成 exclusiveGateway 的分支边）
+            if (s.getBranches() != null && !s.getBranches().isEmpty()) {
+                n.setConditionExpr(branchesToJson(s.getBranches()));
+            }
             nodeMapper.insert(n);
 
             if (StringUtils.hasText(s.getRuleType())) {

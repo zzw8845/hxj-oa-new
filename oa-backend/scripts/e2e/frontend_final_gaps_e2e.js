@@ -216,7 +216,7 @@ function readApproveRows(page) {
 
 /* ---------------- 页面侧写死的旧清单（用于「已消失」断言） ---------------- */
 const OLD_DOC_TYPE_STUB = '日常申请单';   // 旧写死单据类型，documentType() 永远合成不出这个名字
-const OLD_BIZ_TYPE_STUB = '业务付款';     // 旧写死业务类型，真实单据类型里没有 BIZ 类别
+const OLD_BIZ_TYPE_STUB = '业务付款';     // 旧写死业务类型；注意它**可以**由 BIZ 类别的真实单据类型推出来
 
 /** 与页面 documentType() 同一规则（用于推导"应有"的选项） */
 function documentTypeOf(name) {
@@ -489,8 +489,14 @@ const BIZ_TEXT = { DAILY: '日常付款', BIZ: '业务付款', REIMBURSE: '员�
     check('  选项 = 从真实单据类型的业务类别推导',
       bizOpts.length > 0 && bizOpts.every(o => expectBizOpts.includes(o)) && expectBizOpts.every(o => bizOpts.includes(o)),
       '页面=[' + bizOpts.join('/') + '] 推导=[' + expectBizOpts.join('/') + ']');
-    check('  旧写死项「' + OLD_BIZ_TYPE_STUB + '」已消失（真实单据类型里没有该类别）',
-      !bizOpts.includes(OLD_BIZ_TYPE_STUB), '选项=[' + bizOpts.join('/') + ']');
+    check('  旧写死项「' + OLD_BIZ_TYPE_STUB + '」不在选项里（除非确有该类别的单据类型）',
+      // 这条要验的是"页面上没有凭空写死的选项"，而不是"某个词永远不许出现"。
+      // 原写法断言它绝不出现，前提是"真实单据类型里没有 BIZ 类别"——
+      // 这个前提在有人新建了一个 BIZ 类别的单据类型之后就不成立了，
+      // 此时下拉里出现它是**正确推导**，不是写死。真正的推导正确性由上面那条
+      // 双向集合相等断言保证；这里只在"推导不出它"时才要求它消失。
+      !bizOpts.includes(OLD_BIZ_TYPE_STUB) || expectBizOpts.includes(OLD_BIZ_TYPE_STUB),
+      '选项=[' + bizOpts.join('/') + '] 推导=[' + expectBizOpts.join('/') + ']');
 
     await pickOpenOption(page, '用印申请');
     const rowsBiz = await readApproveRows(page);

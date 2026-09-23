@@ -23,7 +23,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
    为什么要把这个数写死在代码里：本项目出过一次「假绿灯」—— 上游某条断言依赖的接口被回退后
    抛错中断，导致其后 16 条断言（含整条审计留痕链路）**从未执行**，而末行照样打印
    "85/85 通过"。有了这个数，任何"少跑了"都会立刻变成红灯，而不是无声无息。 */
-const EXPECTED_TOTAL = 80;
+const EXPECTED_TOTAL = 88;
 
 const results = [];
 function check(name, ok, extra) {
@@ -382,16 +382,19 @@ async function closeDialogs(page) {
   const flowDlg = await page.evaluate(() => {
     const dlgs = [...document.querySelectorAll('.el-dialog')].filter(d => d.offsetParent !== null);
     const dlg = dlgs[dlgs.length - 1];
-    if (!dlg) return { labels: [], selects: 0, text: '' };
+    if (!dlg) return { labels: [], selects: 0, text: '', full: '' };
+    const full = dlg.textContent.replace(/\s+/g, ' ');
     return {
       labels: [...dlg.querySelectorAll('.el-form-item__label')].map(e => e.textContent.trim().replace(/[:：]/g, '')),
       selects: dlg.querySelectorAll('.el-select').length,
-      text: dlg.textContent.replace(/\s+/g, ' ').slice(0, 240)
+      // text 只用于失败时的片段回显；内容断言必须用 full ——
+      // 弹窗现在有节点行，固定截断 240 字会把底部的版本提示切掉（曾经误报过一次）
+      text: full.slice(0, 240),
+      full: full
     };
   });
   check('流程弹窗含「关联单据类型」', flowDlg.labels.some(l => l.includes('关联单据类型')), flowDlg.labels.join(' | '));  check('流程弹窗含「审批节点」', flowDlg.labels.some(l => l.includes('审批节点')), flowDlg.labels.join(' | '));
-  const flowDlgText = flowDlg.text || '';
-  check('弹窗提示了版本影响', flowDlgText.includes('新版本') || flowDlgText.includes('部署'), flowDlgText.slice(0, 120));
+  check('弹窗提示了版本影响', /新版本|部署/.test(flowDlg.full || ''), (flowDlg.text || '').slice(0, 120));
 
   // 节点下拉必须来自后端模板库（说明文案里带"取发起人所在部门"这类规则描述）
   await page.evaluate(() => {
@@ -414,6 +417,82 @@ async function closeDialogs(page) {
   check('节点选项带审批人规则说明',
     nodeOpts.some(o => /取发起人所在部门|按发起人部门|沿用已有/.test(o)),
     nodeOpts.slice(0, 3).join(' || ').slice(0, 150));
+
+  /* ---- 条件分支编辑器（本次新增：客户可自助配"金额超过多少走谁"） ----
+     只打开看渲染与交互，**不保存** —— 保存会生成新版本并污染演示流程，
+     写路径与清理由 verify_flow_branch_admin 覆盖。 ---- */
+  const branchUi = await page.evaluate(() => {
+    const dlg = [...document.querySelectorAll('.el-dialog')].filter(d => d.offsetParent !== null).pop();
+    if (!dlg) return { rows: 0, gwRows: 0, branchRows: 0, tags: [] };
+    return {
+      rows: dlg.querySelectorAll('.node-row').length,
+      gwRows: dlg.querySelectorAll('.node-row.is-gw').length,
+      branchRows: dlg.querySelectorAll('.node-row.is-gw .branch-row').length,
+      tags: [...dlg.querySelectorAll('.node-row .el-tag')].map(e => e.textContent.trim())
+    };
+  });
+  check('流程弹窗按「节点行」渲染（不再是一个多选下拉）', branchUi.rows >= 3,
+    JSON.stringify(branchUi));
+  check('演示流程的条件分支节点被识别，并展开出分支条件行',
+    branchUi.gwRows >= 1 && branchUi.branchRows >= 2, JSON.stringify(branchUi));
+  check('节点行标出类型（含「条件分支」）',
+    branchUi.tags.includes('条件分支') && branchUi.tags.length >= 3, branchUi.tags.join('/'));
+
+  /* 分支目标下拉必须只列「本条件分支之后」的节点 —— 这是禁止回跳、
+     从结构上排除死循环的界面体现。只认 "3. 节点名" 这种编号选项，
+     以免和上一步还开着的节点名下拉串味。 */
+  const gwSeq = await page.evaluate(() => {
+    const dlg = [...document.querySelectorAll('.el-dialog')].filter(d => d.offsetParent !== null).pop();
+    const gw = dlg.querySelector('.node-row.is-gw');
+    if (!gw) return null;
+    const w = gw.querySelectorAll('.branch-row .el-select__wrapper');
+    if (w.length) w[0].click();
+    return parseInt(gw.querySelector('.node-seq').textContent.trim(), 10);
+  });
+  await sleep(900);
+  const numberedTargets = await page.evaluate(() =>
+    [...document.querySelectorAll('.el-select-dropdown__item')]
+      .filter(o => o.offsetParent !== null)
+      .map(o => o.textContent.replace(/\s+/g, ' ').trim())
+      .filter(t => /^\d+\./.test(t))
+  );
+  check('分支目标只列条件分支之后的节点（禁止回跳 → 结构上排除死循环）',
+    numberedTargets.length >= 1 && numberedTargets.every(t => parseInt(t, 10) > gwSeq),
+    '网关在第 ' + gwSeq + ' 行，可选目标=' + numberedTargets.join(' || ').slice(0, 150));
+
+  /* 「＋ 添加条件分支」的一次点击：应同时补上承接节点，并把「否则」指向它 */
+  await page.keyboard.press('Escape').catch(() => {});
+  await sleep(400);
+  const addClicked = await page.evaluate(() => {
+    const dlg = [...document.querySelectorAll('.el-dialog')].filter(d => d.offsetParent !== null).pop();
+    const b = [...dlg.querySelectorAll('.node-add button')].find(x => x.textContent.includes('添加条件分支'));
+    if (!b) return false;
+    b.click();
+    return true;
+  });
+  await sleep(700);
+  const afterAdd = await page.evaluate(() => {
+    const dlg = [...document.querySelectorAll('.el-dialog')].filter(d => d.offsetParent !== null).pop();
+    const rows = [...dlg.querySelectorAll('.node-row')];
+    const gw = rows[rows.length - 2];              // 新增的条件分支，其后是承接节点
+    const msg = [...document.querySelectorAll('.el-message')].map(e => e.textContent).join(' ');
+    if (!gw) return { rows: rows.length, gw: false, branchRows: 0, pickers: 0, msg: msg };
+    return {
+      rows: rows.length,
+      gw: gw.classList.contains('is-gw'),
+      branchRows: gw.querySelectorAll('.branch-row').length,
+      pickers: gw.querySelectorAll('.branch-row .el-select__wrapper').length,
+      msg: msg
+    };
+  });
+  check('「＋ 添加条件分支」按钮存在且可点', addClicked, '');
+  check('新增条件分支：行数 +2（条件分支 + 承接节点）',
+    afterAdd.rows === branchUi.rows + 2, '由 ' + branchUi.rows + ' → ' + afterAdd.rows);
+  check('新增的条件分支自带条件行与目标选择器',
+    afterAdd.gw && afterAdd.branchRows === 2 && afterAdd.pickers === 2, JSON.stringify(afterAdd));
+  check('新增时说明了为什么多出一个承接节点',
+    /承接节点/.test(afterAdd.msg || ''), (afterAdd.msg || '').slice(0, 90));
+
   await page.screenshot({ path: '/tmp/proto/shots2/admin-flow.png' });
 
   /* ---- 节点指派界面（本次新增：接现成的 PUT /configs/{id}/assignees） ----

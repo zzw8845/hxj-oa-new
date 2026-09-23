@@ -23,7 +23,7 @@ os.environ['NO_PROXY'] = os.environ['no_proxy']
 B = 'http://127.0.0.1:8080'
 DB = 'haixiajin_oa'
 
-EXPECTED_TOTAL = 23
+EXPECTED_TOTAL = 24
 
 PASS, FAIL = [], []
 
@@ -67,6 +67,8 @@ admin = login('admin')
 staff = login('linjl')
 check('管理员登录成功', bool(admin))
 check('普通员工登录成功', bool(staff))
+# 单据类型总数在跑前必须记下来：守恒判据是"回到跑前"，不是"等于某个写死的数"
+base_dt_count = sql_scalar("SELECT COUNT(*) FROM document_type WHERE deleted=0")
 
 CODE = 'ZZT_DOCTYPE'
 
@@ -134,8 +136,18 @@ st, r = call('DELETE', '/api/document-types/%s' % dt_id, token=admin)
 check('第二次删除成功（唯一键已让位，不撞 uk_doctype_code）', st == 200, '实际 %s' % st)
 
 print()
-print('== 5. 删除守卫：绑定模板/流程/单据的类型必须拒绝（演示库 3 类型全有绑定） ==')
-for row in sql_scalar("SELECT id, name FROM document_type WHERE deleted=0 ORDER BY id").splitlines():
+print('== 5. 删除守卫：绑定模板/流程/单据的类型必须拒绝 ==')
+# ⚠ 只对**演示库这 3 个已知类型**断言，不要遍历全表。
+#   原写法是 `SELECT ... FROM document_type WHERE deleted=0` 全表逐个 DELETE 试守卫，
+#   有两个后果：
+#     ① 断言条数随库里类型数漂移（有人新建一个类型，EXPECTED_TOTAL 闸门就误报）；
+#     ② **真会删数据** —— 遇到一个没有任何绑定的类型，守卫放行，它就被真删了。
+#   守卫本身仍由服务端保证，用例只需钉住"有绑定时必拒绝"这个事实。
+DEMO_DT_CODES = ('DAILY_PAYMENT', 'REIMBURSE_EMPLOYEE', 'SEAL_APPLY')
+guard_rows = sql_scalar("SELECT id, name FROM document_type WHERE deleted=0 AND code IN "
+                        "('DAILY_PAYMENT','REIMBURSE_EMPLOYEE','SEAL_APPLY') ORDER BY id").splitlines()
+check('演示库 3 个单据类型都在（守卫断言的对象）', len(guard_rows) == 3, '实际 %s 个' % len(guard_rows))
+for row in guard_rows:
     did, name = row.split('\t')
     st, r = call('DELETE', '/api/document-types/%s' % did, token=admin)
     check('删除「%s」-> 拒绝' % name, r.get('code') == 400,
@@ -159,8 +171,12 @@ left = sql_scalar("SELECT COUNT(*) FROM document_type WHERE code LIKE 'ZZT%' AND
 check('无 ZZT 残留（逻辑删除前已物理核对）', left == '0', '实际 %s' % left)
 subprocess.run(['mysql', '-uroot', DB, '-e',
                 "DELETE FROM document_type WHERE code LIKE 'ZZT%'"], capture_output=True)
+# 守恒 = 回到跑前那个数，而不是"必须等于 3"。
+# 演示库里被人工加过测试类型（code=TEST），那是演示数据不是污染，
+# 用例没资格要求它消失；本用例真正的不变量是"没多也没少"。
 demo_dt = sql_scalar("SELECT COUNT(*) FROM document_type WHERE deleted=0")
-check('演示库单据类型数守恒（3）', demo_dt == '3', '实际 %s' % demo_dt)
+check('演示库单据类型数守恒（回到跑前）', demo_dt == base_dt_count,
+      '跑前 %s -> 跑后 %s' % (base_dt_count, demo_dt))
 
 print()
 print('=' * 72)
