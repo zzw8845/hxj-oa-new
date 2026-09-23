@@ -23,7 +23,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
    为什么要把这个数写死在代码里：本项目出过一次「假绿灯」—— 上游某条断言依赖的接口被回退后
    抛错中断，导致其后 16 条断言（含整条审计留痕链路）**从未执行**，而末行照样打印
    "85/85 通过"。有了这个数，任何"少跑了"都会立刻变成红灯，而不是无声无息。 */
-const EXPECTED_TOTAL = 78;
+const EXPECTED_TOTAL = 80;
 
 const results = [];
 function check(name, ok, extra) {
@@ -389,8 +389,7 @@ async function closeDialogs(page) {
       text: dlg.textContent.replace(/\s+/g, ' ').slice(0, 240)
     };
   });
-  check('流程弹窗含「关联单据类型」', flowDlg.labels.some(l => l.includes('关联单据类型')), flowDlg.labels.join(' | '));
-  check('流程弹窗含「审批节点」', flowDlg.labels.some(l => l.includes('审批节点')), flowDlg.labels.join(' | '));
+  check('流程弹窗含「关联单据类型」', flowDlg.labels.some(l => l.includes('关联单据类型')), flowDlg.labels.join(' | '));  check('流程弹窗含「审批节点」', flowDlg.labels.some(l => l.includes('审批节点')), flowDlg.labels.join(' | '));
   const flowDlgText = flowDlg.text || '';
   check('弹窗提示了版本影响', flowDlgText.includes('新版本') || flowDlgText.includes('部署'), flowDlgText.slice(0, 120));
 
@@ -416,6 +415,30 @@ async function closeDialogs(page) {
     nodeOpts.some(o => /取发起人所在部门|按发起人部门|沿用已有/.test(o)),
     nodeOpts.slice(0, 3).join(' || ').slice(0, 150));
   await page.screenshot({ path: '/tmp/proto/shots2/admin-flow.png' });
+
+  /* ---- 节点指派界面（本次新增：接现成的 PUT /configs/{id}/assignees） ----
+     只打开看渲染，**不保存** —— 改审批人的写路径由 verify_flow_assignee_admin 覆盖
+     （那条脚本自己会还原演示库规则，UI 这里点保存会污染演示数据）。 ---- */
+  await closeDialogs(page);
+  const asgEntry = await page.evaluate(() => {
+    const b = [...document.querySelectorAll('.el-main button')].find(x => x.textContent.includes('节点指派'));
+    if (b) { b.click(); return true; }
+    return false;
+  });
+  await sleep(2200);
+  check('流程卡片有「节点指派」入口', asgEntry, '');
+  const asgDlg = await page.evaluate(() => {
+    const dlgs = [...document.querySelectorAll('.el-dialog')].filter(d => d.offsetParent !== null);
+    const dlg = dlgs.find(d => d.textContent.includes('节点指派'));
+    if (!dlg) return { open: false, blocks: 0, types: 0 };
+    return {
+      open: true,
+      blocks: [...dlg.querySelectorAll('.el-table')].length,
+      types: [...dlg.querySelectorAll('.el-select')].length
+    };
+  });
+  check('节点指派弹窗按节点列出规则编辑器', asgDlg.open && asgDlg.blocks >= 3, JSON.stringify(asgDlg));
+  await closeDialogs(page);
 
   console.log('\n=== 6. 用印台账与归还闭环（后端 seal_apply/seal_record 的可视化验证） ===');
   await page.reload({ waitUntil: 'networkidle2' });
