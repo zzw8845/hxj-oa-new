@@ -54,7 +54,7 @@ echo "使用 node：${NODE}（$("$NODE" --version)）"
 SUITES="
 frontend_admin_e2e:88
 frontend_attachment_e2e:56
-frontend_dashboard_e2e:44
+frontend_dashboard_e2e:46
 frontend_final_gaps_e2e:65
 frontend_business_gaps_e2e:79
 frontend_p1_review_e2e:44

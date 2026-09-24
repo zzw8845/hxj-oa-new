@@ -32,7 +32,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
    为什么要把这个数写死在代码里：本项目出过一次「假绿灯」—— 上游某条断言依赖的接口被回退后
    抛错中断，导致其后 16 条断言（含整条审计留痕链路）**从未执行**，而末行照样打印
    "85/85 通过"。有了这个数，任何"少跑了"都会立刻变成红灯，而不是无声无息。 */
-const EXPECTED_TOTAL = 44;
+const EXPECTED_TOTAL = 46;
 
 const results = [];
 function check(name, ok, extra) {
@@ -292,6 +292,29 @@ fs.writeFileSync(PNG_PATH, Buffer.from(
     check('  统计与「我发起的」列表条数一致',
       String(s.total) === String((await api('GET', '/api/documents?pageNum=1&pageSize=1&scope=mine', tok)).body.data.total),
       'stats=' + s.total);
+
+    /* ================= 二点五、首页「办结率」= 后端真值（反假数据） =================
+       2026-09-24 审查发现：原型把 96% 写死在静态模板里（:percentage="96"），
+       一度与同屏圆环「已办结 19/46」自相矛盾。现改为绑定 completionRate，
+       这里钉死「界面必须等于后端 stats 算出来的值」，防止它再退回写死值。 */
+    section('二点五、首页「办结率」是真实数据');
+    await clickMenu(page, '首页');
+    await sleep(2400);
+    const hero = await page.evaluate(() => {
+      const p = document.querySelector('.hero .el-progress');
+      const t = document.querySelector('.hero .percent');
+      const label = document.querySelector('.hero .el-progress small');
+      return p ? { now: p.getAttribute('aria-valuenow'),
+                   text: t ? t.textContent.trim() : '',
+                   label: label ? label.textContent.trim() : '' } : null;
+    });
+    const expectRate = Number(s.total) > 0
+      ? Math.round(Number(s.approved || 0) * 100 / Number(s.total)) : 0;
+    check('首页办结率 = 后端 stats 真值（原型曾写死 96%）',
+      !!hero && String(hero.now) === String(expectRate) && hero.text === expectRate + '%',
+      '界面=' + JSON.stringify(hero) + ' 期望=' + expectRate + '%（stats total=' + s.total + ' approved=' + s.approved + '）');
+    check('  指标名是「办结率」（不是原型的「流程合规率」）',
+      !!hero && hero.label === '办结率', hero ? hero.label : '(没有 hero)');
 
     await clickMenu(page, '工作看板');
     const grid = await page.evaluate(() => {

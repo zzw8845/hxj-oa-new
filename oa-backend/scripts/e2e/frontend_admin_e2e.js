@@ -440,13 +440,15 @@ async function closeDialogs(page) {
 
   /* 分支目标下拉必须只列「本条件分支之后」的节点 —— 这是禁止回跳、
      从结构上排除死循环的界面体现。只认 "3. 节点名" 这种编号选项，
-     以免和上一步还开着的节点名下拉串味。 */
+     以免和上一步还开着的节点名下拉串味。
+     2026-09-24 起条件行是「字段/怎么比/值」三控件 + 目标下拉，
+     目标下拉是**每行最后一个** select —— 要点它，别点到字段/运算符。 */
   const gwSeq = await page.evaluate(() => {
     const dlg = [...document.querySelectorAll('.el-dialog')].filter(d => d.offsetParent !== null).pop();
     const gw = dlg.querySelector('.node-row.is-gw');
     if (!gw) return null;
     const w = gw.querySelectorAll('.branch-row .el-select__wrapper');
-    if (w.length) w[0].click();
+    if (w.length) w[w.length - 1].click();
     return parseInt(gw.querySelector('.node-seq').textContent.trim(), 10);
   });
   await sleep(900);
@@ -488,8 +490,10 @@ async function closeDialogs(page) {
   check('「＋ 添加条件分支」按钮存在且可点', addClicked, '');
   check('新增条件分支：行数 +2（条件分支 + 承接节点）',
     afterAdd.rows === branchUi.rows + 2, '由 ' + branchUi.rows + ' → ' + afterAdd.rows);
-  check('新增的条件分支自带条件行与目标选择器',
-    afterAdd.gw && afterAdd.branchRows === 2 && afterAdd.pickers === 2, JSON.stringify(afterAdd));
+  /* 2026-09-24 起条件行 = 字段/怎么比/值 三控件 + 目标下拉（否则行只有目标下拉）
+     ⇒ 2 行共 4 个 select。若再回到"手写表达式"，这里会退回 2 —— 变红就是在提醒别回退。 */
+  check('新增的条件分支自带「字段/怎么比」下拉与目标选择器（结构化条件，不再要求手写表达式）',
+    afterAdd.gw && afterAdd.branchRows === 2 && afterAdd.pickers === 4, JSON.stringify(afterAdd));
   check('新增时说明了为什么多出一个承接节点',
     /承接节点/.test(afterAdd.msg || ''), (afterAdd.msg || '').slice(0, 90));
 
