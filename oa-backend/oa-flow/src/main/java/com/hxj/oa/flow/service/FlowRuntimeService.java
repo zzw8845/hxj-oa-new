@@ -117,12 +117,22 @@ public class FlowRuntimeService {
         syncCurrentNode(inst);
         instanceMapper.updateById(inst);
 
-        autoSkipUnassigned(pi.getId(), inst);
+        boolean finishedOnStart = autoSkipUnassigned(pi.getId(), inst);
 
-        eventPublisher.publishEvent(new FlowLifecycleEvent(this, FlowLifecycleEvent.Stage.STARTED,
-                req.getDocumentId(), inst.getId(), inst.getCurrentNodeKey(),
-                configNodeName(inst, inst.getCurrentNodeKey()), "发起申请",
-                req.getApplicantId(), null));
+        // ⚠ 只有流程**没有**在启动阶段就办结时才发 STARTED。
+        // 原实现无条件发 STARTED：autoSkip 跳完最后一个节点时已经 publish(FINISHED)
+        // （单据 status=3），紧接着这里又把它覆盖回 status=2 ⇒ **幽灵单**：
+        // 单据显示"审批中"，但 flow_instance.ended_at 有值、ACT_RU_TASK=0，
+        // 待办和已办都查不到它。单管理员冷启动（唯一节点=自己的部门负责人）100% 必踩。
+        if (finishedOnStart) {
+            log.info("流程启动后即办结（无待处理节点），不再发 STARTED 以免覆盖办结状态 docNo={}",
+                    req.getDocNo());
+        } else {
+            eventPublisher.publishEvent(new FlowLifecycleEvent(this, FlowLifecycleEvent.Stage.STARTED,
+                    req.getDocumentId(), inst.getId(), inst.getCurrentNodeKey(),
+                    configNodeName(inst, inst.getCurrentNodeKey()), "发起申请",
+                    req.getApplicantId(), null));
+        }
 
         log.info("流程启动 docNo={} procDefKey={} procInstId={} 当前节点={}",
                 req.getDocNo(), config.getProcDefKey(), pi.getId(), inst.getCurrentNodeKey());
@@ -140,8 +150,20 @@ public class FlowRuntimeService {
         FlowInstance inst = requireInstance(task.getProcessInstanceId());
         LocalDateTime now = LocalDateTime.now();
 
-        if ("reject".equalsIgnoreCase(req.getAction())) {
+        // 白名单：只有明确的 action 才放行，未知值一律报错。
+        //
+        // 【为什么不能"除 reject 外都算通过"】审批是不可逆动作。原先只判 "reject"，
+        // 于是任何非空值（拼错成 "agree"/"aprove"、传 "withdraw"、"submit"，
+        // 或将来新增动作名而调用方先上了线）都会**静默走通过分支** ——
+        // 一个 typo 就等于替审批人签了字，且不留任何痕迹。
+        // 与《管理员角色与权限设计说明》P5「失败必须显式」相反，这里 fail-fast。
+        String action = req.getAction() == null ? "" : req.getAction().trim();
+        if ("reject".equalsIgnoreCase(action)) {
             return doReject(task, nodeRec, inst, req, user, now);
+        }
+        if (!"approve".equalsIgnoreCase(action)) {
+            throw new BizException(400, "不支持的审批动作：" + req.getAction()
+                    + "（仅支持 approve=通过 / reject=驳回）");
         }
 
         // ---- 通过 ----
@@ -277,17 +299,33 @@ public class FlowRuntimeService {
     /**
      * 若某节点解析不出任何处理人（例如申请人就是自己的部门负责人），
      * 该节点不应把流程卡死 —— 记录一条自动跳过记录后直接完成。
+     *
+     * @return 流程是否**已经办结**。调用方必须据此决定要不要再发中间态事件：
+     *         {@code start()} 如果无条件发 STARTED，会把刚刚 publish(FINISHED) 的
+     *         单据状态从"已通过"覆盖回"审批中"，产生**幽灵单**（待办/已办都查不到）。
      */
     @Transactional(rollbackFor = Exception.class)
-    public void autoSkipUnassigned(String procInstId, FlowInstance inst) {
+    public boolean autoSkipUnassigned(String procInstId, FlowInstance inst) {
         for (int guard = 0; guard < 10; guard++) {
             List<Task> tasks = taskService.createTaskQuery().processInstanceId(procInstId).list();
             if (tasks.isEmpty()) {
-                return;
+                // 没有任何待处理节点。可能引擎实例已经结束（例如流程定义里没有用户任务、
+                // 或全部节点都在别处被跳过）—— 那种情况下单据会被留在"待审/审批中"却
+                // 没有任何入口，是幽灵单的另一种形态，这里补一次 FINISHED 把它闭上。
+                boolean ended = processEnded(procInstId);
+                if (ended && inst.getEndedAt() == null) {
+                    inst.setStatus(2);
+                    inst.setEndedAt(LocalDateTime.now());
+                    instanceMapper.updateById(inst);
+                    publish(FlowLifecycleEvent.Stage.FINISHED, inst, null, null, null, "流程结束");
+                    log.info("无可处理节点且引擎实例已结束，补发办结事件 docNo={}", inst.getBusinessKey());
+                }
+                return ended;
             }
             Task pending = tasks.stream().filter(this::hasNoAssignee).findFirst().orElse(null);
             if (pending == null) {
-                return;
+                // 每个任务都有办理人 ⇒ 流程正常停在某节点，尚未办结
+                return processEnded(procInstId);
             }
 
             FlowInstanceNode rec = currentNodeRecord(pending.getId());
@@ -317,10 +355,17 @@ public class FlowRuntimeService {
                 instanceMapper.updateById(inst);
                 publish(FlowLifecycleEvent.Stage.FINISHED, inst, null, null, null, "流程结束");
                 log.info("所有剩余节点自动跳过后流程结束 docNo={}", inst.getBusinessKey());
-                return;
+                return true;
             }
         }
         log.error("自动跳过次数超过保护阈值，可能存在流程配置环路 procInstId={}", procInstId);
+        return processEnded(procInstId);
+    }
+
+    /** 引擎实例是否已结束。判断"流程是否办结"以引擎为准，不以我们自己有没有发过事件为准。 */
+    private boolean processEnded(String procInstId) {
+        return runtimeService.createProcessInstanceQuery()
+                .processInstanceId(procInstId).singleResult() == null;
     }
 
     private boolean hasNoAssignee(Task task) {
@@ -387,10 +432,23 @@ public class FlowRuntimeService {
      *
      * <p>类别用的是**流程实例上的快照**而不是调用方传参 —— 传参一旦漏传就会把
      * "只代某类单据"静默放宽成"代全部"，而这是权限范畴的事，不能有静默放宽的余地。
+     *
+     * <p>本方法在调用侧只有 {@link #approve} 与 {@link #countersign} 两处，
+     * 都用各自的调用参数做了鉴权，本方法负责"这两处鉴权口径一致"。
+     *
+     * <p>【为什么这里没有 ADMIN 旁路】历史实现写成
+     * {@code uid.equals(task.getAssignee()) || user.hasRole("ADMIN")}，
+     * 效果是<b>持有 ADMIN 角色的账号可以代任意人批准任意节点的任务</b> ——
+     * 这是全项目唯一一处真实的越权：它绕过的正是"谁是审批人"这个判定的全部机制
+     * （节点指派规则、候选人池、委托校验）。而"审批决定权"按设计
+     * （管理员角色与权限设计说明 §P3）<b>永不授予管理员</b>：
+     * 管理员能改流程配置、能改角色，但不能替人签字。
+     * 需要"看得见全部单据"时走 {@link com.hxj.oa.common.util.DataScopeHelper}
+     * 的行级数据范围（role_data_scope），那是读；这里是写，两者不能混。
      */
     private void assertAssignee(Task task, LoginUser user) {
         String uid = String.valueOf(user.getUserId());
-        if (uid.equals(task.getAssignee()) || user.hasRole("ADMIN")) {
+        if (uid.equals(task.getAssignee())) {
             return;
         }
         List<IdentityLink> links = taskService.getIdentityLinksForTask(task.getId());

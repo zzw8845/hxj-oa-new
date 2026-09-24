@@ -51,6 +51,14 @@ public class FlowConfigController {
         return R.ok(flowConfigService.listByDocType(docTypeId));
     }
 
+    /**
+     * 流程配置详情：config（配置本体）+ nodes（节点列表）+ assignees（按 nodeId 索引的**指派规则**表）。
+     *
+     * <p>⚠ assignees 是"规则"而不是"解析出来的审批人"。要预览某张单实际会由谁审，
+     * 请调 {@code POST /configs/{id}/preview}（返回的字段是 candidateNames）。
+     *
+     * @param id 流程配置 ID
+     */
     @GetMapping("/configs/{id}")
     public R<Map<String, Object>> detail(@PathVariable Long id) {
         FlowConfig cfg = flowConfigService.getById(id);
@@ -153,11 +161,16 @@ public class FlowConfigController {
         return R.ok(null, "流程已废弃");
     }
 
+    /** 流程预览入参：用「这份表单的上下文」试算会走到哪些节点、每步谁审 */
     @Data
     public static class PreviewRequest {
+        /** 申请人用户 ID；不传则按当前登录人算 */
         private Long applicantId;
+        /** 业务大类 DAILY / BIZ / REIMBURSE / SEAL，影响条件分支取值 */
         private String bizCategory;
+        /** 金额（元），条件分支表达式里的 doc.amount 取自这里 */
         private BigDecimal amount;
+        /** 动态表单字段值，条件分支可据此判断 */
         private Map<String, Object> formData;
     }
 }

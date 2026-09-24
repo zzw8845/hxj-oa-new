@@ -15,14 +15,21 @@ import java.util.Map;
 @Builder
 public class AssigneeContext {
 
+    /** 公司 ID */
     private Long companyId;
+    /** 申请人用户 ID */
     private Long applicantId;
+    /** 申请人部门 ID（「发起人部门负责人」类规则依赖它） */
     private Long applicantDeptId;
     /** 业务大类 DAILY / BIZ / REIMBURSE / SEAL */
     private String bizCategory;
+    /** 单据类型 ID（「某业务类型某角色」类规则依赖它） */
     private Long docTypeId;
+    /** 金额（元），条件类规则会读它 */
     private BigDecimal amount;
+    /** 单据 ID（可为空：预览时还没有真实单据） */
     private Long documentId;
+    /** 单据编号（可为空） */
     private String docNo;
     /** 动态表单字段值，供 condition 类规则判断，如 {"sealType":"OFFICIAL"} */
     @Builder.Default

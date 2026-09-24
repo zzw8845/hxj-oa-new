@@ -35,9 +35,13 @@
 mysql -uroot -e "DROP DATABASE IF EXISTS haixiajin_oa; \
   CREATE DATABASE haixiajin_oa DEFAULT CHARSET utf8mb4 COLLATE utf8mb4_0900_ai_ci;"
 
-# ---- 2. 业务表（29 张）+ 种子数据 ----
+# ---- 2. 业务表（29 张）+ 引导集（7 张表）----
+# ⚠ 只灌引导集（company / admin / ADMIN / 权限点 / 角色绑定 / 数据范围）——
+#   这与交付给客户的起点完全一致：department=0 的空组织。
+#   部门/岗位/角色/用户/单据类型/表单模板/流程一律走接口造（见第 6 步之后）。
+#   不要再直写库造业务数据：那会绕过应用的全部校验，让「交付路径」永远不被跑。
 mysql -uroot haixiajin_oa < sql/schema.sql
-mysql -uroot haixiajin_oa < sql/seed_data.sql
+mysql -uroot haixiajin_oa < sql/minimal_seed.sql
 
 # ---- 3. Flowable 引擎表（41 张 ACT_*；必须先建，原因见「已知问题」）----
 mysql -uroot haixiajin_oa < sql/flowable_schema_mysql.sql
@@ -49,7 +53,14 @@ mvn -pl oa-boot -am install -DskipTests
 # ---- 5. 启动 ----
 java -jar oa-boot/target/oa-boot-1.0.0-SNAPSHOT.jar --server.port=8080
 
-# ---- 6. 冒烟测试（另开终端）----
+# ---- 6. 造业务数据：全程走接口（这才是客户要走的路径）----
+# 把「只有一个 admin 的空系统」变成「三种单据可提单」的完整环境。
+# 幂等（按 code/name 查重后复用），可重复执行；等价于旧 seed_data.sql，但一行 SQL 都不写。
+python3 scripts/bootstrap_via_api.py --verify
+# 想把「真提一张单」也验证掉（会写入单据数据，仅限空库/临时库）：
+python3 scripts/bootstrap_via_api.py --verify --smoke
+
+# ---- 7. 冒烟测试（另开终端）----
 python3 scripts/api_smoke_test.py http://127.0.0.1:8080
 ```
 
@@ -161,7 +172,8 @@ oa-backend/
 ├── oa-boot/        启动层：装配、认证拦截器、全局异常、CORS、配置
 ├── sql/            建表与种子脚本
 │   ├── schema.sql                    业务表 29 张（含 Flowable 绑定列）
-│   ├── seed_data.sql                 组织架构 + 权限 + 3 种单据的完整配置
+│   ├── minimal_seed.sql              引导集 7 张表（**交付起点**：公司/admin/ADMIN/权限点/绑定/数据范围）
+│   ├── init_database.sql             建库产物（29 业务表 + 41 引擎表），由 gen_init_database.sh 生成，勿手改
 │   ├── flowable_schema_mysql.sql     Flowable 引擎表 41 张（自动生成，勿手改）
 │   ├── migration_20260918_flowable.sql  存量库幂等迁移
 │   ├── schema_partition.sql          audit_log 按月分区

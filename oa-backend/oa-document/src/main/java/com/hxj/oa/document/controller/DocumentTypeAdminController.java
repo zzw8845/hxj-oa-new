@@ -47,6 +47,12 @@ public class DocumentTypeAdminController {
         return R.ok(adminService.categories());
     }
 
+    /**
+     * 新建单据类型。
+     *
+     * <p>编码与名称在同一公司内不允许重复；业务大类必须是白名单之一（可选值见 /categories）。
+     * 新类型还要再配流程与表单模板才能提单。
+     */
     @PostMapping
     @RequirePerm("system:docType")
     @Audit(module = "system", action = "createDocType")
@@ -54,6 +60,11 @@ public class DocumentTypeAdminController {
         return R.ok(adminService.create(req, UserContext.require()), "单据类型已创建");
     }
 
+    /**
+     * 修改单据类型（名称 / 业务大类 / 是否关联上单 / 状态 / 排序）。
+     *
+     * @param id 单据类型 ID
+     */
     @PutMapping("/{id}")
     @RequirePerm("system:docType")
     @Audit(module = "system", action = "updateDocType")
@@ -61,6 +72,14 @@ public class DocumentTypeAdminController {
         return R.ok(adminService.update(id, req), "单据类型已更新");
     }
 
+    /**
+     * 删除单据类型（逻辑删除）。
+     *
+     * <p>三种引用都会拒绝，msg 里给出数量：已有单据 / 已绑表单模板 / 已绑审批流程。
+     * 已有单据时建议改用「停用」。
+     *
+     * @param id 单据类型 ID
+     */
     @DeleteMapping("/{id}")
     @RequirePerm("system:docType")
     @Audit(module = "system", action = "deleteDocType")

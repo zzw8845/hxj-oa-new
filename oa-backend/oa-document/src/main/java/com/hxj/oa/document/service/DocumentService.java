@@ -69,6 +69,19 @@ public class DocumentService {
         if (docType == null || docType.getStatus() == null || docType.getStatus() != 1) {
             throw BizException.notFound("单据类型不存在或已停用: " + req.getDocTypeId());
         }
+        // 申请人必须归属部门 —— 而且必须在**插入之前**拦住，不能指望数据库报错。
+        // 为什么：`document.dept_id` 是 NOT NULL 且刻意不给默认值（它是行级数据权限
+        // DataScopeHelper 与"部门负责人"解析的锚点，塞个魔法默认值只会把错误藏起来）；
+        // 而 MyBatis-Plus 默认插入策略会**跳过 null 字段**，于是 deptId 为 null 时
+        // 这条 INSERT 根本不带 dept_id 列 ⇒ MySQL 抛 DataIntegrityViolationException
+        // （Field 'dept_id' doesn't have a default value）⇒ 被 GlobalExceptionHandler
+        // 兜底成「HTTP 500 服务异常，请联系管理员」。
+        // 实测：无部门账号建单 100% 复现 500，而日志里那句"服务异常"谁看了都不知道
+        // 是"这个人没挂部门"。这就是 P5「失败必须显式」的落点。
+        if (user.getDeptId() == null) {
+            throw BizException.of("当前账号未归属任何部门，无法发起单据。"
+                    + "请联系管理员在【组织管理】中为你指定部门后再试");
+        }
 
         FormTemplate tpl = formTemplateService.getEffective(req.getDocTypeId());
         Map<String, Object> formData = req.getFormData() == null ? new HashMap<>() : req.getFormData();
@@ -164,9 +177,26 @@ public class DocumentService {
                 .build());
 
         doc.setFlowInstanceId(inst.getId());
-        doc.setCurrentNodeKey(inst.getCurrentNodeKey());
-        doc.setCurrentNodeName(nodeName(doc.getDocTypeId(), inst.getCurrentNodeKey()));
-        doc.setStatus(STATUS_RUNNING);
+        // ⚠ 状态以**数据库现值**为准，不能无条件覆盖。
+        // start() 内部可能已经因为"解析不出处理人"自动跳过全部节点并发过 FINISHED，
+        // FlowLifecycleListener 已把单据写成终态并清空当前节点。此处若照旧
+        // setStatus(STATUS_RUNNING) + setCurrentNodeKey(...)，就把单据**覆盖回"审批中"**
+        // —— 而引擎侧已无任何待办：待办、已办、列表都找不到它，这就是**幽灵单**
+        // （实测复现：单管理员/申请人即本部门负责人时 100% 必踩）。
+        Integer fresh = documentMapper.selectById(doc.getId()).getStatus();
+        boolean finishedDuringStart = fresh != null
+                && !Objects.equals(fresh, STATUS_WAIT) && !Objects.equals(fresh, STATUS_RUNNING);
+        if (finishedDuringStart) {
+            // 提交即办结：跟上 listener 写入的终态，状态与节点都不回写
+            doc.setStatus(fresh);
+            doc.setCurrentNodeKey(null);
+            doc.setCurrentNodeName(null);
+            log.info("单据提交后即办结（提交时无待处理节点）docNo={} status={}", doc.getDocNo(), fresh);
+        } else {
+            doc.setCurrentNodeKey(inst.getCurrentNodeKey());
+            doc.setCurrentNodeName(nodeName(doc.getDocTypeId(), inst.getCurrentNodeKey()));
+            doc.setStatus(STATUS_RUNNING);
+        }
         documentMapper.updateById(doc);
 
         // 用印类单据：提交即产生「待用印」台账记录。
@@ -476,11 +506,17 @@ public class DocumentService {
      * <p>现已收敛为与列表/统计/台账**同源**：直接把
      * {@link DataScopeHelper#buildClause} 生成的片段套回本单据自身，
      * 让「详情可见 ⟺ 出现在我的列表里」成为构造性事实，而不是靠人工同步两处代码。
+     *
+     * <p>【为什么这里也没有 ADMIN 旁路】原先第一行是
+     * {@code if (user.hasRole("ADMIN")) return;}。它带来的不是能力，而是**遮蔽**：
+     * 管理员能否看见全公司在实现上其实是 {@code role_data_scope} 决定的
+     * （ADMIN 缺这一行会静默降级为 self，见 2026-09-23 冷启动体检），
+     * 而那句旁路让"配置缺失"永远表现不出来 —— 一旦旁路被去掉才发现看不见。
+     * 删掉它之后，"管理员看得见全部单据"变成一条**可配置、可审计**的数据事实
+     * （当前演示库 admin 的 scope = company ⇒ 覆盖全部 46 张单据），
+     * 而不是散在代码里的一行字符串比较。
      */
     public void assertVisible(Document doc, LoginUser user) {
-        if (user.hasRole("ADMIN")) {
-            return;
-        }
         if (inDataScope(doc, user)) {
             return;
         }

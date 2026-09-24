@@ -15,14 +15,21 @@ import java.util.List;
 @Data
 public class BatchApproveResultVO {
 
+    /** 本次请求的任务总数 */
     private int total;
+    /** 处理成功条数（HTTP 仍是 200 + code=0，是否成功看这里） */
     private int succeeded;
+    /** 处理失败条数 */
     private int failed;
+    /** 逐条结果（与请求的 taskIds 一一对应，顺序不保证） */
     private List<Item> items = new ArrayList<>();
 
+    /** 单条结果 */
     @Data
     public static class Item {
+        /** 任务 ID */
         private String taskId;
+        /** 该条是否成功 */
         private boolean ok;
         /** 失败原因（成功时为空） */
         private String message;

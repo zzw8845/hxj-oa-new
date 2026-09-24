@@ -15,25 +15,35 @@ import java.util.List;
 @Data
 public class UserVO {
 
+    /** 用户 ID */
     private Long id;
+    /** 公司 ID */
     private Long companyId;
+    /** 姓名 */
     private String realName;
+    /** 工号 */
     private String jobNo;
+    /** 登录账号 */
     private String account;
 
+    /** 部门 ID */
     private Long deptId;
     /** 部门名称，由 deptId 反查得到 */
     private String deptName;
 
+    /** 岗位 ID */
     private Long postId;
     /** 岗位名称，由 postId 反查得到 */
     private String postName;
 
+    /** 手机号 */
     private String phone;
+    /** 邮箱 */
     private String email;
 
     /** 1 在职 0 离职 */
     private Integer status;
+    /** 最后一次登录时间 */
     private LocalDateTime lastLoginAt;
 
     /** 已分配角色编码 */

@@ -18,6 +18,7 @@ import base64
 import json
 import os
 import subprocess
+import sys
 import urllib.error
 import urllib.request
 import uuid
@@ -125,6 +126,13 @@ st, r = call('POST', '/api/auth/login', body={'account': 'admin', 'password': '1
 check('admin 登录', st == 200 and r.get('code') == 0, r.get('msg', ''))
 admin = r['data']['token']
 admin_id = r['data']['user']['userId']
+
+# 演示流程快照。收尾的「未被本次验证改动」用跑前→跑后比对，
+# 不能写死"恰好 3 条且都是 v1"：演示库里有人工加的流程（"测试" v3），
+# 那是演示数据不是本次污染。
+_st, _r = call('GET', '/api/flows/configs', token=admin)
+DEMO_FLOWS_AT_START = {c['id']: (c.get('name'), c.get('version'))
+                       for c in (_r.get('data') or []) if c.get('docTypeId') in (1, 2, 3)}
 
 st, r = call('GET', '/api/users', token=admin)
 users = r.get('data') or []
@@ -546,10 +554,11 @@ leftover = sql_scalar("SELECT id FROM document_type WHERE code='%s'" % TMP_CODE)
 check('临时数据清理干净', not leftover)
 
 st, r = call('GET', '/api/flows/configs', token=admin)
-demo = [c for c in (r.get('data') or []) if c.get('docTypeId') in (1, 2, 3)]
-check('演示流程未被本次验证改动',
-      len(demo) == 3 and all(c.get('version') == 1 for c in demo),
-      ', '.join('%s(v%s)' % (c.get('name'), c.get('version')) for c in demo))
+demo_now = {c['id']: (c.get('name'), c.get('version'))
+            for c in (r.get('data') or []) if c.get('docTypeId') in (1, 2, 3)}
+check('演示流程未被本次验证改动（跑前/跑后逐条比对）',
+      demo_now == DEMO_FLOWS_AT_START,
+      '跑前 %s → 跑后 %s' % (DEMO_FLOWS_AT_START, demo_now))
 
 st, r = call('GET', '/api/todos', token=admin)
 check('演示待办未受影响', st == 200 and r.get('code') == 0, '待办 %d 条' % len(r.get('data') or []))
@@ -562,3 +571,7 @@ if FAIL:
     for f in FAIL:
         print('  - ' + f)
 print('=' * 74)
+
+# run_all_verify.sh 纯靠退出码判定（第 95 行）。没有这一行，本脚本恒退出 0，
+# 断言失败也会被打绿勾 —— 结构性假绿灯。
+sys.exit(1 if FAIL else 0)

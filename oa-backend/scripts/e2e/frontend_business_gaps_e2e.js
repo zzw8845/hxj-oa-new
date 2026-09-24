@@ -309,6 +309,17 @@ function overdueNodeCountSql() {
     const servedRes = await fetch(API + '/oa.html');
     const servedBuf = Buffer.from(await servedRes.arrayBuffer());
     const served = servedBuf.toString('utf8');
+
+    /* 下面几条是**源码级**断言（"已部署的那份里这个字面量还在不在"）。
+       代价是：一句解释性注释如果引用了旧文案，也会被判成没改。
+       2026-09-24 真实踩到过一次 —— 排查时它只打印了运行时文案，指错了方向，
+       所以这里把**命中位置和上下文**一起打出来，一眼能看出是模板还是注释。 */
+    function srcHit(needle) {
+      const i = served.indexOf(needle);
+      if (i < 0) return '';
+      const around = served.slice(Math.max(0, i - 70), i + needle.length + 25).replace(/\s+/g, ' ');
+      return '命中源码第 ' + i + ' 字符处：…' + around + '…';
+    }
     check('服务返回的 oa.html 与本地文件字节一致（部署的是同一份）',
       servedBuf.equals(localBytes), 'served=' + servedBuf.length + 'B local=' + localBytes.length + 'B');
 
@@ -319,7 +330,8 @@ function overdueNodeCountSql() {
       served.indexOf('<el-menu-item index="flow">') >= 0);
     check('已部署版本里那句按 index 改文案的兜底已删除',
       served.indexOf("if (idx === 'risk') rename('风险预警','流程管理');") < 0);
-    check('已部署版本里首页已无写死的「5 项审批」', served.indexOf('5 项审批') < 0);
+    check('已部署版本里首页已无写死的「5 项审批」',
+      served.indexOf('5 项审批') < 0, srcHit('5 项审批') || '源码内无此字面量');
     check('已部署版本里导出台账按钮已接 exportLedger',
       served.indexOf('@click="exportLedger"') >= 0);
     check('已部署版本里台账日期筛选已接线（服务端 updatedAt 范围）',
@@ -364,7 +376,8 @@ function overdueNodeCountSql() {
     check('  风险数 = /api/risks 超期数', heroRisk === riskHuang.overdue,
       '页面=' + heroRisk + ' 后端=' + riskHuang.overdue);
     check('  写死的「5 项审批 / 3 项风险预警」已不存在',
-      served.indexOf('5 项审批') < 0 && served.indexOf('3 项风险预警') < 0, '文案=「' + hero + '」');
+      served.indexOf('5 项审批') < 0 && served.indexOf('3 项风险预警') < 0,
+      srcHit('5 项审批') || srcHit('3 项风险预警') || ('运行时文案=「' + hero + '」，源码内两处字面量均无'));
 
     /* ================= 二、风险预警页 ================= */
     section('二、风险预警页：入口 / 真值 / 承办人 / 行点击（黄小明，数据范围内有超期件）');

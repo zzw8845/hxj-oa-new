@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 @Controller
 public class PageEntryController {
 
+    /** 页面入口：302 跳转到 /oa.html */
     @GetMapping("/")
     public String index() {
         return "redirect:/oa.html";

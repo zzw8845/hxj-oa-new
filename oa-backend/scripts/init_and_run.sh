@@ -38,10 +38,16 @@ echo "[2/6] 重建数据库 $DB"
 "${MYSQL_CMD[@]}" -e "DROP DATABASE IF EXISTS \`$DB\`; \
   CREATE DATABASE \`$DB\` DEFAULT CHARSET utf8mb4 COLLATE utf8mb4_0900_ai_ci;"
 
-# ---- 2. 业务表 + 种子数据 ----
-echo "[3/6] 导入业务表结构（29 张）与种子数据"
+# ---- 2. 业务表 + 引导集 ----
+echo "[3/6] 导入业务表结构（29 张）与引导集（7 张表）"
 "${MYSQL_CMD[@]}" "$DB" < sql/schema.sql
-"${MYSQL_CMD[@]}" "$DB" < sql/seed_data.sql
+# 只灌引导集（公司 / admin / ADMIN 角色 / 权限点 / 角色绑定 / 数据范围）——
+# 与交付给客户的起点**完全一致**（department=0 的空组织，等你在界面里建）。
+# 业务数据（部门/岗位/角色/用户/单据类型/表单模板/流程定义）一律走接口造：
+#     python3 scripts/bootstrap_via_api.py --verify
+# 为什么不再直写库：直写绕过应用的全部校验（权限点引用、角色解析、流程版本、
+# BPMN 生成、字段级权限），后果不是"快一点"，而是**交付路径从来没被跑过**。
+"${MYSQL_CMD[@]}" "$DB" < sql/minimal_seed.sql
 
 # ---- 3. Flowable 引擎表 ----
 # 必须预建：Flowable 7.0.0 的 eventregistry 用 Liquibase 管 schema，

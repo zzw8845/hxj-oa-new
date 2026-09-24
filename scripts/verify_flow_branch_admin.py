@@ -143,14 +143,15 @@ def note_created(fc):
     if fc.get('deploymentId'):
         created_deps.append(fc['deploymentId'])
     return fc['id']
-# 不写死"单据类型必须 = 3"：演示库里被人工加过测试类型（code=TEST），
-# 那是演示数据不是污染，用例没资格要求它消失。真正的不变量是
-# 「3 个演示类型齐全」+「流程配置恰好 3 条（本用例绝不能变成 4）」。
+# 不写死"单据类型必须 = 3"、"流程配置必须 = 3"：演示库里被人工加过测试类型与流程
+# （code=TEST / "测试" v3），那是演示数据不是污染，用例没资格要求它消失。
+# 真正的不变量只有一条：「3 个演示类型齐全」；"有没有被本用例改动"由收尾的
+# 「回到基线」断言回答（base_dt / base_fc 是本次跑之前实测的，不是写死的 3）。
 demo_codes = sql_scalar("SELECT GROUP_CONCAT(code ORDER BY id) FROM document_type "
                         "WHERE deleted=0 AND code IN ('DAILY_PAYMENT','REIMBURSE_EMPLOYEE','SEAL_APPLY')")
-check('演示库基线：3 个演示单据类型齐全 且 流程配置数=3',
-      demo_codes == 'DAILY_PAYMENT,REIMBURSE_EMPLOYEE,SEAL_APPLY' and base_fc == '3',
-      '单据类型现值 %s（共 %s 条）流程 %s' % (demo_codes, base_dt, base_fc))
+check('演示库基线：3 个演示单据类型齐全',
+      demo_codes == 'DAILY_PAYMENT,REIMBURSE_EMPLOYEE,SEAL_APPLY',
+      '单据类型现值 %s（共 %s 条）流程配置 %s 条（收尾核对是否回到这个数）' % (demo_codes, base_dt, base_fc))
 
 # 临时单据类型：把整块实验隔离在自己的单据类型下，演示的 3 条流程与 3 个类型全程不动
 st, r = call('POST', '/api/document-types', token=admin,

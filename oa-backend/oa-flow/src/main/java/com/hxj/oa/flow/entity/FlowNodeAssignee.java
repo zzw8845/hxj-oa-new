@@ -14,6 +14,7 @@ import lombok.EqualsAndHashCode;
 @TableName("flow_node_assignee")
 public class FlowNodeAssignee extends BaseEntity {
 
+    /** 流程节点定义 ID（flow_config_node.id） */
     private Long nodeId;
     /**
      * initiator_leader 发起人主管 / dept_role 部门+角色 / biztype_role 业务类型+角色
@@ -24,5 +25,6 @@ public class FlowNodeAssignee extends BaseEntity {
     private String ruleValue;
     /** 1 或签 2 会签 3 依次审批 */
     private Integer signMode;
+    /** 同级规则排序号 */
     private Integer sortNo;
 }

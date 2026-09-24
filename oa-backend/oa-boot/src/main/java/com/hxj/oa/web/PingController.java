@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 public class PingController {
 
+    /** 服务探活（不校验登录态，也不读任何用户数据） */
     @GetMapping("/api/ping")
     public R<String> ping() {
         return R.ok("pong");

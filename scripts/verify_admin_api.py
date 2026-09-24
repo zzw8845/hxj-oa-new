@@ -7,6 +7,7 @@
 """
 import json
 import os
+import sys
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -50,6 +51,15 @@ check('admin 登录', st == 200 and r.get('code') == 0, r.get('msg', ''))
 admin = r['data']['token']
 admin_perm_count = len((r['data'].get('user') or {}).get('permCodes') or [])
 print('      admin 权限点数：%d' % admin_perm_count)
+
+# 演示流程快照。收尾的「未被本次验证改动」必须用**跑前 → 跑后比对**，
+# 不能写死"恰好 3 条且都是 v1"：演示库里被人工加过流程（"测试" v3），
+# 那是演示数据不是本次污染，写死版本号会把别人的数据判成我们的锅。
+_st, _r = call('GET', '/api/flows/configs', token=admin)
+DEMO_FLOWS_AT_START = {c['id']: (c.get('name'), c.get('version'))
+                       for c in (_r.get('data') or []) if c.get('docTypeId') in (1, 2, 3)}
+check('演示流程快照已记录（收尾据此比对）', len(DEMO_FLOWS_AT_START) >= 3,
+      '%d 条：%s' % (len(DEMO_FLOWS_AT_START), DEMO_FLOWS_AT_START))
 
 st, r = call('GET', '/api/permissions', token=admin)
 perms = r.get('data') or []
@@ -379,11 +389,12 @@ if tmp_type:
 # 部署清理独立于 tmp_type：即便中途失败，只要 PROCDEF 里还留着 E2E_TMP_TYPE*，就撤掉。
 drop_tmp_deployments('清理')
 
-# 复核演示流程毫发无损
+# 复核演示流程毫发无损：与跑前快照逐条比对（名字 + 版本）
 st, r = call('GET', '/api/flows/configs', token=admin)
-demo = [c for c in (r.get('data') or []) if c.get('docTypeId') in (1, 2, 3)]
-check('演示流程未被本次验证改动', len(demo) == 3 and all(c.get('version') == 1 for c in demo),
-      ', '.join('%s(v%s)' % (c.get('name'), c.get('version')) for c in demo))
+demo_now = {c['id']: (c.get('name'), c.get('version'))
+            for c in (r.get('data') or []) if c.get('docTypeId') in (1, 2, 3)}
+check('演示流程未被本次验证改动（跑前/跑后逐条比对）', demo_now == DEMO_FLOWS_AT_START,
+      '跑前 %s → 跑后 %s' % (DEMO_FLOWS_AT_START, demo_now))
 
 _leak_dep = sql_scalar("SELECT IFNULL(GROUP_CONCAT(KEY_),'') FROM ACT_RE_PROCDEF "
                        "WHERE KEY_ LIKE '%s%%'" % TMP_CODE)
@@ -398,3 +409,7 @@ if FAIL:
     for f in FAIL:
         print('  - ' + f)
 print('=' * 72)
+
+# run_all_verify.sh 纯靠退出码判定（第 95 行）。没有这一行，本脚本恒退出 0，
+# 断言失败也会被打绿勾 —— 结构性假绿灯。
+sys.exit(1 if FAIL else 0)

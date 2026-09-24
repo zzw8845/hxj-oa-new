@@ -23,6 +23,7 @@ public class DocumentTypeSaveReq {
     @Pattern(regexp = "^[A-Za-z][A-Za-z0-9_]*$", message = "类型编码必须是字母开头、仅含字母数字下划线")
     private String code;
 
+    /** 类型名称 */
     @NotBlank(message = "类型名称不能为空")
     @Size(max = 64, message = "类型名称最长 64 字符")
     private String name;
@@ -39,5 +40,6 @@ public class DocumentTypeSaveReq {
     @Min(0) @Max(1)
     private Integer status = 1;
 
+    /** 排序号，小的在前 */
     private Integer sortNo = 0;
 }

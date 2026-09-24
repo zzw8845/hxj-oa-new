@@ -16,7 +16,9 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 /**
- * 部门管理：读接口对全体登录用户开放（发起单据选部门要用），写接口挂 {@code system:dept}。
+ * 部门管理
+ *
+ * <p>读接口对全体登录用户开放（发起单据选部门要用），写接口挂 {@code system:dept}。
  *
  * <p>读与写共用同一路径前缀，但权限口径不同：读只要登录，写要权限点。
  * 写接口绝不能只靠登录态 —— 那样任何能登录的账号都能改组织架构。
@@ -39,18 +41,34 @@ public class DepartmentController {
     private final DepartmentService departmentService;
     private final OrgAdminService orgAdminService;
 
+    /**
+     * 部门树（按 parentId 组成 children 层级），组织架构图与「选部门」下拉用。
+     *
+     * @param companyId 公司 ID；不传则取当前登录人的公司
+     */
     @GetMapping("/tree")
     public R<List<DeptTreeVO>> tree(@RequestParam(required = false) Long companyId) {
         Long cid = companyId == null ? UserContext.require().getCompanyId() : companyId;
         return R.ok(departmentService.tree(cid));
     }
 
+    /**
+     * 部门平铺列表（无层级结构，需要树形请用 /tree）。
+     *
+     * @param companyId 公司 ID；不传则取当前登录人的公司
+     */
     @GetMapping
     public R<List<Department>> list(@RequestParam(required = false) Long companyId) {
         Long cid = companyId == null ? UserContext.require().getCompanyId() : companyId;
         return R.ok(departmentService.listByCompany(cid));
     }
 
+    /**
+     * 新建部门。
+     *
+     * <p>parentId 传 null 或 0 表示一级中心；code 留空由后端按 D0xx 规则生成。
+     * 名称、编码在同一公司内不允许重复。
+     */
     @PostMapping
     @RequirePerm("system:dept")
     @Audit(module = "system", action = "createDept")
@@ -58,6 +76,16 @@ public class DepartmentController {
         return R.ok(orgAdminService.createDept(req));
     }
 
+    /**
+     * 修改部门（名称 / 编码 / 负责人 / 排序 / 状态）。
+     *
+     * <p>⚠ <b>不支持调整上级部门</b>：传了与原值不同的 parentId 会直接报错（移动部门要重写整棵
+     * 子树的路径，做一半更危险）。调整组织架构请新建部门后迁移人员。
+     *
+     * <p>⚠ <b>清空负责人要传 {@code leaderId: 0}</b>，传 null 等于"不改这个字段"（不会报错）。
+     *
+     * @param id 部门 ID
+     */
     @PutMapping("/{id}")
     @RequirePerm("system:dept")
     @Audit(module = "system", action = "updateDept")
@@ -65,6 +93,14 @@ public class DepartmentController {
         return R.ok(orgAdminService.updateDept(id, req));
     }
 
+    /**
+     * 删除部门（逻辑删除）。
+     *
+     * <p>三道引用守卫，任一不过都拒绝并在 msg 里说明原因：仍有子部门 / 仍有员工挂在该部门下 /
+     * 仍挂着兼岗记录。
+     *
+     * @param id 部门 ID
+     */
     @DeleteMapping("/{id}")
     @RequirePerm("system:dept")
     @Audit(module = "system", action = "deleteDept")

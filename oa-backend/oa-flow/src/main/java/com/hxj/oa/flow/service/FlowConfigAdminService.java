@@ -617,18 +617,27 @@ public class FlowConfigAdminService {
 
     /* ------------------------------------------------------------------ 入参 */
 
+    /** 单独调整某节点的指派规则（界面上的「调整角色」入口）；rules 为**全量覆盖**，漏传即删 */
     @lombok.Data
     public static class NodeAssignReq {
+        /** 流程节点定义 ID */
         private Long nodeId;
+        /** 节点标识，如 n2 */
         private String nodeKey;
+        /** 节点名称 */
         private String nodeName;
+        /** 该节点的全部指派规则（全量覆盖，不是增量追加） */
         private List<RuleItem> rules;
     }
 
+    /** 一条节点指派规则 */
     @lombok.Data
     public static class RuleItem {
+        /** 规则类型：initiator_leader / dept_role / biztype_role / role / user / condition */
         private String ruleType;
+        /** 规则参数 JSON，如 {"roleCode":"ACCOUNTANT"} */
         private String ruleValue;
+        /** 1 或签 2 会签 3 依次审批；多规则时生效 */
         private Integer signMode;
     }
 }

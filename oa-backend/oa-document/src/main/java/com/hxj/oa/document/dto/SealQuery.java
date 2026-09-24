@@ -17,8 +17,11 @@ public class SealQuery {
 
     /** 创建时间区间（含端点），格式 yyyy-MM-dd */
     private String dateFrom;
+    /** 创建时间上限（含端点），格式 yyyy-MM-dd */
     private String dateTo;
 
+    /** 页码，从 1 开始，默认 1 */
     private Integer pageNum = 1;
+    /** 每页条数，默认 20 */
     private Integer pageSize = 20;
 }

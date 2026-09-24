@@ -17,14 +17,17 @@ import java.util.List;
 @Data
 public class UserSaveReq {
 
+    /** 姓名 */
     @NotBlank(message = "姓名不能为空")
     @Size(max = 32, message = "姓名不能超过 32 字")
     private String realName;
 
+    /** 工号，同公司内唯一 */
     @NotBlank(message = "工号不能为空")
     @Size(max = 32, message = "工号不能超过 32 字")
     private String jobNo;
 
+    /** 登录账号，同公司内唯一 */
     @NotBlank(message = "登录账号不能为空")
     @Size(max = 64, message = "登录账号不能超过 64 字")
     private String account;
@@ -33,10 +36,12 @@ public class UserSaveReq {
     @Size(max = 64, message = "密码不能超过 64 字")
     private String password;
 
+    /** 部门 ID；与 deptName 二选一，ID 优先 */
     private Long deptId;
     /** deptId 为空时按名称解析 */
     private String deptName;
 
+    /** 岗位 ID；与 postName 二选一，ID 优先 */
     private Long postId;
     /** postId 为空时按名称解析，解析不到则自动在 post 表建一条 */
     private String postName;
@@ -46,9 +51,11 @@ public class UserSaveReq {
     /** 分配角色的名称（按名称解析为编码） */
     private List<String> roleNames;
 
+    /** 手机号 */
     @Size(max = 20, message = "手机号过长")
     private String phone;
 
+    /** 邮箱 */
     @Size(max = 64, message = "邮箱过长")
     private String email;
 

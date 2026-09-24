@@ -17,8 +17,11 @@ import java.time.LocalDateTime;
 @TableName("flow_config")
 public class FlowConfig extends BaseEntity {
 
+    /** 所属公司 ID；null = 全局配置 */
     private Long companyId;
+    /** 单据类型 ID —— 流程是「按单据类型」生效的 */
     private Long docTypeId;
+    /** 流程名称 */
     private String name;
     /** DAILY / BIZ / REIMBURSE / SEAL */
     private String category;
@@ -26,19 +29,32 @@ public class FlowConfig extends BaseEntity {
     private Integer version;
     /** 0 草稿 1 生效 2 废弃 */
     private Integer status;
+    /** 生效开始时间；null = 立即生效 */
     private LocalDateTime effectiveFrom;
+    /** 生效结束时间；null = 长期有效 */
     private LocalDateTime effectiveTo;
 
     /** flowable / native */
     private String engineType;
+    /** Flowable 流程定义 KEY，如 DAILY_PAYMENT_V1（每次改结构都会新建版本） */
     private String procDefKey;
+    /** Flowable 流程定义 ID（形如 key:version:id），部署后回填 */
     private String procDefId;
+    /** Flowable 部署 ID */
     private String deploymentId;
+    /**
+     * BPMN 2.0 XML 快照（由 flow_config_node 生成，可重部署 / 可审计）。
+     * ⚠ 内容很大（每份可能几十 KB）。{@code GET /api/flows/configs} 目前**会带上该字段**，
+     * 前端列表渲染前请丢弃它，别塞进表格 / 本地缓存。
+     */
     private String bpmnXml;
-    /** 0 未部署 1 已部署 2 部署失败 */
+    /** 部署状态 0 未部署 1 已部署 2 部署失败 */
     private Integer deployStatus;
+    /** 部署失败原因；成功时为 null */
     private String deployMessage;
 
+    /** 创建人 ID */
     private Long createdBy;
+    /** 最后更新人 ID */
     private Long updatedBy;
 }

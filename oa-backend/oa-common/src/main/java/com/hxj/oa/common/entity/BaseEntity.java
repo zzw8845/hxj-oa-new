@@ -18,15 +18,19 @@ import java.time.LocalDateTime;
 @Data
 public abstract class BaseEntity implements Serializable {
 
+    /** 主键，数据库自增。前端做详情 / 修改 / 删除时用的就是这个 id */
     @TableId(value = "id", type = IdType.AUTO)
     private Long id;
 
+    /** 创建时间，由数据库默认值写入，前端只读 */
     @TableField(value = "created_at", updateStrategy = com.baomidou.mybatisplus.annotation.FieldStrategy.NEVER)
     private LocalDateTime createdAt;
 
+    /** 最后更新时间，由数据库 ON UPDATE 维护，前端只读 */
     @TableField(value = "updated_at", updateStrategy = com.baomidou.mybatisplus.annotation.FieldStrategy.NEVER)
     private LocalDateTime updatedAt;
 
+    /** ⚠ 逻辑删除标记（0 未删 / 1 已删）。查询已自动过滤，前端**忽略该字段**即可 */
     @TableLogic
     private Integer deleted;
 }

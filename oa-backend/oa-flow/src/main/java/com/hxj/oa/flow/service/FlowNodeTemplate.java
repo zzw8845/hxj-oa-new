@@ -50,15 +50,21 @@ public class FlowNodeTemplate {
     /** 节点模板：前端下拉直接用它渲染，每个候选都对应一条确定的规则 */
     @Data
     public static class NodeTemplate {
+        /** 节点名称（中文，客户看到的） */
         private String name;
+        /** 1 审批 2 抄送 3 条件分支 4 办理 5 发起 */
         private Integer nodeType;
+        /** 节点类型的中文名，前端直接展示 */
         private String nodeTypeLabel;
+        /** 指派规则类型，见 rule_type 取值 */
         private String ruleType;
+        /** 规则参数 JSON */
         private String ruleValue;
         /** 规则的人话说明 */
         private String ruleLabel;
         /** 处理时限（小时） */
         private Double slaHours;
+        /** 该节点是否允许加签 */
         private Boolean allowCountersign;
         /** 是否必须上传办理凭证：办理类节点（出纳付款回单、用印盖章件）默认为真 */
         private Boolean requireAttachment;
@@ -76,7 +82,9 @@ public class FlowNodeTemplate {
     public static class Branch {
         /** 条件表达式；「否则」分支为空 */
         private String expr;
+        /** ⚠ 已是**最终 nodeKey**（如 n4），前端不要再做位置号换算 */
         private String target;
+        /** 是否「否则」（else）分支；一条分支链上只会有一条为 true */
         private boolean defaultBranch;
     }
 

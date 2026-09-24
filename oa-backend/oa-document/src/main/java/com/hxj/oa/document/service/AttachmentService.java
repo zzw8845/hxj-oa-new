@@ -143,8 +143,11 @@ public class AttachmentService {
         Attachment att = requireAttachment(id);
         if (att.getDocumentId() != null) {
             documentService.assertVisible(requireDocument(att.getDocumentId()), user);
-        } else if (!Objects.equals(att.getUploaderId(), user.getUserId()) && !user.hasRole("ADMIN")) {
-            // 尚未挂到单据上的草稿附件：只有上传者本人可见
+        } else if (!Objects.equals(att.getUploaderId(), user.getUserId())) {
+            // 尚未挂到单据上的草稿附件：只有上传者本人可见。
+            // 这里刻意没有 ADMIN 旁路：草稿附件是「还没提交给别人看」的材料，
+            // 管理员身份不构成查看它的业务理由；而"附件挂在单据上"的那条路径
+            // 已经由 assertVisible 裁决过了 —— 两处都放行才是重复实现。
             throw BizException.forbidden("无权下载该附件");
         }
         if (!storageService.exists(att.getFileKey())) {
@@ -166,7 +169,10 @@ public class AttachmentService {
     @Transactional(rollbackFor = Exception.class)
     public void delete(Long id, LoginUser user) {
         Attachment att = requireAttachment(id);
-        if (!Objects.equals(att.getUploaderId(), user.getUserId()) && !user.hasRole("ADMIN")) {
+        // 删除是「写」动作，同样不给 ADMIN 旁路：附件一旦删掉，文件系统的二进制也一并回收，
+        // 不可逆。要清理别人的附件应走"停用单据 / 流程终止"这类可追溯的业务动作，
+        // 而不是让管理员拥有一个无痕的删除后门。
+        if (!Objects.equals(att.getUploaderId(), user.getUserId())) {
             throw BizException.forbidden("只能删除本人上传的附件");
         }
         if (att.getDocumentId() != null) {

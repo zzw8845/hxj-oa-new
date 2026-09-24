@@ -6,6 +6,7 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 
+import java.util.Collection;
 import java.util.List;
 
 @Mapper
@@ -33,10 +34,36 @@ public interface SysUserMapper extends BaseMapper<SysUser> {
             """)
     List<Long> selectUserIdsByRole(@Param("roleCode") String roleCode, @Param("companyId") Long companyId);
 
-    /** 查某部门负责人的用户 ID（节点指派 initiator_leader 规则） */
+    /**
+     * 查某部门负责人的用户 ID（节点指派 initiator_leader 规则）。
+     *
+     * <p><b>必须 join sys_user 校验可用性</b>：同文件的 {@link #selectUserIdsByRole} /
+     * {@link #selectUserIdsByDeptAndRole} 都带 {@code u.status=1 AND u.deleted=0}，
+     * 只有这一条漏了。后果分两层：
+     * <ol>
+     *   <li>leader 被停用 / 删除后照样被解析出来 —— 而 {@code AssigneeTaskListener} 只要
+     *       {@code size()==1} 就 {@code setAssignee}，{@code autoSkipUnassigned} 又只判
+     *       assignee 是否为空 ⇒ <b>"解析出个废人"比"解析不出人"更危险：非空废人静默永久卡死</b>
+     *       （空列表反而有 auto_skip 兜底）。</li>
+     *   <li>原条件 {@code d.leader_id IS NOT NULL} 放过了哨兵值 <b>0</b>（"未设负责人"）⇒
+     *       返回 0 ⇒ {@code setAssignee("0")}。</li>
+     * </ol>
+     */
     @Select("""
-            SELECT d.leader_id FROM department d
-            WHERE d.id = #{deptId} AND d.deleted = 0 AND d.leader_id IS NOT NULL
+            SELECT u.id FROM department d
+              JOIN sys_user u ON u.id = d.leader_id AND u.deleted = 0 AND u.status = 1
+            WHERE d.id = #{deptId} AND d.deleted = 0 AND d.leader_id > 0
             """)
     Long selectLeaderIdByDeptId(@Param("deptId") Long deptId);
+
+    /**
+     * 过滤出仍然可用的用户 ID（解析结果出口的防御纵深）。
+     *
+     * <p>放在出口而不是逐个规则里：新增一种指派规则时不会因为"忘了校验"而静默漏掉。
+     */
+    @Select({"<script>",
+            "SELECT id FROM sys_user WHERE deleted = 0 AND status = 1 AND id IN",
+            "<foreach collection='ids' item='i' open='(' separator=',' close=')'>#{i}</foreach>",
+            "</script>"})
+    List<Long> selectAliveIds(@Param("ids") Collection<Long> ids);
 }

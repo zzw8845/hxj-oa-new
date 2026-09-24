@@ -16,7 +16,9 @@ public enum DataScopeType {
     /** 全公司 */
     COMPANY(5, "company");
 
+    /** 宽度等级，数字越大范围越宽；多角色时取最宽者生效 */
     private final int level;
+    /** 接口里传的字符串编码（小写） */
     private final String code;
 
     DataScopeType(int level, String code) {

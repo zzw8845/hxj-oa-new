@@ -18,6 +18,7 @@ import lombok.Data;
 @Data
 public class DeptSaveReq {
 
+    /** 部门名称 */
     @Size(max = 64, message = "部门名称不能超过 64 字")
     private String name;
 
@@ -31,6 +32,7 @@ public class DeptSaveReq {
     /** 部门负责人用户 ID，可空。「取发起人主管」的指派规则依赖它 */
     private Long leaderId;
 
+    /** 排序号，小的在前 */
     private Integer sortNo;
 
     /** 1 启用 0 停用 */

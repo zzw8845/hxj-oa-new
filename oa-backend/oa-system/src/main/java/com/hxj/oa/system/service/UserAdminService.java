@@ -185,6 +185,12 @@ public class UserAdminService {
     @Transactional(rollbackFor = Exception.class)
     public UserVO update(Long id, UserSaveReq req) {
         SysUser exist = requireUser(id);
+        // 自锁护栏（C6）：不允许改自己的启停状态 —— 系统只有一层管理员时，
+        // 停用自己等于把自己锁在门外（login 会以"该账号已停用"拒绝），只能改库恢复。
+        if (Objects.equals(id, UserContext.currentUserId())
+                && req.getStatus() != null && !Objects.equals(req.getStatus(), exist.getStatus())) {
+            throw BizException.of("不能修改当前登录账号自己的启停状态，请用其他管理员账号操作");
+        }
         Long companyId = exist.getCompanyId();
         String account = req.getAccount().trim();
         String jobNo = req.getJobNo().trim();
@@ -211,7 +217,9 @@ public class UserAdminService {
 
         // 角色/岗位：只有显式带了对应字段才覆盖，避免「只想改手机号」把角色清空
         if (req.getRoleCodes() != null || req.getRoleNames() != null) {
-            rebindRoles(id, orgResolver.resolveRoleCodes(companyId, req.getRoleCodes(), req.getRoleNames()));
+            List<String> resolved = orgResolver.resolveRoleCodes(companyId, req.getRoleCodes(), req.getRoleNames());
+            assertNotSelfRoleChange(id, resolved);
+            rebindRoles(id, resolved);
         }
         rebindPrimaryPost(userMapper.selectById(id));
 
@@ -224,10 +232,31 @@ public class UserAdminService {
     public UserVO updateRoles(Long id, List<String> roleCodes) {
         SysUser exist = requireUser(id);
         List<String> resolved = orgResolver.resolveRoleCodes(exist.getCompanyId(), roleCodes, null);
+        assertNotSelfRoleChange(id, resolved);
         rebindRoles(id, resolved);
         snapshotCache.invalidateAfterCommit();
         log.info("调整员工角色 id={} roles={} 操作人={}", id, resolved, UserContext.currentUserId());
         return detail(id);
+    }
+
+    /**
+     * 自锁护栏（C6）：不允许改自己的角色。
+     *
+     * <p>同文件 {@link #delete(Long)} 一直有「不能删除当前登录账号」，但 update / updateRoles
+     * 这两条写路径都漏了 —— 于是存在三条把自己锁在门外的路：停用自己、清空自己的角色、
+     * 改自己的角色（反方向也可用于自我提权）。
+     *
+     * <p>只拦「真的变了」：界面回传原值时角色集合不变则不拦（改自己手机号 / 邮箱是合理需求）。
+     */
+    private void assertNotSelfRoleChange(Long id, List<String> targetRoles) {
+        if (!Objects.equals(id, UserContext.currentUserId())) {
+            return;
+        }
+        Set<String> current = new LinkedHashSet<>(roleCodesByUser(Set.of(id)).getOrDefault(id, List.of()));
+        Set<String> target = new LinkedHashSet<>(targetRoles == null ? Collections.<String>emptyList() : targetRoles);
+        if (!current.equals(target)) {
+            throw BizException.of("不能修改当前登录账号自己的角色，请用其他管理员账号操作");
+        }
     }
 
     /**

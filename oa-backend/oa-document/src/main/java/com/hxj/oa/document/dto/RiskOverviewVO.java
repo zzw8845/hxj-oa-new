@@ -35,28 +35,41 @@ public class RiskOverviewVO {
     /** 临期判定阈值（小时），前端展示「24 小时内到期」的说明文案要与它一致 */
     private int dueSoonHours;
 
+    /** 风险明细（overdue 在前，由服务层保证顺序） */
     private List<RiskItem> items = new ArrayList<>();
 
     /** 逐条风险；overdue 项排在前面（由服务层保证顺序） */
     @Data
     public static class RiskItem {
 
+        /** 单据 ID（点开详情用） */
         private Long documentId;
+        /** 单据编号 */
         private String docNo;
+        /** 单据标题 */
         private String title;
+        /** 业务大类编码 */
         private String businessCategory;
         /** 单据类型名（中文），前端直接展示 */
         private String docTypeName;
+        /** 申请人姓名 */
         private String applicantName;
+        /** 申请部门名称 */
         private String deptName;
+        /** 金额（元） */
         private BigDecimal amount;
         /** 单据当前状态，0 草稿 / 1 待审 / 2 审批中 */
         private Integer docStatus;
 
+        /** 卡住的节点编码 */
         private String nodeKey;
+        /** 卡住的节点名称 */
         private String nodeName;
+        /** 当前节点承办人用户 ID */
         private Long assigneeId;
+        /** 当前节点承办人姓名 */
         private String assigneeName;
+        /** 该节点的处理时限 */
         private LocalDateTime deadline;
 
         /** overdue 已超期 / dueSoon 即将到期 / none 无时限 */

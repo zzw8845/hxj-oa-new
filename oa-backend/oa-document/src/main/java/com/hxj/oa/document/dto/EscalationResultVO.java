@@ -21,5 +21,6 @@ public class EscalationResultVO {
     private int alreadyEscalated;
     /** 节点状态与引擎不一致（任务已不存在），跳过并记台账 */
     private int staleTask;
+    /** 本次执行的逐条说明（为什么升级 / 为什么跳过），排查用 */
     private List<String> details = new ArrayList<>();
 }

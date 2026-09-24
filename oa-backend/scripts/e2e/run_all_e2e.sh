@@ -1,6 +1,6 @@
 #!/bin/bash
 # ===========================================================================
-#  一次跑完 5 个前端 E2E 套件（含前置自检与"预期条数"核对）
+#  一次跑完全部前端 E2E 套件（含前置自检与"预期条数"核对）
 #
 #  用法：
 #      bash oa-backend/scripts/e2e/run_all_e2e.sh
@@ -57,6 +57,7 @@ frontend_attachment_e2e:56
 frontend_dashboard_e2e:44
 frontend_final_gaps_e2e:65
 frontend_business_gaps_e2e:79
+frontend_p1_review_e2e:44
 "
 
 # ---------------------------------------------------------------- 前置自检
@@ -96,9 +97,10 @@ fi
 
 # ---------------------------------------------------------------- 逐套件
 echo "==================== E2E 套件 ===================="
-TOTAL_WANT=0; TOTAL_GOT=0; BAD=0
+TOTAL_WANT=0; TOTAL_GOT=0; BAD=0; SUITE_N=0
 for item in $SUITES; do
   s="${item%%:*}"; want="${item##*:}"
+  SUITE_N=$((SUITE_N+1))
   log="/tmp/e2e_${s}.log"
   "$NODE" "$s.js" > "$log" 2>&1
   rc=$?
@@ -155,8 +157,8 @@ if command -v mysql >/dev/null 2>&1; then
 fi
 
 echo "==================== 汇总 ===================="
-printf '套件：5 个，预期断言 %s 条，实跑通过 %s 条，异常套件 %s 个\n' \
-  "$TOTAL_WANT" "$TOTAL_GOT" "$BAD"
+printf '套件：%s 个，预期断言 %s 条，实跑通过 %s 条，异常套件 %s 个\n' \
+  "$SUITE_N" "$TOTAL_WANT" "$TOTAL_GOT" "$BAD"
 if [ "$BAD" != "0" ]; then
   echo "✗ 有 $BAD 个套件异常（详见 /tmp/e2e_*.log）"
   exit 1

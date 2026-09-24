@@ -37,6 +37,11 @@ public class PostController {
     private final PostMapper postMapper;
     private final OrgAdminService orgAdminService;
 
+    /**
+     * 岗位列表（人员管理页与「选岗位」下拉的数据源）。
+     *
+     * @param companyId 公司 ID；不传则取当前登录人的公司
+     */
     @GetMapping
     public R<List<Post>> list(@RequestParam(required = false) Long companyId) {
         Long cid = companyId == null ? UserContext.require().getCompanyId() : companyId;
@@ -46,6 +51,7 @@ public class PostController {
                 .orderByAsc(Post::getId)));
     }
 
+    /** 新建岗位。编码在同一公司内不允许重复。 */
     @PostMapping
     @RequirePerm("system:dept")
     @Audit(module = "system", action = "createPost")
@@ -53,6 +59,11 @@ public class PostController {
         return R.ok(orgAdminService.createPost(req));
     }
 
+    /**
+     * 修改岗位。
+     *
+     * @param id 岗位 ID
+     */
     @PutMapping("/{id}")
     @RequirePerm("system:dept")
     @Audit(module = "system", action = "updatePost")
@@ -60,6 +71,13 @@ public class PostController {
         return R.ok(orgAdminService.updatePost(id, req));
     }
 
+    /**
+     * 删除岗位（逻辑删除）。
+     *
+     * <p>仍有员工在任、或仍挂在兼岗记录上时拒绝，并在 msg 里给出人数。
+     *
+     * @param id 岗位 ID
+     */
     @DeleteMapping("/{id}")
     @RequirePerm("system:dept")
     @Audit(module = "system", action = "deletePost")

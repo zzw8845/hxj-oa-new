@@ -29,7 +29,11 @@ public class SealController {
 
     private final SealService sealService;
 
-    /** 用印台账分页（按用章类型 / 归还状态 / 关键字 / 创建日期区间筛选） */
+    /**
+     * 用印台账分页（按用章类型 / 归还状态 / 关键字 / 创建日期区间筛选）。
+     *
+     * @param query 筛选与分页条件（字段见 {@code SealQuery}）
+     */
     @GetMapping
     @RequirePerm("document:approve:seal")
     public R<PageResult<SealLedgerVO>> page(SealQuery query) {

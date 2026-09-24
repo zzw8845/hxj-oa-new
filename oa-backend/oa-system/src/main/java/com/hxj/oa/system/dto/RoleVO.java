@@ -13,12 +13,18 @@ import java.util.List;
 @Data
 public class RoleVO {
 
+    /** 角色 ID */
     private Long id;
+    /** 公司 ID */
     private Long companyId;
+    /** 角色编码，如 ADMIN、CUSTOM_01（后端按编码判权，改名不影响） */
     private String code;
+    /** 角色名称 */
     private String name;
 
+    /** 归属部门 ID（可空） */
     private Long deptId;
+    /** 归属部门名称 */
     private String deptName;
 
     /** 对应岗位名称（展示用） */
@@ -41,6 +47,8 @@ public class RoleVO {
 
     /** 1 内置角色（不可删除） */
     private Integer isBuiltin;
+    /** 1 启用 0 停用 */
     private Integer status;
+    /** 备注 */
     private String remark;
 }

@@ -15,7 +15,9 @@ import lombok.Data;
 @Data
 public class DocumentLinkVO {
 
+    /** 关联记录 ID */
     private Long id;
+    /** 被关联单据的 ID */
     private Long linkedId;
     /** 被关联单据的编号 */
     private String linkedDocNo;

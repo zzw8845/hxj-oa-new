@@ -30,12 +30,22 @@ public class RoleController {
 
     private final RoleAdminService roleAdminService;
 
+    /**
+     * 角色列表（含已配权限点与数据范围，供「配置权限」弹窗回填）。
+     *
+     * @param companyId 公司 ID；不传则取当前登录人的公司
+     */
     @GetMapping
     public R<List<RoleVO>> list(@RequestParam(required = false) Long companyId) {
         Long cid = companyId == null ? UserContext.require().getCompanyId() : companyId;
         return R.ok(roleAdminService.listWithDetail(cid));
     }
 
+    /**
+     * 角色详情。
+     *
+     * @param id 角色 ID
+     */
     @GetMapping("/{id}")
     public R<RoleVO> detail(@PathVariable Long id) {
         return R.ok(roleAdminService.detail(id));
@@ -43,6 +53,7 @@ public class RoleController {
 
     /* ------------------------------------------------------------------ 写 */
 
+    /** 新建角色。角色编码在同一公司内不允许重复。 */
     @PostMapping
     @RequirePerm("system:role")
     @Audit(module = "permission", action = "createRole")
@@ -50,6 +61,13 @@ public class RoleController {
         return R.ok(roleAdminService.create(req), "角色已创建");
     }
 
+    /**
+     * 修改角色。
+     *
+     * <p>⚠ 内置角色（如 ADMIN）同样可以被修改 —— 后端目前不拦，改之前请确认影响面。
+     *
+     * @param id 角色 ID
+     */
     @PutMapping("/{id}")
     @RequirePerm("system:role")
     @Audit(module = "permission", action = "updateRole")
@@ -57,7 +75,7 @@ public class RoleController {
         return R.ok(roleAdminService.update(id, req), "角色已更新");
     }
 
-    /** 全量覆盖角色权限点 */
+    /** 全量覆盖角色权限点（没传的会被移除，不是增量追加） */
     @PutMapping("/{id}/permissions")
     @RequirePerm("system:role")
     @Audit(module = "permission", action = "grantPerm")
@@ -74,6 +92,13 @@ public class RoleController {
                 "数据范围已保存");
     }
 
+    /**
+     * 删除角色。
+     *
+     * <p>内置角色（isBuiltin=1，如 ADMIN）受保护，不可删除。
+     *
+     * @param id 角色 ID
+     */
     @DeleteMapping("/{id}")
     @RequirePerm("system:role")
     @Audit(module = "permission", action = "deleteRole")
@@ -82,14 +107,20 @@ public class RoleController {
         return R.ok(null, "角色已删除");
     }
 
+    /** 权限点分配请求 */
     @Data
     public static class PermAssignReq {
+        /** 要保留的权限点 code 列表；**全量覆盖**，未传的会被移除 */
         private List<String> permCodes;
     }
 
+    /** 数据范围配置请求 */
     @Data
     public static class DataScopeReq {
+        /** SELF 仅本人 / DEPT 本部门及下级 / CENTER 本中心（⚠ 当前实现与 DEPT 等价）/ CUSTOM_DEPT 指定部门 / COMPANY 全公司。传非法值不报错，会静默降级为 SELF */
         private String scopeType;
+
+        /** scopeType=CUSTOM_DEPT 时的部门 ID 列表，其余类型忽略 */
         private List<Long> scopeDeptIds;
     }
 }

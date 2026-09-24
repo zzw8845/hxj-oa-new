@@ -22,7 +22,12 @@ public class NotificationController {
 
     private final NotificationService notificationService;
 
-    /** 我的通知列表（最新在前） */
+    /**
+     * 我的通知列表（最新在前，受行级数据范围约束：只能看到发给自己的）。
+     *
+     * @param pageNum  页码，从 1 开始；不传按 1
+     * @param pageSize 每页条数；不传按 20，超过 100 按 100 处理
+     */
     @GetMapping
     public R<PageResult<Notification>> mine(@RequestParam(required = false) Integer pageNum,
                                             @RequestParam(required = false) Integer pageSize) {

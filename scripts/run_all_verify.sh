@@ -44,11 +44,21 @@ baseline() {
       ' delegation=',     (SELECT COUNT(*) FROM flow_delegation WHERE deleted=0),
       ' escalation=',     (SELECT COUNT(*) FROM flow_escalation WHERE deleted=0),
       ' act_task=',       (SELECT COUNT(*) FROM ACT_RU_TASK),
-      ' notify=',         (SELECT COUNT(*) FROM notification WHERE deleted=0)
+      ' notify=',         (SELECT COUNT(*) FROM notification WHERE deleted=0),
+      -- 生效流程指向（易漂移、且漂移是静默的）：
+      -- 后端按 document_type.flow_config_id 选流程，而「发布新版本」本来就会改这个指向
+      -- （FlowConfigAdminService.updateDocTypeFlowConfig）。2026-09-23 10:20 有人发布了两版
+      -- 「测试」流程 ⇒ 该单据类型上跑的流程整个换了：界面照常、接口用例照绿，
+      -- 只有 E2E 里「要往下走到第 3 个节点」的断言成片变红（当时红了 104 条）。
+      -- 记进基线：跑测期间指向被改会立刻暴露，同时它也是给人看的一行「当前跑的是哪版」。
+      -- ⚠ 本函数的 SQL 串在 bash 双引号里，注释中禁止出现反引号与 ASCII 双引号
+      --   （前者被当命令替换、后者会提前结束字符串，都踩过）。
+      ' dt1_flow=',       (SELECT IFNULL(flow_config_id,'-') FROM document_type WHERE id=1 AND deleted=0)
     );" 2>/dev/null
 }
 
 SUITES=(
+  check_perm_reachability
   verify_admin_api
   verify_attachment_api
   verify_idor_fix
@@ -61,7 +71,9 @@ SUITES=(
   verify_escalation_api
   verify_flow_interaction
   verify_flow_branch_admin
+  verify_flow_assignee_admin
   verify_doc_type_admin
+  verify_admin_no_bypass
 )
 
 # ------------------------------------------------------------------ 随机顺序

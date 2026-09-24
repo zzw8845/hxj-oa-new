@@ -26,6 +26,19 @@ public class AuditLogController {
 
     private final AuditLogService auditLogService;
 
+    /**
+     * 审计日志分页查询（强制分页，参数全部可选，不传即不过滤）。
+     *
+     * @param module  模块：document / flow / permission / system / seal / auth
+     * @param action  动作名，如 approve、createUser、updateRole
+     * @param userId  操作人 ID
+     * @param bizId   业务对象 ID（如单据 ID）
+     * @param keyword 关键字（在 account / 详情文本里模糊匹配）
+     * @param from    起始时间（ISO-8601，如 2026-09-01T00:00:00）
+     * @param to      截止时间（同上）
+     * @param pageNum  页码，从 1 开始；不传默认 1
+     * @param pageSize 每页条数；不传默认 20
+     */
     @GetMapping
     @RequirePerm("system:audit")
     public R<PageResult<AuditLog>> page(@RequestParam(required = false) String module,

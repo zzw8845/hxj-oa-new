@@ -1,0 +1,6751 @@
+{
+  "counts": {
+    "operations": 98,
+    "controllers": 19,
+    "ops_with_summary": 98,
+    "params_total": 114,
+    "params_documented": 51,
+    "models": 68,
+    "fields_total": 580,
+    "fields_documented": 580,
+    "ops_with_perm": 46,
+    "ops_with_audit": 49
+  },
+  "risks": [
+    {
+      "level": "P3",
+      "kind": "路径/查询参数为简单 ID，无说明（可接受）",
+      "detail": "GET /api/attachments documentId: Long"
+    },
+    {
+      "level": "P3",
+      "kind": "路径/查询参数为简单 ID，无说明（可接受）",
+      "detail": "GET /api/attachments/{id}/download id: Long"
+    },
+    {
+      "level": "P3",
+      "kind": "路径/查询参数为简单 ID，无说明（可接受）",
+      "detail": "GET /api/attachments/{id}/preview id: Long"
+    },
+    {
+      "level": "P1",
+      "kind": "请求体/查询对象参数无说明（前端看不出这是干嘛的）",
+      "detail": "POST /api/documents 参数 DocumentCreateRequest req"
+    },
+    {
+      "level": "P3",
+      "kind": "路径/查询参数为简单 ID，无说明（可接受）",
+      "detail": "PUT /api/documents/{id} id: Long"
+    },
+    {
+      "level": "P1",
+      "kind": "请求体/查询对象参数无说明（前端看不出这是干嘛的）",
+      "detail": "PUT /api/documents/{id} 参数 DocumentCreateRequest req"
+    },
+    {
+      "level": "P3",
+      "kind": "路径/查询参数为简单 ID，无说明（可接受）",
+      "detail": "POST /api/documents/{id}/submit id: Long"
+    },
+    {
+      "level": "P3",
+      "kind": "路径/查询参数为简单 ID，无说明（可接受）",
+      "detail": "POST /api/documents/{id}/withdraw id: Long"
+    },
+    {
+      "level": "P3",
+      "kind": "路径/查询参数为简单 ID，无说明（可接受）",
+      "detail": "GET /api/documents/{id} id: Long"
+    },
+    {
+      "level": "P1",
+      "kind": "请求体/查询对象参数无说明（前端看不出这是干嘛的）",
+      "detail": "POST /api/document-types 参数 DocumentTypeSaveReq req"
+    },
+    {
+      "level": "P1",
+      "kind": "请求体/查询对象参数无说明（前端看不出这是干嘛的）",
+      "detail": "PUT /api/document-types/{id} 参数 DocumentTypeSaveReq req"
+    },
+    {
+      "level": "P3",
+      "kind": "路径/查询参数为简单 ID，无说明（可接受）",
+      "detail": "GET /api/flows/escalation/by-document/{documentId} documentId: Long"
+    },
+    {
+      "level": "P3",
+      "kind": "路径/查询参数为简单 ID，无说明（可接受）",
+      "detail": "GET /api/forms/templates docTypeId: Long"
+    },
+    {
+      "level": "P3",
+      "kind": "路径/查询参数为简单 ID，无说明（可接受）",
+      "detail": "POST /api/forms/validate docTypeId: Long"
+    },
+    {
+      "level": "P1",
+      "kind": "请求体/查询对象参数无说明（前端看不出这是干嘛的）",
+      "detail": "POST /api/forms/validate 参数 Object> formData"
+    },
+    {
+      "level": "P3",
+      "kind": "路径/查询参数为简单 ID，无说明（可接受）",
+      "detail": "GET /api/forms/templates/versions docTypeId: Long"
+    },
+    {
+      "level": "P3",
+      "kind": "路径/查询参数为简单 ID，无说明（可接受）",
+      "detail": "GET /api/forms/templates/{id} id: Long"
+    },
+    {
+      "level": "P1",
+      "kind": "请求体/查询对象参数无说明（前端看不出这是干嘛的）",
+      "detail": "POST /api/forms/templates 参数 FormTemplateSaveReq req"
+    },
+    {
+      "level": "P3",
+      "kind": "路径/查询参数为简单 ID，无说明（可接受）",
+      "detail": "PUT /api/forms/templates/{id} id: Long"
+    },
+    {
+      "level": "P1",
+      "kind": "请求体/查询对象参数无说明（前端看不出这是干嘛的）",
+      "detail": "PUT /api/forms/templates/{id} 参数 FormTemplateSaveReq req"
+    },
+    {
+      "level": "P3",
+      "kind": "路径/查询参数为简单 ID，无说明（可接受）",
+      "detail": "POST /api/forms/templates/{id}/activate id: Long"
+    },
+    {
+      "level": "P3",
+      "kind": "路径/查询参数为简单 ID，无说明（可接受）",
+      "detail": "PUT /api/forms/templates/{id}/field-permissions id: Long"
+    },
+    {
+      "level": "P1",
+      "kind": "请求体/查询对象参数无说明（前端看不出这是干嘛的）",
+      "detail": "PUT /api/forms/templates/{id}/field-permissions 参数 List<FormTemplateSaveReq.FieldPerm> perms"
+    },
+    {
+      "level": "P3",
+      "kind": "路径/查询参数为简单 ID，无说明（可接受）",
+      "detail": "DELETE /api/forms/templates/{id} id: Long"
+    },
+    {
+      "level": "P3",
+      "kind": "路径/查询参数为简单 ID，无说明（可接受）",
+      "detail": "POST /api/notifications/{id}/read id: Long"
+    },
+    {
+      "level": "P3",
+      "kind": "路径/查询参数为简单 ID，无说明（可接受）",
+      "detail": "GET /api/seals/by-document/{documentId} documentId: Long"
+    },
+    {
+      "level": "P1",
+      "kind": "请求体/查询对象参数无说明（前端看不出这是干嘛的）",
+      "detail": "POST /api/seals/use 参数 SealActionReq req"
+    },
+    {
+      "level": "P1",
+      "kind": "请求体/查询对象参数无说明（前端看不出这是干嘛的）",
+      "detail": "POST /api/seals/return 参数 SealActionReq req"
+    },
+    {
+      "level": "P1",
+      "kind": "请求体/查询对象参数无说明（前端看不出这是干嘛的）",
+      "detail": "POST /api/todos/approve 参数 ApprovalRequest req"
+    },
+    {
+      "level": "P1",
+      "kind": "请求体/查询对象参数无说明（前端看不出这是干嘛的）",
+      "detail": "POST /api/todos/batch-approve 参数 BatchApproveReq req"
+    },
+    {
+      "level": "P1",
+      "kind": "请求体/查询对象参数无说明（前端看不出这是干嘛的）",
+      "detail": "POST /api/todos/countersign 参数 CountersignRequest req"
+    },
+    {
+      "level": "P1",
+      "kind": "请求体/查询对象参数无说明（前端看不出这是干嘛的）",
+      "detail": "POST /api/delegations 参数 DelegationSaveReq req"
+    },
+    {
+      "level": "P3",
+      "kind": "路径/查询参数为简单 ID，无说明（可接受）",
+      "detail": "DELETE /api/delegations/{id} id: Long"
+    },
+    {
+      "level": "P3",
+      "kind": "路径/查询参数为简单 ID，无说明（可接受）",
+      "detail": "GET /api/flows/configs docTypeId: Long"
+    },
+    {
+      "level": "P3",
+      "kind": "路径/查询参数为简单 ID，无说明（可接受）",
+      "detail": "GET /api/flows/configs/{id}/bpmn id: Long"
+    },
+    {
+      "level": "P3",
+      "kind": "路径/查询参数为简单 ID，无说明（可接受）",
+      "detail": "POST /api/flows/configs/{id}/preview id: Long"
+    },
+    {
+      "level": "P1",
+      "kind": "请求体/查询对象参数无说明（前端看不出这是干嘛的）",
+      "detail": "POST /api/flows/configs/{id}/preview 参数 PreviewRequest req"
+    },
+    {
+      "level": "P3",
+      "kind": "路径/查询参数为简单 ID，无说明（可接受）",
+      "detail": "GET /api/flows/configs/{id}/assignees id: Long"
+    },
+    {
+      "level": "P1",
+      "kind": "请求体/查询对象参数无说明（前端看不出这是干嘛的）",
+      "detail": "POST /api/flows/configs 参数 FlowSaveReq req"
+    },
+    {
+      "level": "P3",
+      "kind": "路径/查询参数为简单 ID，无说明（可接受）",
+      "detail": "PUT /api/flows/configs/{id} id: Long"
+    },
+    {
+      "level": "P1",
+      "kind": "请求体/查询对象参数无说明（前端看不出这是干嘛的）",
+      "detail": "PUT /api/flows/configs/{id} 参数 FlowSaveReq req"
+    },
+    {
+      "level": "P3",
+      "kind": "路径/查询参数为简单 ID，无说明（可接受）",
+      "detail": "PUT /api/flows/configs/{id}/assignees id: Long"
+    },
+    {
+      "level": "P1",
+      "kind": "请求体/查询对象参数无说明（前端看不出这是干嘛的）",
+      "detail": "PUT /api/flows/configs/{id}/assignees 参数 List<FlowConfigAdminService.NodeAssignReq> req"
+    },
+    {
+      "level": "P3",
+      "kind": "路径/查询参数为简单 ID，无说明（可接受）",
+      "detail": "POST /api/flows/configs/{id}/deploy id: Long"
+    },
+    {
+      "level": "P3",
+      "kind": "路径/查询参数为简单 ID，无说明（可接受）",
+      "detail": "DELETE /api/flows/configs/{id} id: Long"
+    },
+    {
+      "level": "P1",
+      "kind": "请求体/查询对象参数无说明（前端看不出这是干嘛的）",
+      "detail": "POST /api/auth/login 参数 LoginRequest req"
+    },
+    {
+      "level": "P1",
+      "kind": "请求体/查询对象参数无说明（前端看不出这是干嘛的）",
+      "detail": "PUT /api/auth/password 参数 com.hxj.oa.system.dto.ChangePasswordReq req"
+    },
+    {
+      "level": "P1",
+      "kind": "请求体/查询对象参数无说明（前端看不出这是干嘛的）",
+      "detail": "POST /api/depts 参数 DeptSaveReq req"
+    },
+    {
+      "level": "P1",
+      "kind": "请求体/查询对象参数无说明（前端看不出这是干嘛的）",
+      "detail": "PUT /api/depts/{id} 参数 DeptSaveReq req"
+    },
+    {
+      "level": "P1",
+      "kind": "请求体/查询对象参数无说明（前端看不出这是干嘛的）",
+      "detail": "POST /api/dicts 参数 DictSaveReq req"
+    },
+    {
+      "level": "P1",
+      "kind": "请求体/查询对象参数无说明（前端看不出这是干嘛的）",
+      "detail": "PUT /api/dicts/{id} 参数 DictSaveReq req"
+    },
+    {
+      "level": "P1",
+      "kind": "请求体/查询对象参数无说明（前端看不出这是干嘛的）",
+      "detail": "POST /api/posts 参数 PostSaveReq req"
+    },
+    {
+      "level": "P1",
+      "kind": "请求体/查询对象参数无说明（前端看不出这是干嘛的）",
+      "detail": "PUT /api/posts/{id} 参数 PostSaveReq req"
+    },
+    {
+      "level": "P1",
+      "kind": "请求体/查询对象参数无说明（前端看不出这是干嘛的）",
+      "detail": "POST /api/roles 参数 RoleSaveReq req"
+    },
+    {
+      "level": "P1",
+      "kind": "请求体/查询对象参数无说明（前端看不出这是干嘛的）",
+      "detail": "PUT /api/roles/{id} 参数 RoleSaveReq req"
+    },
+    {
+      "level": "P3",
+      "kind": "路径/查询参数为简单 ID，无说明（可接受）",
+      "detail": "PUT /api/roles/{id}/permissions id: Long"
+    },
+    {
+      "level": "P1",
+      "kind": "请求体/查询对象参数无说明（前端看不出这是干嘛的）",
+      "detail": "PUT /api/roles/{id}/permissions 参数 PermAssignReq req"
+    },
+    {
+      "level": "P3",
+      "kind": "路径/查询参数为简单 ID，无说明（可接受）",
+      "detail": "PUT /api/roles/{id}/data-scope id: Long"
+    },
+    {
+      "level": "P1",
+      "kind": "请求体/查询对象参数无说明（前端看不出这是干嘛的）",
+      "detail": "PUT /api/roles/{id}/data-scope 参数 DataScopeReq req"
+    },
+    {
+      "level": "P1",
+      "kind": "请求体/查询对象参数无说明（前端看不出这是干嘛的）",
+      "detail": "POST /api/users 参数 UserSaveReq req"
+    },
+    {
+      "level": "P1",
+      "kind": "请求体/查询对象参数无说明（前端看不出这是干嘛的）",
+      "detail": "PUT /api/users/{id} 参数 UserSaveReq req"
+    },
+    {
+      "level": "P3",
+      "kind": "路径/查询参数为简单 ID，无说明（可接受）",
+      "detail": "PUT /api/users/{id}/roles id: Long"
+    },
+    {
+      "level": "P1",
+      "kind": "请求体/查询对象参数无说明（前端看不出这是干嘛的）",
+      "detail": "PUT /api/users/{id}/roles 参数 RoleAssignReq req"
+    },
+    {
+      "level": "P2",
+      "kind": "查询对象参数无注解（官方规则=按 query 识别；同步后确认已展开成字段名而非单个 query）",
+      "detail": "GET /api/documents -> DocumentQuery query"
+    },
+    {
+      "level": "P2",
+      "kind": "查询对象参数无注解（官方规则=按 query 识别；同步后确认已展开成字段名而非单个 query）",
+      "detail": "GET /api/documents/export -> LedgerExportQuery query"
+    },
+    {
+      "level": "P2",
+      "kind": "查询对象参数无注解（官方规则=按 query 识别；同步后确认已展开成字段名而非单个 query）",
+      "detail": "GET /api/seals -> SealQuery query"
+    },
+    {
+      "level": "P2",
+      "kind": "字段类型无法生成结构（Apifox 只能给 Object/示例）",
+      "detail": "DocumentCreateRequest.formData : Map<String,Object>"
+    },
+    {
+      "level": "P2",
+      "kind": "字段类型无法生成结构（Apifox 只能给 Object/示例）",
+      "detail": "DocumentDetailVO.formSchema : Map<String,Object>"
+    },
+    {
+      "level": "P2",
+      "kind": "字段类型无法生成结构（Apifox 只能给 Object/示例）",
+      "detail": "FormTemplateDetailVO.schema : Map<String,Object>"
+    },
+    {
+      "level": "P2",
+      "kind": "字段类型无法生成结构（Apifox 只能给 Object/示例）",
+      "detail": "FormTemplateSaveReq.schema : Map<String,Object>"
+    },
+    {
+      "level": "P2",
+      "kind": "字段类型无法生成结构（Apifox 只能给 Object/示例）",
+      "detail": "PreviewRequest.formData : Map<String,Object>"
+    }
+  ],
+  "cross_check": {
+    "contract_paths": 75,
+    "emulator_paths": 73,
+    "only_in_emulator": [],
+    "only_in_contract": [
+      "/api/ping"
+    ]
+  },
+  "operations": [
+    {
+      "controller": "AttachmentController",
+      "group_doc": "",
+      "method": "upload",
+      "verb": "POST",
+      "path": "/api/attachments",
+      "path_tmpl": "/api/attachments",
+      "summary": "上传附件。",
+      "desc": "",
+      "params": [
+        {
+          "name": "file",
+          "type": "MultipartFile",
+          "kind": "query",
+          "required": true,
+          "raw": "@RequestParam(\"file\") MultipartFile file"
+        },
+        {
+          "name": "documentId",
+          "type": "Long",
+          "kind": "query",
+          "required": false,
+          "raw": "@RequestParam(value = \"documentId\", required = false) Long documentId"
+        },
+        {
+          "name": "nodeKey",
+          "type": "String",
+          "kind": "query",
+          "required": false,
+          "raw": "@RequestParam(value = \"nodeKey\", required = false) String nodeKey"
+        },
+        {
+          "name": "bizType",
+          "type": "String",
+          "kind": "query",
+          "required": false,
+          "raw": "@RequestParam(value = \"bizType\", required = false) String bizType"
+        }
+      ],
+      "javadoc_params": {
+        "file": "要上传的文件（form-data 字段名固定为 `file}）",
+        "documentId": "所属单据；草稿已创建的情况下由前端传入",
+        "nodeKey": "所属流程节点（审批凭证需要，申请资料可空）",
+        "bizType": "apply 申请 / approve 审批凭证 / seal 用印 / receipt 付款回单"
+      },
+      "return": "R<AttachmentVO>",
+      "require_perm": "",
+      "audit": "module = \"document\", action = \"uploadAttachment\"",
+      "deprecated": false,
+      "file": "oa-backend/oa-document/src/main/java/com/hxj/oa/document/controller/AttachmentController.java",
+      "line": 45
+    },
+    {
+      "controller": "AttachmentController",
+      "group_doc": "",
+      "method": "list",
+      "verb": "GET",
+      "path": "/api/attachments",
+      "path_tmpl": "/api/attachments",
+      "summary": "某单据的附件列表",
+      "desc": "",
+      "params": [
+        {
+          "name": "documentId",
+          "type": "Long",
+          "kind": "query",
+          "required": true,
+          "raw": "@RequestParam(\"documentId\") Long documentId"
+        }
+      ],
+      "javadoc_params": {},
+      "return": "R<List<AttachmentVO>>",
+      "require_perm": "",
+      "audit": "",
+      "deprecated": false,
+      "file": "oa-backend/oa-document/src/main/java/com/hxj/oa/document/controller/AttachmentController.java",
+      "line": 55
+    },
+    {
+      "controller": "AttachmentController",
+      "group_doc": "",
+      "method": "download",
+      "verb": "GET",
+      "path": "/api/attachments/{id}/download",
+      "path_tmpl": "/api/attachments/{id}/download",
+      "summary": "下载（强制落盘保存）",
+      "desc": "",
+      "params": [
+        {
+          "name": "id",
+          "type": "Long",
+          "kind": "path",
+          "required": null,
+          "raw": "@PathVariable Long id"
+        }
+      ],
+      "javadoc_params": {},
+      "return": "ResponseEntity<Resource>",
+      "require_perm": "",
+      "audit": "",
+      "deprecated": false,
+      "file": "oa-backend/oa-document/src/main/java/com/hxj/oa/document/controller/AttachmentController.java",
+      "line": 61
+    },
+    {
+      "controller": "AttachmentController",
+      "group_doc": "",
+      "method": "preview",
+      "verb": "GET",
+      "path": "/api/attachments/{id}/preview",
+      "path_tmpl": "/api/attachments/{id}/preview",
+      "summary": "在线预览（仅图片与 PDF；其余类型一律拒绝，避免把不可信内容当 HTML/SVG 内联渲染出来）",
+      "desc": "",
+      "params": [
+        {
+          "name": "id",
+          "type": "Long",
+          "kind": "path",
+          "required": null,
+          "raw": "@PathVariable Long id"
+        }
+      ],
+      "javadoc_params": {},
+      "return": "ResponseEntity<Resource>",
+      "require_perm": "",
+      "audit": "",
+      "deprecated": false,
+      "file": "oa-backend/oa-document/src/main/java/com/hxj/oa/document/controller/AttachmentController.java",
+      "line": 68
+    },
+    {
+      "controller": "AttachmentController",
+      "group_doc": "",
+      "method": "delete",
+      "verb": "DELETE",
+      "path": "/api/attachments/{id}",
+      "path_tmpl": "/api/attachments/{id}",
+      "summary": "删除附件。",
+      "desc": "只能删本人上传的（管理员例外）；单据已提交后附件属于审批留痕，不允许再删。",
+      "params": [
+        {
+          "name": "id",
+          "type": "Long",
+          "kind": "path",
+          "required": null,
+          "raw": "@PathVariable Long id"
+        }
+      ],
+      "javadoc_params": {
+        "id": "附件 ID"
+      },
+      "return": "R<Void>",
+      "require_perm": "",
+      "audit": "module = \"document\", action = \"deleteAttachment\"",
+      "deprecated": false,
+      "file": "oa-backend/oa-document/src/main/java/com/hxj/oa/document/controller/AttachmentController.java",
+      "line": 85
+    },
+    {
+      "controller": "AuditLogController",
+      "group_doc": "",
+      "method": "page",
+      "verb": "GET",
+      "path": "/api/audit-logs",
+      "path_tmpl": "/api/audit-logs",
+      "summary": "审计日志分页查询（强制分页，参数全部可选，不传即不过滤）。",
+      "desc": "",
+      "params": [
+        {
+          "name": "module",
+          "type": "String",
+          "kind": "query",
+          "required": false,
+          "raw": "@RequestParam(required = false) String module"
+        },
+        {
+          "name": "action",
+          "type": "String",
+          "kind": "query",
+          "required": false,
+          "raw": "@RequestParam(required = false) String action"
+        },
+        {
+          "name": "userId",
+          "type": "Long",
+          "kind": "query",
+          "required": false,
+          "raw": "@RequestParam(required = false) Long userId"
+        },
+        {
+          "name": "bizId",
+          "type": "Long",
+          "kind": "query",
+          "required": false,
+          "raw": "@RequestParam(required = false) Long bizId"
+        },
+        {
+          "name": "keyword",
+          "type": "String",
+          "kind": "query",
+          "required": false,
+          "raw": "@RequestParam(required = false) String keyword"
+        },
+        {
+          "name": "from",
+          "type": "LocalDateTime",
+          "kind": "query",
+          "required": false,
+          "raw": "@RequestParam(required = false)\n                                       @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime from"
+        },
+        {
+          "name": "to",
+          "type": "LocalDateTime",
+          "kind": "query",
+          "required": false,
+          "raw": "@RequestParam(required = false)\n                                       @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime to"
+        },
+        {
+          "name": "pageNum",
+          "type": "Integer",
+          "kind": "query",
+          "required": false,
+          "raw": "@RequestParam(required = false) Integer pageNum"
+        },
+        {
+          "name": "pageSize",
+          "type": "Integer",
+          "kind": "query",
+          "required": false,
+          "raw": "@RequestParam(required = false) Integer pageSize"
+        }
+      ],
+      "javadoc_params": {
+        "module": "模块：document / flow / permission / system / seal / auth",
+        "action": "动作名，如 approve、createUser、updateRole",
+        "userId": "操作人 ID",
+        "bizId": "业务对象 ID（如单据 ID）",
+        "keyword": "关键字（在 account / 详情文本里模糊匹配）",
+        "from": "起始时间（ISO-8601，如 2026-09-01T00:00:00）",
+        "to": "截止时间（同上）",
+        "pageNum": "页码，从 1 开始；不传默认 1",
+        "pageSize": "每页条数；不传默认 20"
+      },
+      "return": "R<PageResult<AuditLog>>",
+      "require_perm": "\"system:audit\"",
+      "audit": "",
+      "deprecated": false,
+      "file": "oa-backend/oa-document/src/main/java/com/hxj/oa/document/controller/AuditLogController.java",
+      "line": 42
+    },
+    {
+      "controller": "DocumentController",
+      "group_doc": "",
+      "method": "types",
+      "verb": "GET",
+      "path": "/api/documents/types",
+      "path_tmpl": "/api/documents/types",
+      "summary": "单据类型清单（前端左侧菜单的核心数据源）。",
+      "desc": "返回 `DocumentTypeVO}：比实体多一个后端下发的 `categoryLabel}，\n前端业务类型标签一律以此为准，不再维护「DAILY→日常付款」这类写死映射。",
+      "params": [],
+      "javadoc_params": {},
+      "return": "R<List<DocumentTypeVO>>",
+      "require_perm": "",
+      "audit": "",
+      "deprecated": false,
+      "file": "oa-backend/oa-document/src/main/java/com/hxj/oa/document/controller/DocumentController.java",
+      "line": 45
+    },
+    {
+      "controller": "DocumentController",
+      "group_doc": "",
+      "method": "create",
+      "verb": "POST",
+      "path": "/api/documents",
+      "path_tmpl": "/api/documents",
+      "summary": "保存草稿",
+      "desc": "",
+      "params": [
+        {
+          "name": "req",
+          "type": "DocumentCreateRequest",
+          "kind": "body",
+          "required": null,
+          "raw": "@Valid @RequestBody DocumentCreateRequest req"
+        }
+      ],
+      "javadoc_params": {},
+      "return": "R<Document>",
+      "require_perm": "",
+      "audit": "module = \"document\", action = \"createDraft\"",
+      "deprecated": false,
+      "file": "oa-backend/oa-document/src/main/java/com/hxj/oa/document/controller/DocumentController.java",
+      "line": 52
+    },
+    {
+      "controller": "DocumentController",
+      "group_doc": "",
+      "method": "update",
+      "verb": "PUT",
+      "path": "/api/documents/{id}",
+      "path_tmpl": "/api/documents/{id}",
+      "summary": "更新草稿",
+      "desc": "",
+      "params": [
+        {
+          "name": "id",
+          "type": "Long",
+          "kind": "path",
+          "required": null,
+          "raw": "@PathVariable Long id"
+        },
+        {
+          "name": "req",
+          "type": "DocumentCreateRequest",
+          "kind": "body",
+          "required": null,
+          "raw": "@RequestBody DocumentCreateRequest req"
+        }
+      ],
+      "javadoc_params": {},
+      "return": "R<Document>",
+      "require_perm": "",
+      "audit": "module = \"document\", action = \"updateDraft\"",
+      "deprecated": false,
+      "file": "oa-backend/oa-document/src/main/java/com/hxj/oa/document/controller/DocumentController.java",
+      "line": 59
+    },
+    {
+      "controller": "DocumentController",
+      "group_doc": "",
+      "method": "submit",
+      "verb": "POST",
+      "path": "/api/documents/{id}/submit",
+      "path_tmpl": "/api/documents/{id}/submit",
+      "summary": "提交审批",
+      "desc": "",
+      "params": [
+        {
+          "name": "id",
+          "type": "Long",
+          "kind": "path",
+          "required": null,
+          "raw": "@PathVariable Long id"
+        }
+      ],
+      "javadoc_params": {},
+      "return": "R<Document>",
+      "require_perm": "",
+      "audit": "module = \"document\", action = \"submit\"",
+      "deprecated": false,
+      "file": "oa-backend/oa-document/src/main/java/com/hxj/oa/document/controller/DocumentController.java",
+      "line": 66
+    },
+    {
+      "controller": "DocumentController",
+      "group_doc": "",
+      "method": "withdraw",
+      "verb": "POST",
+      "path": "/api/documents/{id}/withdraw",
+      "path_tmpl": "/api/documents/{id}/withdraw",
+      "summary": "撤回",
+      "desc": "",
+      "params": [
+        {
+          "name": "id",
+          "type": "Long",
+          "kind": "path",
+          "required": null,
+          "raw": "@PathVariable Long id"
+        }
+      ],
+      "javadoc_params": {},
+      "return": "R<Document>",
+      "require_perm": "",
+      "audit": "module = \"document\", action = \"withdraw\"",
+      "deprecated": false,
+      "file": "oa-backend/oa-document/src/main/java/com/hxj/oa/document/controller/DocumentController.java",
+      "line": 73
+    },
+    {
+      "controller": "DocumentController",
+      "group_doc": "",
+      "method": "detail",
+      "verb": "GET",
+      "path": "/api/documents/{id}",
+      "path_tmpl": "/api/documents/{id}",
+      "summary": "详情（含按当前节点裁剪的表单、流转记录、可执行动作）",
+      "desc": "",
+      "params": [
+        {
+          "name": "id",
+          "type": "Long",
+          "kind": "path",
+          "required": null,
+          "raw": "@PathVariable Long id"
+        }
+      ],
+      "javadoc_params": {},
+      "return": "R<DocumentDetailVO>",
+      "require_perm": "",
+      "audit": "",
+      "deprecated": false,
+      "file": "oa-backend/oa-document/src/main/java/com/hxj/oa/document/controller/DocumentController.java",
+      "line": 80
+    },
+    {
+      "controller": "DocumentController",
+      "group_doc": "",
+      "method": "page",
+      "verb": "GET",
+      "path": "/api/documents",
+      "path_tmpl": "/api/documents",
+      "summary": "列表（受行级数据范围约束）。",
+      "desc": "筛选条件走 query string 平铺（不是 JSON body），字段见 `DocumentQuery}。",
+      "params": [
+        {
+          "name": "query",
+          "type": "DocumentQuery",
+          "kind": "pojo",
+          "required": null,
+          "raw": "DocumentQuery query"
+        }
+      ],
+      "javadoc_params": {
+        "query": "筛选与分页条件"
+      },
+      "return": "R<PageResult<Document>>",
+      "require_perm": "",
+      "audit": "",
+      "deprecated": false,
+      "file": "oa-backend/oa-document/src/main/java/com/hxj/oa/document/controller/DocumentController.java",
+      "line": 92
+    },
+    {
+      "controller": "DocumentController",
+      "group_doc": "",
+      "method": "stats",
+      "verb": "GET",
+      "path": "/api/documents/stats",
+      "path_tmpl": "/api/documents/stats",
+      "summary": "按状态统计（看板/首页用），受行级数据范围约束。",
+      "desc": "路径是字面量 `/stats}，Spring 会优先于 `/{id}} 匹配，\n与已有的 `/types} 同理，不会把 stats 当成 id 解析。",
+      "params": [],
+      "javadoc_params": {},
+      "return": "R<DocumentStatsVO>",
+      "require_perm": "",
+      "audit": "",
+      "deprecated": false,
+      "file": "oa-backend/oa-document/src/main/java/com/hxj/oa/document/controller/DocumentController.java",
+      "line": 103
+    },
+    {
+      "controller": "DocumentController",
+      "group_doc": "",
+      "method": "exportLedger",
+      "verb": "GET",
+      "path": "/api/documents/export",
+      "path_tmpl": "/api/documents/export",
+      "summary": "台账导出（CSV）。",
+      "desc": "路径同样是字面量，优先于 `/{id}} 匹配。\n挂 `document:export}（ADMIN / GM / 财务总监 / 会计持有）——\n导出是唯一「一次点击把整个台账搬走」的入口，必须比「看台账」更严。\n导出行为本身也会进审计（detail 里带上了筛选条件与行数）。\n前端文件名走 RFC 5987 的 `filename*}：中文文件名直接塞 `filename=}\n会被截断或乱码（与附件下载同一处理）。",
+      "params": [
+        {
+          "name": "query",
+          "type": "LedgerExportQuery",
+          "kind": "pojo",
+          "required": null,
+          "raw": "LedgerExportQuery query"
+        }
+      ],
+      "javadoc_params": {
+        "query": "导出筛选条件（字段见 `LedgerExportQuery}）"
+      },
+      "return": "ResponseEntity<byte[]>",
+      "require_perm": "\"document:export\"",
+      "audit": "module = \"document\", action = \"exportLedger\"",
+      "deprecated": false,
+      "file": "oa-backend/oa-document/src/main/java/com/hxj/oa/document/controller/DocumentController.java",
+      "line": 122
+    },
+    {
+      "controller": "DocumentTypeAdminController",
+      "group_doc": "",
+      "method": "list",
+      "verb": "GET",
+      "path": "/api/document-types",
+      "path_tmpl": "/api/document-types",
+      "summary": "全量（含停用），管理页用",
+      "desc": "",
+      "params": [],
+      "javadoc_params": {},
+      "return": "R<List<DocumentTypeVO>>",
+      "require_perm": "",
+      "audit": "",
+      "deprecated": false,
+      "file": "oa-backend/oa-document/src/main/java/com/hxj/oa/document/controller/DocumentTypeAdminController.java",
+      "line": 33
+    },
+    {
+      "controller": "DocumentTypeAdminController",
+      "group_doc": "",
+      "method": "enabled",
+      "verb": "GET",
+      "path": "/api/document-types/enabled",
+      "path_tmpl": "/api/document-types/enabled",
+      "summary": "启用中的类型（发起菜单 / 筛选项数据源），带 categoryLabel",
+      "desc": "",
+      "params": [],
+      "javadoc_params": {},
+      "return": "R<List<DocumentTypeVO>>",
+      "require_perm": "",
+      "audit": "",
+      "deprecated": false,
+      "file": "oa-backend/oa-document/src/main/java/com/hxj/oa/document/controller/DocumentTypeAdminController.java",
+      "line": 39
+    },
+    {
+      "controller": "DocumentTypeAdminController",
+      "group_doc": "",
+      "method": "categories",
+      "verb": "GET",
+      "path": "/api/document-types/categories",
+      "path_tmpl": "/api/document-types/categories",
+      "summary": "业务大类白名单（键=编码，值=中文标签），前端下拉与标签渲染的唯一来源",
+      "desc": "",
+      "params": [],
+      "javadoc_params": {},
+      "return": "R<Map<String, String>>",
+      "require_perm": "",
+      "audit": "",
+      "deprecated": false,
+      "file": "oa-backend/oa-document/src/main/java/com/hxj/oa/document/controller/DocumentTypeAdminController.java",
+      "line": 45
+    },
+    {
+      "controller": "DocumentTypeAdminController",
+      "group_doc": "",
+      "method": "create",
+      "verb": "POST",
+      "path": "/api/document-types",
+      "path_tmpl": "/api/document-types",
+      "summary": "新建单据类型。",
+      "desc": "编码与名称在同一公司内不允许重复；业务大类必须是白名单之一（可选值见 /categories）。\n新类型还要再配流程与表单模板才能提单。",
+      "params": [
+        {
+          "name": "req",
+          "type": "DocumentTypeSaveReq",
+          "kind": "body",
+          "required": null,
+          "raw": "@Valid @RequestBody DocumentTypeSaveReq req"
+        }
+      ],
+      "javadoc_params": {},
+      "return": "R<DocumentTypeVO>",
+      "require_perm": "\"system:docType\"",
+      "audit": "module = \"system\", action = \"createDocType\"",
+      "deprecated": false,
+      "file": "oa-backend/oa-document/src/main/java/com/hxj/oa/document/controller/DocumentTypeAdminController.java",
+      "line": 56
+    },
+    {
+      "controller": "DocumentTypeAdminController",
+      "group_doc": "",
+      "method": "update",
+      "verb": "PUT",
+      "path": "/api/document-types/{id}",
+      "path_tmpl": "/api/document-types/{id}",
+      "summary": "修改单据类型（名称 / 业务大类 / 是否关联上单 / 状态 / 排序）。",
+      "desc": "",
+      "params": [
+        {
+          "name": "id",
+          "type": "Long",
+          "kind": "path",
+          "required": null,
+          "raw": "@PathVariable Long id"
+        },
+        {
+          "name": "req",
+          "type": "DocumentTypeSaveReq",
+          "kind": "body",
+          "required": null,
+          "raw": "@Valid @RequestBody DocumentTypeSaveReq req"
+        }
+      ],
+      "javadoc_params": {
+        "id": "单据类型 ID"
+      },
+      "return": "R<DocumentTypeVO>",
+      "require_perm": "\"system:docType\"",
+      "audit": "module = \"system\", action = \"updateDocType\"",
+      "deprecated": false,
+      "file": "oa-backend/oa-document/src/main/java/com/hxj/oa/document/controller/DocumentTypeAdminController.java",
+      "line": 68
+    },
+    {
+      "controller": "DocumentTypeAdminController",
+      "group_doc": "",
+      "method": "delete",
+      "verb": "DELETE",
+      "path": "/api/document-types/{id}",
+      "path_tmpl": "/api/document-types/{id}",
+      "summary": "删除单据类型（逻辑删除）。",
+      "desc": "三种引用都会拒绝，msg 里给出数量：已有单据 / 已绑表单模板 / 已绑审批流程。\n已有单据时建议改用「停用」。",
+      "params": [
+        {
+          "name": "id",
+          "type": "Long",
+          "kind": "path",
+          "required": null,
+          "raw": "@PathVariable Long id"
+        }
+      ],
+      "javadoc_params": {
+        "id": "单据类型 ID"
+      },
+      "return": "R<Void>",
+      "require_perm": "\"system:docType\"",
+      "audit": "module = \"system\", action = \"deleteDocType\"",
+      "deprecated": false,
+      "file": "oa-backend/oa-document/src/main/java/com/hxj/oa/document/controller/DocumentTypeAdminController.java",
+      "line": 83
+    },
+    {
+      "controller": "EscalationController",
+      "group_doc": "",
+      "method": "run",
+      "verb": "POST",
+      "path": "/api/flows/escalation/run",
+      "path_tmpl": "/api/flows/escalation/run",
+      "summary": "立即执行一次超时升级盘点（幂等：已升级过的节点不会重复升）。",
+      "desc": "",
+      "params": [
+        {
+          "name": "documentId",
+          "type": "Long",
+          "kind": "query",
+          "required": false,
+          "raw": "@RequestParam(required = false) Long documentId"
+        }
+      ],
+      "javadoc_params": {
+        "documentId": "可选：只处理某张单据的节点。**建议运维用它**—— 不传就是全局扫描，会把库里所有超时节点都动一遍。"
+      },
+      "return": "R<EscalationResultVO>",
+      "require_perm": "\"system:flow\"",
+      "audit": "module = \"flow\", action = \"runEscalation\"",
+      "deprecated": false,
+      "file": "oa-backend/oa-document/src/main/java/com/hxj/oa/document/controller/EscalationController.java",
+      "line": 35
+    },
+    {
+      "controller": "EscalationController",
+      "group_doc": "",
+      "method": "byDocument",
+      "verb": "GET",
+      "path": "/api/flows/escalation/by-document/{documentId}",
+      "path_tmpl": "/api/flows/escalation/by-document/{documentId}",
+      "summary": "某单据的升级记录（排查\"这条待办为什么升级了\"用）",
+      "desc": "",
+      "params": [
+        {
+          "name": "documentId",
+          "type": "Long",
+          "kind": "path",
+          "required": null,
+          "raw": "@PathVariable Long documentId"
+        }
+      ],
+      "javadoc_params": {},
+      "return": "R<List<FlowEscalation>>",
+      "require_perm": "\"system:flow\"",
+      "audit": "",
+      "deprecated": false,
+      "file": "oa-backend/oa-document/src/main/java/com/hxj/oa/document/controller/EscalationController.java",
+      "line": 44
+    },
+    {
+      "controller": "FormTemplateController",
+      "group_doc": "",
+      "method": "schema",
+      "verb": "GET",
+      "path": "/api/forms/schema",
+      "path_tmpl": "/api/forms/schema",
+      "summary": "取某单据类型的表单 Schema。",
+      "desc": "",
+      "params": [
+        {
+          "name": "docTypeId",
+          "type": "Long",
+          "kind": "query",
+          "required": null,
+          "raw": "@RequestParam Long docTypeId"
+        },
+        {
+          "name": "nodeKey",
+          "type": "String",
+          "kind": "query",
+          "required": true,
+          "raw": "@RequestParam(defaultValue = \"n1\") String nodeKey"
+        }
+      ],
+      "javadoc_params": {
+        "docTypeId": "单据类型",
+        "nodeKey": "节点标识，默认 n1（发起）；传入当前审批节点则返回该节点的字段权限"
+      },
+      "return": "R<Map<String, Object>>",
+      "require_perm": "",
+      "audit": "",
+      "deprecated": false,
+      "file": "oa-backend/oa-document/src/main/java/com/hxj/oa/document/controller/FormTemplateController.java",
+      "line": 36
+    },
+    {
+      "controller": "FormTemplateController",
+      "group_doc": "",
+      "method": "templates",
+      "verb": "GET",
+      "path": "/api/forms/templates",
+      "path_tmpl": "/api/forms/templates",
+      "summary": "模板原始定义（配置页用）",
+      "desc": "",
+      "params": [
+        {
+          "name": "docTypeId",
+          "type": "Long",
+          "kind": "query",
+          "required": null,
+          "raw": "@RequestParam Long docTypeId"
+        }
+      ],
+      "javadoc_params": {},
+      "return": "R<List<FormTemplate>>",
+      "require_perm": "",
+      "audit": "",
+      "deprecated": false,
+      "file": "oa-backend/oa-document/src/main/java/com/hxj/oa/document/controller/FormTemplateController.java",
+      "line": 44
+    },
+    {
+      "controller": "FormTemplateController",
+      "group_doc": "",
+      "method": "validate",
+      "verb": "POST",
+      "path": "/api/forms/validate",
+      "path_tmpl": "/api/forms/validate",
+      "summary": "服务端二次校验（前端提交前可预检，但提交时后端仍会再校验一次）",
+      "desc": "",
+      "params": [
+        {
+          "name": "docTypeId",
+          "type": "Long",
+          "kind": "query",
+          "required": null,
+          "raw": "@RequestParam Long docTypeId"
+        },
+        {
+          "name": "formData",
+          "type": "Object>",
+          "kind": "body",
+          "required": null,
+          "raw": "@RequestBody Map<String, Object> formData"
+        }
+      ],
+      "javadoc_params": {},
+      "return": "R<List<Map<String, String>>>",
+      "require_perm": "",
+      "audit": "",
+      "deprecated": false,
+      "file": "oa-backend/oa-document/src/main/java/com/hxj/oa/document/controller/FormTemplateController.java",
+      "line": 50
+    },
+    {
+      "controller": "FormTemplateController",
+      "group_doc": "",
+      "method": "versions",
+      "verb": "GET",
+      "path": "/api/forms/templates/versions",
+      "path_tmpl": "/api/forms/templates/versions",
+      "summary": "某单据类型的全部版本（草稿 / 生效 / 废弃）—— 配置页用",
+      "desc": "",
+      "params": [
+        {
+          "name": "docTypeId",
+          "type": "Long",
+          "kind": "query",
+          "required": null,
+          "raw": "@RequestParam Long docTypeId"
+        }
+      ],
+      "javadoc_params": {},
+      "return": "R<List<FormTemplate>>",
+      "require_perm": "\"system:form\"",
+      "audit": "",
+      "deprecated": false,
+      "file": "oa-backend/oa-document/src/main/java/com/hxj/oa/document/controller/FormTemplateController.java",
+      "line": 64
+    },
+    {
+      "controller": "FormTemplateController",
+      "group_doc": "",
+      "method": "detail",
+      "verb": "GET",
+      "path": "/api/forms/templates/{id}",
+      "path_tmpl": "/api/forms/templates/{id}",
+      "summary": "模板详情：schema 已解析 + 字段级权限",
+      "desc": "",
+      "params": [
+        {
+          "name": "id",
+          "type": "Long",
+          "kind": "path",
+          "required": null,
+          "raw": "@PathVariable Long id"
+        }
+      ],
+      "javadoc_params": {},
+      "return": "R<FormTemplateDetailVO>",
+      "require_perm": "\"system:form\"",
+      "audit": "",
+      "deprecated": false,
+      "file": "oa-backend/oa-document/src/main/java/com/hxj/oa/document/controller/FormTemplateController.java",
+      "line": 73
+    },
+    {
+      "controller": "FormTemplateController",
+      "group_doc": "",
+      "method": "create",
+      "verb": "POST",
+      "path": "/api/forms/templates",
+      "path_tmpl": "/api/forms/templates",
+      "summary": "新建模板（落草稿，版本号由服务端分配）",
+      "desc": "",
+      "params": [
+        {
+          "name": "req",
+          "type": "FormTemplateSaveReq",
+          "kind": "body",
+          "required": null,
+          "raw": "@Valid @RequestBody FormTemplateSaveReq req"
+        }
+      ],
+      "javadoc_params": {},
+      "return": "R<FormTemplateDetailVO>",
+      "require_perm": "\"system:form\"",
+      "audit": "module = \"system\", action = \"createFormTemplate\"",
+      "deprecated": false,
+      "file": "oa-backend/oa-document/src/main/java/com/hxj/oa/document/controller/FormTemplateController.java",
+      "line": 80
+    },
+    {
+      "controller": "FormTemplateController",
+      "group_doc": "",
+      "method": "update",
+      "verb": "PUT",
+      "path": "/api/forms/templates/{id}",
+      "path_tmpl": "/api/forms/templates/{id}",
+      "summary": "改模板（只允许改草稿；生效版本要改必须新建版本）",
+      "desc": "",
+      "params": [
+        {
+          "name": "id",
+          "type": "Long",
+          "kind": "path",
+          "required": null,
+          "raw": "@PathVariable Long id"
+        },
+        {
+          "name": "req",
+          "type": "FormTemplateSaveReq",
+          "kind": "body",
+          "required": null,
+          "raw": "@Valid @RequestBody FormTemplateSaveReq req"
+        }
+      ],
+      "javadoc_params": {},
+      "return": "R<FormTemplateDetailVO>",
+      "require_perm": "\"system:form\"",
+      "audit": "module = \"system\", action = \"updateFormTemplate\"",
+      "deprecated": false,
+      "file": "oa-backend/oa-document/src/main/java/com/hxj/oa/document/controller/FormTemplateController.java",
+      "line": 88
+    },
+    {
+      "controller": "FormTemplateController",
+      "group_doc": "",
+      "method": "activate",
+      "verb": "POST",
+      "path": "/api/forms/templates/{id}/activate",
+      "path_tmpl": "/api/forms/templates/{id}/activate",
+      "summary": "启用：草稿 → 生效，同时废弃同单据类型的旧生效版本",
+      "desc": "",
+      "params": [
+        {
+          "name": "id",
+          "type": "Long",
+          "kind": "path",
+          "required": null,
+          "raw": "@PathVariable Long id"
+        }
+      ],
+      "javadoc_params": {},
+      "return": "R<FormTemplateDetailVO>",
+      "require_perm": "\"system:form\"",
+      "audit": "module = \"system\", action = \"activateFormTemplate\"",
+      "deprecated": false,
+      "file": "oa-backend/oa-document/src/main/java/com/hxj/oa/document/controller/FormTemplateController.java",
+      "line": 97
+    },
+    {
+      "controller": "FormTemplateController",
+      "group_doc": "",
+      "method": "updatePermissions",
+      "verb": "PUT",
+      "path": "/api/forms/templates/{id}/field-permissions",
+      "path_tmpl": "/api/forms/templates/{id}/field-permissions",
+      "summary": "字段级权限：全量覆盖",
+      "desc": "",
+      "params": [
+        {
+          "name": "id",
+          "type": "Long",
+          "kind": "path",
+          "required": null,
+          "raw": "@PathVariable Long id"
+        },
+        {
+          "name": "perms",
+          "type": "List<FormTemplateSaveReq.FieldPerm>",
+          "kind": "body",
+          "required": null,
+          "raw": "@RequestBody List<FormTemplateSaveReq.FieldPerm> perms"
+        }
+      ],
+      "javadoc_params": {},
+      "return": "R<FormTemplateDetailVO>",
+      "require_perm": "\"system:form\"",
+      "audit": "module = \"system\", action = \"updateFormFieldPerm\"",
+      "deprecated": false,
+      "file": "oa-backend/oa-document/src/main/java/com/hxj/oa/document/controller/FormTemplateController.java",
+      "line": 105
+    },
+    {
+      "controller": "FormTemplateController",
+      "group_doc": "",
+      "method": "delete",
+      "verb": "DELETE",
+      "path": "/api/forms/templates/{id}",
+      "path_tmpl": "/api/forms/templates/{id}",
+      "summary": "删除模板（只允许删草稿）",
+      "desc": "",
+      "params": [
+        {
+          "name": "id",
+          "type": "Long",
+          "kind": "path",
+          "required": null,
+          "raw": "@PathVariable Long id"
+        }
+      ],
+      "javadoc_params": {},
+      "return": "R<Void>",
+      "require_perm": "\"system:form\"",
+      "audit": "module = \"system\", action = \"deleteFormTemplate\"",
+      "deprecated": false,
+      "file": "oa-backend/oa-document/src/main/java/com/hxj/oa/document/controller/FormTemplateController.java",
+      "line": 115
+    },
+    {
+      "controller": "NotificationController",
+      "group_doc": "",
+      "method": "mine",
+      "verb": "GET",
+      "path": "/api/notifications",
+      "path_tmpl": "/api/notifications",
+      "summary": "我的通知列表（最新在前，受行级数据范围约束：只能看到发给自己的）。",
+      "desc": "",
+      "params": [
+        {
+          "name": "pageNum",
+          "type": "Integer",
+          "kind": "query",
+          "required": false,
+          "raw": "@RequestParam(required = false) Integer pageNum"
+        },
+        {
+          "name": "pageSize",
+          "type": "Integer",
+          "kind": "query",
+          "required": false,
+          "raw": "@RequestParam(required = false) Integer pageSize"
+        }
+      ],
+      "javadoc_params": {
+        "pageNum": "页码，从 1 开始；不传按 1",
+        "pageSize": "每页条数；不传按 20，超过 100 按 100 处理"
+      },
+      "return": "R<PageResult<Notification>>",
+      "require_perm": "",
+      "audit": "",
+      "deprecated": false,
+      "file": "oa-backend/oa-document/src/main/java/com/hxj/oa/document/controller/NotificationController.java",
+      "line": 31
+    },
+    {
+      "controller": "NotificationController",
+      "group_doc": "",
+      "method": "unreadCount",
+      "verb": "GET",
+      "path": "/api/notifications/unread-count",
+      "path_tmpl": "/api/notifications/unread-count",
+      "summary": "我的未读数（菜单角标）",
+      "desc": "",
+      "params": [],
+      "javadoc_params": {},
+      "return": "R<Long>",
+      "require_perm": "",
+      "audit": "",
+      "deprecated": false,
+      "file": "oa-backend/oa-document/src/main/java/com/hxj/oa/document/controller/NotificationController.java",
+      "line": 38
+    },
+    {
+      "controller": "NotificationController",
+      "group_doc": "",
+      "method": "read",
+      "verb": "POST",
+      "path": "/api/notifications/{id}/read",
+      "path_tmpl": "/api/notifications/{id}/read",
+      "summary": "标记单条已读",
+      "desc": "",
+      "params": [
+        {
+          "name": "id",
+          "type": "Long",
+          "kind": "path",
+          "required": null,
+          "raw": "@PathVariable Long id"
+        }
+      ],
+      "javadoc_params": {},
+      "return": "R<Void>",
+      "require_perm": "",
+      "audit": "",
+      "deprecated": false,
+      "file": "oa-backend/oa-document/src/main/java/com/hxj/oa/document/controller/NotificationController.java",
+      "line": 44
+    },
+    {
+      "controller": "NotificationController",
+      "group_doc": "",
+      "method": "readAll",
+      "verb": "POST",
+      "path": "/api/notifications/read-all",
+      "path_tmpl": "/api/notifications/read-all",
+      "summary": "全部标记已读，返回影响条数",
+      "desc": "",
+      "params": [],
+      "javadoc_params": {},
+      "return": "R<Integer>",
+      "require_perm": "",
+      "audit": "",
+      "deprecated": false,
+      "file": "oa-backend/oa-document/src/main/java/com/hxj/oa/document/controller/NotificationController.java",
+      "line": 51
+    },
+    {
+      "controller": "RiskController",
+      "group_doc": "",
+      "method": "overview",
+      "verb": "GET",
+      "path": "/api/risks",
+      "path_tmpl": "/api/risks",
+      "summary": "当前用户可见范围内的风险总览 + 明细",
+      "desc": "",
+      "params": [],
+      "javadoc_params": {},
+      "return": "R<RiskOverviewVO>",
+      "require_perm": "",
+      "audit": "",
+      "deprecated": false,
+      "file": "oa-backend/oa-document/src/main/java/com/hxj/oa/document/controller/RiskController.java",
+      "line": 26
+    },
+    {
+      "controller": "SealController",
+      "group_doc": "",
+      "method": "page",
+      "verb": "GET",
+      "path": "/api/seals",
+      "path_tmpl": "/api/seals",
+      "summary": "用印台账分页（按用章类型 / 归还状态 / 关键字 / 创建日期区间筛选）。",
+      "desc": "",
+      "params": [
+        {
+          "name": "query",
+          "type": "SealQuery",
+          "kind": "pojo",
+          "required": null,
+          "raw": "SealQuery query"
+        }
+      ],
+      "javadoc_params": {
+        "query": "筛选与分页条件（字段见 `SealQuery}）"
+      },
+      "return": "R<PageResult<SealLedgerVO>>",
+      "require_perm": "\"document:approve:seal\"",
+      "audit": "",
+      "deprecated": false,
+      "file": "oa-backend/oa-document/src/main/java/com/hxj/oa/document/controller/SealController.java",
+      "line": 37
+    },
+    {
+      "controller": "SealController",
+      "group_doc": "",
+      "method": "byDocument",
+      "verb": "GET",
+      "path": "/api/seals/by-document/{documentId}",
+      "path_tmpl": "/api/seals/by-document/{documentId}",
+      "summary": "某张单据的用印状态 + 动作台账。",
+      "desc": "未登记用印时返回 id 为空的「待用印」视图而不是 404 —— 界面需要靠它渲染\n\"还没盖章 + 登记用印按钮\"，404 会被前端当成故障弹错。",
+      "params": [
+        {
+          "name": "documentId",
+          "type": "Long",
+          "kind": "path",
+          "required": null,
+          "raw": "@PathVariable Long documentId"
+        }
+      ],
+      "javadoc_params": {},
+      "return": "R<SealLedgerVO>",
+      "require_perm": "\"document:approve:seal\"",
+      "audit": "",
+      "deprecated": false,
+      "file": "oa-backend/oa-document/src/main/java/com/hxj/oa/document/controller/SealController.java",
+      "line": 49
+    },
+    {
+      "controller": "SealController",
+      "group_doc": "",
+      "method": "use",
+      "verb": "POST",
+      "path": "/api/seals/use",
+      "path_tmpl": "/api/seals/use",
+      "summary": "登记用印：待用印 → 已用印",
+      "desc": "",
+      "params": [
+        {
+          "name": "req",
+          "type": "SealActionReq",
+          "kind": "body",
+          "required": null,
+          "raw": "@Valid @RequestBody SealActionReq req"
+        }
+      ],
+      "javadoc_params": {},
+      "return": "R<SealLedgerVO>",
+      "require_perm": "\"document:approve:seal\"",
+      "audit": "module = \"seal\", action = \"useSeal\"",
+      "deprecated": false,
+      "file": "oa-backend/oa-document/src/main/java/com/hxj/oa/document/controller/SealController.java",
+      "line": 56
+    },
+    {
+      "controller": "SealController",
+      "group_doc": "",
+      "method": "returnSeal",
+      "verb": "POST",
+      "path": "/api/seals/return",
+      "path_tmpl": "/api/seals/return",
+      "summary": "归还：已用印 → 已归还",
+      "desc": "",
+      "params": [
+        {
+          "name": "req",
+          "type": "SealActionReq",
+          "kind": "body",
+          "required": null,
+          "raw": "@Valid @RequestBody SealActionReq req"
+        }
+      ],
+      "javadoc_params": {},
+      "return": "R<SealLedgerVO>",
+      "require_perm": "\"document:approve:seal\"",
+      "audit": "module = \"seal\", action = \"returnSeal\"",
+      "deprecated": false,
+      "file": "oa-backend/oa-document/src/main/java/com/hxj/oa/document/controller/SealController.java",
+      "line": 64
+    },
+    {
+      "controller": "TodoController",
+      "group_doc": "",
+      "method": "myTodo",
+      "verb": "GET",
+      "path": "/api/todos",
+      "path_tmpl": "/api/todos",
+      "summary": "我的待办（⚠ 不是分页接口，是「取前 N 条」，返回的是数组不是 PageResult）。",
+      "desc": "",
+      "params": [
+        {
+          "name": "limit",
+          "type": "int",
+          "kind": "query",
+          "required": true,
+          "raw": "@RequestParam(defaultValue = \"100\") int limit"
+        }
+      ],
+      "javadoc_params": {
+        "limit": "最多返回几条，默认 100"
+      },
+      "return": "R<List<TodoVO>>",
+      "require_perm": "",
+      "audit": "",
+      "deprecated": false,
+      "file": "oa-backend/oa-document/src/main/java/com/hxj/oa/document/controller/TodoController.java",
+      "line": 35
+    },
+    {
+      "controller": "TodoController",
+      "group_doc": "",
+      "method": "myDone",
+      "verb": "GET",
+      "path": "/api/todos/done",
+      "path_tmpl": "/api/todos/done",
+      "summary": "我已处理（⚠ 同上：不是分页接口，返回数组）。",
+      "desc": "",
+      "params": [
+        {
+          "name": "limit",
+          "type": "int",
+          "kind": "query",
+          "required": true,
+          "raw": "@RequestParam(defaultValue = \"50\") int limit"
+        }
+      ],
+      "javadoc_params": {
+        "limit": "最多返回几条，默认 50"
+      },
+      "return": "R<List<FlowInstanceNode>>",
+      "require_perm": "",
+      "audit": "",
+      "deprecated": false,
+      "file": "oa-backend/oa-document/src/main/java/com/hxj/oa/document/controller/TodoController.java",
+      "line": 45
+    },
+    {
+      "controller": "TodoController",
+      "group_doc": "",
+      "method": "approve",
+      "verb": "POST",
+      "path": "/api/todos/approve",
+      "path_tmpl": "/api/todos/approve",
+      "summary": "审批：通过 / 驳回 / 要求补料。",
+      "desc": "三种结局共用 action=approve 这一「类别」，具体是哪种写在审计 detail 的 reqAction 里 ——\n审计要回答的是「谁在什么时候对该单据做了审批动作、结果是什么」，两者都需要。",
+      "params": [
+        {
+          "name": "req",
+          "type": "ApprovalRequest",
+          "kind": "body",
+          "required": null,
+          "raw": "@Valid @RequestBody ApprovalRequest req"
+        }
+      ],
+      "javadoc_params": {},
+      "return": "R<FlowInstanceNode>",
+      "require_perm": "\"document:approve\"",
+      "audit": "module = \"flow\", action = \"approve\"",
+      "deprecated": false,
+      "file": "oa-backend/oa-document/src/main/java/com/hxj/oa/document/controller/TodoController.java",
+      "line": 56
+    },
+    {
+      "controller": "TodoController",
+      "group_doc": "",
+      "method": "batchApprove",
+      "verb": "POST",
+      "path": "/api/todos/batch-approve",
+      "path_tmpl": "/api/todos/batch-approve",
+      "summary": "批量通过（一次最多 50 条）。",
+      "desc": "逐条独立事务、逐条返回结果：一条因\"状态已被别人改过\"失败，\n不会把已成功的几条一起回滚 —— \"3 条通过、1 条失败\"是有用的结果，\n全回滚只会让用户白等一遍还得自己找是哪条挡住了。\n只支持通过：驳回需要单独的理由与退回目标，批量很容易误伤一整批。\n授权没有放宽：每条仍走「你是这个节点的处理人吗」那套判定，\n传别人的 taskId 只会得到该条失败。",
+      "params": [
+        {
+          "name": "req",
+          "type": "BatchApproveReq",
+          "kind": "body",
+          "required": null,
+          "raw": "@Valid @RequestBody BatchApproveReq req"
+        }
+      ],
+      "javadoc_params": {},
+      "return": "R<BatchApproveResultVO>",
+      "require_perm": "\"document:approve\"",
+      "audit": "module = \"flow\", action = \"batchApprove\"",
+      "deprecated": false,
+      "file": "oa-backend/oa-document/src/main/java/com/hxj/oa/document/controller/TodoController.java",
+      "line": 75
+    },
+    {
+      "controller": "TodoController",
+      "group_doc": "",
+      "method": "countersign",
+      "verb": "POST",
+      "path": "/api/todos/countersign",
+      "path_tmpl": "/api/todos/countersign",
+      "summary": "加签",
+      "desc": "",
+      "params": [
+        {
+          "name": "req",
+          "type": "CountersignRequest",
+          "kind": "body",
+          "required": null,
+          "raw": "@RequestBody CountersignRequest req"
+        }
+      ],
+      "javadoc_params": {},
+      "return": "R<Void>",
+      "require_perm": "\"document:approve\"",
+      "audit": "module = \"flow\", action = \"countersign\"",
+      "deprecated": false,
+      "file": "oa-backend/oa-document/src/main/java/com/hxj/oa/document/controller/TodoController.java",
+      "line": 84
+    },
+    {
+      "controller": "DelegationController",
+      "group_doc": "",
+      "method": "mine",
+      "verb": "GET",
+      "path": "/api/delegations/mine",
+      "path_tmpl": "/api/delegations/mine",
+      "summary": "我设置的委托",
+      "desc": "",
+      "params": [],
+      "javadoc_params": {},
+      "return": "R<List<DelegationVO>>",
+      "require_perm": "",
+      "audit": "",
+      "deprecated": false,
+      "file": "oa-backend/oa-flow/src/main/java/com/hxj/oa/flow/controller/DelegationController.java",
+      "line": 31
+    },
+    {
+      "controller": "DelegationController",
+      "group_doc": "",
+      "method": "toMe",
+      "verb": "GET",
+      "path": "/api/delegations/to-me",
+      "path_tmpl": "/api/delegations/to-me",
+      "summary": "委托给我的",
+      "desc": "",
+      "params": [],
+      "javadoc_params": {},
+      "return": "R<List<DelegationVO>>",
+      "require_perm": "",
+      "audit": "",
+      "deprecated": false,
+      "file": "oa-backend/oa-flow/src/main/java/com/hxj/oa/flow/controller/DelegationController.java",
+      "line": 37
+    },
+    {
+      "controller": "DelegationController",
+      "group_doc": "",
+      "method": "create",
+      "verb": "POST",
+      "path": "/api/delegations",
+      "path_tmpl": "/api/delegations",
+      "summary": "新建委托（委托人 = 当前登录用户）",
+      "desc": "",
+      "params": [
+        {
+          "name": "req",
+          "type": "DelegationSaveReq",
+          "kind": "body",
+          "required": null,
+          "raw": "@Valid @RequestBody DelegationSaveReq req"
+        }
+      ],
+      "javadoc_params": {},
+      "return": "R<DelegationVO>",
+      "require_perm": "",
+      "audit": "module = \"flow\", action = \"createDelegation\"",
+      "deprecated": false,
+      "file": "oa-backend/oa-flow/src/main/java/com/hxj/oa/flow/controller/DelegationController.java",
+      "line": 43
+    },
+    {
+      "controller": "DelegationController",
+      "group_doc": "",
+      "method": "cancel",
+      "verb": "DELETE",
+      "path": "/api/delegations/{id}",
+      "path_tmpl": "/api/delegations/{id}",
+      "summary": "撤销委托（只能撤销自己设置的）",
+      "desc": "",
+      "params": [
+        {
+          "name": "id",
+          "type": "Long",
+          "kind": "path",
+          "required": null,
+          "raw": "@PathVariable Long id"
+        }
+      ],
+      "javadoc_params": {},
+      "return": "R<Void>",
+      "require_perm": "",
+      "audit": "module = \"flow\", action = \"cancelDelegation\"",
+      "deprecated": false,
+      "file": "oa-backend/oa-flow/src/main/java/com/hxj/oa/flow/controller/DelegationController.java",
+      "line": 50
+    },
+    {
+      "controller": "FlowConfigController",
+      "group_doc": "",
+      "method": "list",
+      "verb": "GET",
+      "path": "/api/flows/configs",
+      "path_tmpl": "/api/flows/configs",
+      "summary": "------------------------------------------------------------------ 读",
+      "desc": "",
+      "params": [
+        {
+          "name": "docTypeId",
+          "type": "Long",
+          "kind": "query",
+          "required": false,
+          "raw": "@RequestParam(required = false) Long docTypeId"
+        }
+      ],
+      "javadoc_params": {},
+      "return": "R<List<FlowConfig>>",
+      "require_perm": "",
+      "audit": "",
+      "deprecated": false,
+      "file": "oa-backend/oa-flow/src/main/java/com/hxj/oa/flow/controller/FlowConfigController.java",
+      "line": 49
+    },
+    {
+      "controller": "FlowConfigController",
+      "group_doc": "",
+      "method": "detail",
+      "verb": "GET",
+      "path": "/api/flows/configs/{id}",
+      "path_tmpl": "/api/flows/configs/{id}",
+      "summary": "流程配置详情：config（配置本体）+ nodes（节点列表）+ assignees（按 nodeId 索引的**指派规则**表）。",
+      "desc": "⚠ assignees 是\"规则\"而不是\"解析出来的审批人\"。要预览某张单实际会由谁审，\n请调 `POST /configs/{id}/preview}（返回的字段是 candidateNames）。",
+      "params": [
+        {
+          "name": "id",
+          "type": "Long",
+          "kind": "path",
+          "required": null,
+          "raw": "@PathVariable Long id"
+        }
+      ],
+      "javadoc_params": {
+        "id": "流程配置 ID"
+      },
+      "return": "R<Map<String, Object>>",
+      "require_perm": "",
+      "audit": "",
+      "deprecated": false,
+      "file": "oa-backend/oa-flow/src/main/java/com/hxj/oa/flow/controller/FlowConfigController.java",
+      "line": 62
+    },
+    {
+      "controller": "FlowConfigController",
+      "group_doc": "",
+      "method": "bpmn",
+      "verb": "GET",
+      "path": "/api/flows/configs/{id}/bpmn",
+      "path_tmpl": "/api/flows/configs/{id}/bpmn",
+      "summary": "查看生成的 BPMN XML（审计与排障用）",
+      "desc": "",
+      "params": [
+        {
+          "name": "id",
+          "type": "Long",
+          "kind": "path",
+          "required": null,
+          "raw": "@PathVariable Long id"
+        }
+      ],
+      "javadoc_params": {},
+      "return": "String",
+      "require_perm": "",
+      "audit": "",
+      "deprecated": false,
+      "file": "oa-backend/oa-flow/src/main/java/com/hxj/oa/flow/controller/FlowConfigController.java",
+      "line": 74
+    },
+    {
+      "controller": "FlowConfigController",
+      "group_doc": "",
+      "method": "preview",
+      "verb": "POST",
+      "path": "/api/flows/configs/{id}/preview",
+      "path_tmpl": "/api/flows/configs/{id}/preview",
+      "summary": "流程预览：给定单据上下文，算出每个节点实际会由谁审。",
+      "desc": "applicantId 不传则用当前登录用户。",
+      "params": [
+        {
+          "name": "id",
+          "type": "Long",
+          "kind": "path",
+          "required": null,
+          "raw": "@PathVariable Long id"
+        },
+        {
+          "name": "req",
+          "type": "PreviewRequest",
+          "kind": "body",
+          "required": null,
+          "raw": "@RequestBody(required = false) PreviewRequest req"
+        }
+      ],
+      "javadoc_params": {},
+      "return": "R<FlowPreviewVO>",
+      "require_perm": "",
+      "audit": "",
+      "deprecated": false,
+      "file": "oa-backend/oa-flow/src/main/java/com/hxj/oa/flow/controller/FlowConfigController.java",
+      "line": 87
+    },
+    {
+      "controller": "FlowConfigController",
+      "group_doc": "",
+      "method": "assignees",
+      "verb": "GET",
+      "path": "/api/flows/configs/{id}/assignees",
+      "path_tmpl": "/api/flows/configs/{id}/assignees",
+      "summary": "流程节点上挂的指派规则明细",
+      "desc": "",
+      "params": [
+        {
+          "name": "id",
+          "type": "Long",
+          "kind": "path",
+          "required": null,
+          "raw": "@PathVariable Long id"
+        }
+      ],
+      "javadoc_params": {},
+      "return": "R<Map<Long, List<FlowNodeAssignee>>>",
+      "require_perm": "",
+      "audit": "",
+      "deprecated": false,
+      "file": "oa-backend/oa-flow/src/main/java/com/hxj/oa/flow/controller/FlowConfigController.java",
+      "line": 106
+    },
+    {
+      "controller": "FlowConfigController",
+      "group_doc": "",
+      "method": "nodeTemplates",
+      "verb": "GET",
+      "path": "/api/flows/node-templates",
+      "path_tmpl": "/api/flows/node-templates",
+      "summary": "可选节点模板库。",
+      "desc": "前端「审批节点」下拉用它渲染 —— 每个候选都对应后端一条确定的指派规则，\n避免用户自由输入一个名字、流程部署成功却找不到审批人。",
+      "params": [],
+      "javadoc_params": {},
+      "return": "R<List<FlowNodeTemplate.NodeTemplate>>",
+      "require_perm": "",
+      "audit": "",
+      "deprecated": false,
+      "file": "oa-backend/oa-flow/src/main/java/com/hxj/oa/flow/controller/FlowConfigController.java",
+      "line": 116
+    },
+    {
+      "controller": "FlowConfigController",
+      "group_doc": "",
+      "method": "create",
+      "verb": "POST",
+      "path": "/api/flows/configs",
+      "path_tmpl": "/api/flows/configs",
+      "summary": "------------------------------------------------------------------ 写",
+      "desc": "",
+      "params": [
+        {
+          "name": "req",
+          "type": "FlowSaveReq",
+          "kind": "body",
+          "required": null,
+          "raw": "@Valid @RequestBody FlowSaveReq req"
+        }
+      ],
+      "javadoc_params": {},
+      "return": "R<FlowConfig>",
+      "require_perm": "\"system:flow\"",
+      "audit": "module = \"flow\", action = \"createConfig\"",
+      "deprecated": false,
+      "file": "oa-backend/oa-flow/src/main/java/com/hxj/oa/flow/controller/FlowConfigController.java",
+      "line": 123
+    },
+    {
+      "controller": "FlowConfigController",
+      "group_doc": "",
+      "method": "update",
+      "verb": "PUT",
+      "path": "/api/flows/configs/{id}",
+      "path_tmpl": "/api/flows/configs/{id}",
+      "summary": "修改流程结构：新建版本 + 重新部署；在途单据仍走旧版本，不受影响",
+      "desc": "",
+      "params": [
+        {
+          "name": "id",
+          "type": "Long",
+          "kind": "path",
+          "required": null,
+          "raw": "@PathVariable Long id"
+        },
+        {
+          "name": "req",
+          "type": "FlowSaveReq",
+          "kind": "body",
+          "required": null,
+          "raw": "@Valid @RequestBody FlowSaveReq req"
+        }
+      ],
+      "javadoc_params": {},
+      "return": "R<FlowConfig>",
+      "require_perm": "\"system:flow\"",
+      "audit": "module = \"flow\", action = \"updateConfig\"",
+      "deprecated": false,
+      "file": "oa-backend/oa-flow/src/main/java/com/hxj/oa/flow/controller/FlowConfigController.java",
+      "line": 131
+    },
+    {
+      "controller": "FlowConfigController",
+      "group_doc": "",
+      "method": "updateAssignees",
+      "verb": "PUT",
+      "path": "/api/flows/configs/{id}/assignees",
+      "path_tmpl": "/api/flows/configs/{id}/assignees",
+      "summary": "只调整节点审批人：改规则表即生效，无需重新部署",
+      "desc": "",
+      "params": [
+        {
+          "name": "id",
+          "type": "Long",
+          "kind": "path",
+          "required": null,
+          "raw": "@PathVariable Long id"
+        },
+        {
+          "name": "req",
+          "type": "List<FlowConfigAdminService.NodeAssignReq>",
+          "kind": "body",
+          "required": null,
+          "raw": "@RequestBody List<FlowConfigAdminService.NodeAssignReq> req"
+        }
+      ],
+      "javadoc_params": {},
+      "return": "R<FlowConfig>",
+      "require_perm": "\"system:flow\"",
+      "audit": "module = \"flow\", action = \"updateAssignees\"",
+      "deprecated": false,
+      "file": "oa-backend/oa-flow/src/main/java/com/hxj/oa/flow/controller/FlowConfigController.java",
+      "line": 139
+    },
+    {
+      "controller": "FlowConfigController",
+      "group_doc": "",
+      "method": "deploy",
+      "verb": "POST",
+      "path": "/api/flows/configs/{id}/deploy",
+      "path_tmpl": "/api/flows/configs/{id}/deploy",
+      "summary": "手动部署到 Flowable 引擎",
+      "desc": "",
+      "params": [
+        {
+          "name": "id",
+          "type": "Long",
+          "kind": "path",
+          "required": null,
+          "raw": "@PathVariable Long id"
+        }
+      ],
+      "javadoc_params": {},
+      "return": "R<FlowConfig>",
+      "require_perm": "\"system:flow\"",
+      "audit": "module = \"flow\", action = \"deploy\"",
+      "deprecated": false,
+      "file": "oa-backend/oa-flow/src/main/java/com/hxj/oa/flow/controller/FlowConfigController.java",
+      "line": 148
+    },
+    {
+      "controller": "FlowConfigController",
+      "group_doc": "",
+      "method": "retire",
+      "verb": "DELETE",
+      "path": "/api/flows/configs/{id}",
+      "path_tmpl": "/api/flows/configs/{id}",
+      "summary": "废弃流程（有在途单据时会拒绝）",
+      "desc": "",
+      "params": [
+        {
+          "name": "id",
+          "type": "Long",
+          "kind": "path",
+          "required": null,
+          "raw": "@PathVariable Long id"
+        }
+      ],
+      "javadoc_params": {},
+      "return": "R<Void>",
+      "require_perm": "\"system:flow\"",
+      "audit": "module = \"flow\", action = \"retireConfig\"",
+      "deprecated": false,
+      "file": "oa-backend/oa-flow/src/main/java/com/hxj/oa/flow/controller/FlowConfigController.java",
+      "line": 156
+    },
+    {
+      "controller": "AuthController",
+      "group_doc": "",
+      "method": "login",
+      "verb": "POST",
+      "path": "/api/auth/login",
+      "path_tmpl": "/api/auth/login",
+      "summary": "登录。",
+      "desc": "留痕说明：本接口在 AuthInterceptor 白名单里，进控制器时还没有登录态，\n所以身份由审计切面从响应体的 `LoginResp.user} 反解（见 AuditAspect.resolveUser）。\n登录失败时 userId 为空，但 IP / UA / 失败原因照记 —— 撞库尝试正是靠这些字段发现的。\n切面**不会**记录请求体原文，明文密码不会进审计表。",
+      "params": [
+        {
+          "name": "req",
+          "type": "LoginRequest",
+          "kind": "body",
+          "required": null,
+          "raw": "@Valid @RequestBody LoginRequest req"
+        }
+      ],
+      "javadoc_params": {},
+      "return": "R<LoginResp>",
+      "require_perm": "",
+      "audit": "module = \"auth\", action = \"login\"",
+      "deprecated": false,
+      "file": "oa-backend/oa-system/src/main/java/com/hxj/oa/system/controller/AuthController.java",
+      "line": 34
+    },
+    {
+      "controller": "AuthController",
+      "group_doc": "",
+      "method": "me",
+      "verb": "GET",
+      "path": "/api/auth/me",
+      "path_tmpl": "/api/auth/me",
+      "summary": "当前登录用户（前端刷新后回填用户信息与权限）",
+      "desc": "",
+      "params": [],
+      "javadoc_params": {},
+      "return": "R<LoginUser>",
+      "require_perm": "",
+      "audit": "",
+      "deprecated": false,
+      "file": "oa-backend/oa-system/src/main/java/com/hxj/oa/system/controller/AuthController.java",
+      "line": 41
+    },
+    {
+      "controller": "AuthController",
+      "group_doc": "",
+      "method": "changePassword",
+      "verb": "PUT",
+      "path": "/api/auth/password",
+      "path_tmpl": "/api/auth/password",
+      "summary": "在 /api/** 拦截链内：必须持有效 token 才能调 —— 「本人」这个身份由 token 保证。",
+      "desc": "旧密码错误 / 新密码与旧相同会在服务端明确拒绝（见 `AuthService#changePassword}）。",
+      "params": [
+        {
+          "name": "req",
+          "type": "com.hxj.oa.system.dto.ChangePasswordReq",
+          "kind": "body",
+          "required": null,
+          "raw": "@Valid @RequestBody com.hxj.oa.system.dto.ChangePasswordReq req"
+        }
+      ],
+      "javadoc_params": {},
+      "return": "R<Void>",
+      "require_perm": "",
+      "audit": "module = \"auth\", action = \"changePassword\"",
+      "deprecated": false,
+      "file": "oa-backend/oa-system/src/main/java/com/hxj/oa/system/controller/AuthController.java",
+      "line": 52
+    },
+    {
+      "controller": "AuthController",
+      "group_doc": "",
+      "method": "menus",
+      "verb": "GET",
+      "path": "/api/auth/menus",
+      "path_tmpl": "/api/auth/menus",
+      "summary": "当前用户拥有的菜单权限点（permType=1，平铺列表，前端按 parentCode 自行组树）",
+      "desc": "",
+      "params": [],
+      "javadoc_params": {},
+      "return": "R<List<LoginResp.MenuItem>>",
+      "require_perm": "",
+      "audit": "",
+      "deprecated": false,
+      "file": "oa-backend/oa-system/src/main/java/com/hxj/oa/system/controller/AuthController.java",
+      "line": 60
+    },
+    {
+      "controller": "AuthController",
+      "group_doc": "",
+      "method": "permissions",
+      "verb": "GET",
+      "path": "/api/auth/permissions",
+      "path_tmpl": "/api/auth/permissions",
+      "summary": "权限点全量，供前端按钮级控制",
+      "desc": "",
+      "params": [],
+      "javadoc_params": {},
+      "return": "R<List<SysPermission>>",
+      "require_perm": "",
+      "audit": "",
+      "deprecated": false,
+      "file": "oa-backend/oa-system/src/main/java/com/hxj/oa/system/controller/AuthController.java",
+      "line": 66
+    },
+    {
+      "controller": "AuthController",
+      "group_doc": "",
+      "method": "logout",
+      "verb": "POST",
+      "path": "/api/auth/logout",
+      "path_tmpl": "/api/auth/logout",
+      "summary": "登出：**服务端把这一张 token 作废**（此前只是返回一句\"已登出\"，什么也没做）。",
+      "desc": "为什么改成真吊销：token 有效期 720 分钟，只清前端等于\"界面退出了、\n凭证还能用 12 小时\"。切换登录身份、共用电脑都会踩到。\n实现见 `AuthService#logout}：按 jti 拉黑，只作废当前这一张。\n头缺失或 token 已过期时**不报错** —— 登出的语义是\"尽力作废\"，\n前端随后无论如何都会清掉本地 token。",
+      "params": [
+        {
+          "name": "authorization",
+          "type": "String",
+          "kind": "header",
+          "required": null,
+          "raw": "@RequestHeader(value = \"Authorization\", required = false) String authorization"
+        }
+      ],
+      "javadoc_params": {
+        "authorization": "当前令牌，形如 `Bearer eyJ...}；不传也能调通"
+      },
+      "return": "R<Void>",
+      "require_perm": "",
+      "audit": "module = \"auth\", action = \"logout\"",
+      "deprecated": false,
+      "file": "oa-backend/oa-system/src/main/java/com/hxj/oa/system/controller/AuthController.java",
+      "line": 83
+    },
+    {
+      "controller": "DepartmentController",
+      "group_doc": "",
+      "method": "tree",
+      "verb": "GET",
+      "path": "/api/depts/tree",
+      "path_tmpl": "/api/depts/tree",
+      "summary": "部门树（按 parentId 组成 children 层级），组织架构图与「选部门」下拉用。",
+      "desc": "",
+      "params": [
+        {
+          "name": "companyId",
+          "type": "Long",
+          "kind": "query",
+          "required": false,
+          "raw": "@RequestParam(required = false) Long companyId"
+        }
+      ],
+      "javadoc_params": {
+        "companyId": "公司 ID；不传则取当前登录人的公司"
+      },
+      "return": "R<List<DeptTreeVO>>",
+      "require_perm": "",
+      "audit": "",
+      "deprecated": false,
+      "file": "oa-backend/oa-system/src/main/java/com/hxj/oa/system/controller/DepartmentController.java",
+      "line": 49
+    },
+    {
+      "controller": "DepartmentController",
+      "group_doc": "",
+      "method": "list",
+      "verb": "GET",
+      "path": "/api/depts",
+      "path_tmpl": "/api/depts",
+      "summary": "部门平铺列表（无层级结构，需要树形请用 /tree）。",
+      "desc": "",
+      "params": [
+        {
+          "name": "companyId",
+          "type": "Long",
+          "kind": "query",
+          "required": false,
+          "raw": "@RequestParam(required = false) Long companyId"
+        }
+      ],
+      "javadoc_params": {
+        "companyId": "公司 ID；不传则取当前登录人的公司"
+      },
+      "return": "R<List<Department>>",
+      "require_perm": "",
+      "audit": "",
+      "deprecated": false,
+      "file": "oa-backend/oa-system/src/main/java/com/hxj/oa/system/controller/DepartmentController.java",
+      "line": 60
+    },
+    {
+      "controller": "DepartmentController",
+      "group_doc": "",
+      "method": "create",
+      "verb": "POST",
+      "path": "/api/depts",
+      "path_tmpl": "/api/depts",
+      "summary": "新建部门。",
+      "desc": "parentId 传 null 或 0 表示一级中心；code 留空由后端按 D0xx 规则生成。\n名称、编码在同一公司内不允许重复。",
+      "params": [
+        {
+          "name": "req",
+          "type": "DeptSaveReq",
+          "kind": "body",
+          "required": null,
+          "raw": "@Valid @RequestBody DeptSaveReq req"
+        }
+      ],
+      "javadoc_params": {},
+      "return": "R<Department>",
+      "require_perm": "\"system:dept\"",
+      "audit": "module = \"system\", action = \"createDept\"",
+      "deprecated": false,
+      "file": "oa-backend/oa-system/src/main/java/com/hxj/oa/system/controller/DepartmentController.java",
+      "line": 72
+    },
+    {
+      "controller": "DepartmentController",
+      "group_doc": "",
+      "method": "update",
+      "verb": "PUT",
+      "path": "/api/depts/{id}",
+      "path_tmpl": "/api/depts/{id}",
+      "summary": "修改部门（名称 / 编码 / 负责人 / 排序 / 状态）。",
+      "desc": "⚠ 不支持调整上级部门：传了与原值不同的 parentId 会直接报错（移动部门要重写整棵\n子树的路径，做一半更危险）。调整组织架构请新建部门后迁移人员。\n⚠ 清空负责人要传 `leaderId: 0}，传 null 等于\"不改这个字段\"（不会报错）。",
+      "params": [
+        {
+          "name": "id",
+          "type": "Long",
+          "kind": "path",
+          "required": null,
+          "raw": "@PathVariable Long id"
+        },
+        {
+          "name": "req",
+          "type": "DeptSaveReq",
+          "kind": "body",
+          "required": null,
+          "raw": "@Valid @RequestBody DeptSaveReq req"
+        }
+      ],
+      "javadoc_params": {
+        "id": "部门 ID"
+      },
+      "return": "R<Department>",
+      "require_perm": "\"system:dept\"",
+      "audit": "module = \"system\", action = \"updateDept\"",
+      "deprecated": false,
+      "file": "oa-backend/oa-system/src/main/java/com/hxj/oa/system/controller/DepartmentController.java",
+      "line": 89
+    },
+    {
+      "controller": "DepartmentController",
+      "group_doc": "",
+      "method": "delete",
+      "verb": "DELETE",
+      "path": "/api/depts/{id}",
+      "path_tmpl": "/api/depts/{id}",
+      "summary": "删除部门（逻辑删除）。",
+      "desc": "三道引用守卫，任一不过都拒绝并在 msg 里说明原因：仍有子部门 / 仍有员工挂在该部门下 /\n仍挂着兼岗记录。",
+      "params": [
+        {
+          "name": "id",
+          "type": "Long",
+          "kind": "path",
+          "required": null,
+          "raw": "@PathVariable Long id"
+        }
+      ],
+      "javadoc_params": {
+        "id": "部门 ID"
+      },
+      "return": "R<Void>",
+      "require_perm": "\"system:dept\"",
+      "audit": "module = \"system\", action = \"deleteDept\"",
+      "deprecated": false,
+      "file": "oa-backend/oa-system/src/main/java/com/hxj/oa/system/controller/DepartmentController.java",
+      "line": 104
+    },
+    {
+      "controller": "DictController",
+      "group_doc": "",
+      "method": "all",
+      "verb": "GET",
+      "path": "/api/dicts",
+      "path_tmpl": "/api/dicts",
+      "summary": "全量字典（按 dictType 分组的 Map），前端启动时预热一次",
+      "desc": "",
+      "params": [],
+      "javadoc_params": {},
+      "return": "R<Map<String, List<SysDict>>>",
+      "require_perm": "",
+      "audit": "",
+      "deprecated": false,
+      "file": "oa-backend/oa-system/src/main/java/com/hxj/oa/system/controller/DictController.java",
+      "line": 38
+    },
+    {
+      "controller": "DictController",
+      "group_doc": "",
+      "method": "byType",
+      "verb": "GET",
+      "path": "/api/dicts/{dictType}",
+      "path_tmpl": "/api/dicts/{dictType}",
+      "summary": "按类型取字典项（下拉框数据源）。",
+      "desc": "",
+      "params": [
+        {
+          "name": "dictType",
+          "type": "String",
+          "kind": "path",
+          "required": null,
+          "raw": "@PathVariable String dictType"
+        }
+      ],
+      "javadoc_params": {
+        "dictType": "字典类型，如 docCategory、businessCategory"
+      },
+      "return": "R<List<SysDict>>",
+      "require_perm": "",
+      "audit": "",
+      "deprecated": false,
+      "file": "oa-backend/oa-system/src/main/java/com/hxj/oa/system/controller/DictController.java",
+      "line": 48
+    },
+    {
+      "controller": "DictController",
+      "group_doc": "",
+      "method": "create",
+      "verb": "POST",
+      "path": "/api/dicts",
+      "path_tmpl": "/api/dicts",
+      "summary": "新建字典项。",
+      "desc": "dictType + dictCode 是唯一键，重复会报错；companyId 由后端固定为 NULL（全局字典）。",
+      "params": [
+        {
+          "name": "req",
+          "type": "DictSaveReq",
+          "kind": "body",
+          "required": null,
+          "raw": "@Valid @RequestBody DictSaveReq req"
+        }
+      ],
+      "javadoc_params": {},
+      "return": "R<SysDict>",
+      "require_perm": "\"system:dict\"",
+      "audit": "module = \"system\", action = \"createDict\"",
+      "deprecated": false,
+      "file": "oa-backend/oa-system/src/main/java/com/hxj/oa/system/controller/DictController.java",
+      "line": 58
+    },
+    {
+      "controller": "DictController",
+      "group_doc": "",
+      "method": "update",
+      "verb": "PUT",
+      "path": "/api/dicts/{id}",
+      "path_tmpl": "/api/dicts/{id}",
+      "summary": "修改字典项（局部编辑：只传要改的字段）。",
+      "desc": "改了 dictType 或 dictCode 会重新查重。",
+      "params": [
+        {
+          "name": "id",
+          "type": "Long",
+          "kind": "path",
+          "required": null,
+          "raw": "@PathVariable Long id"
+        },
+        {
+          "name": "req",
+          "type": "DictSaveReq",
+          "kind": "body",
+          "required": null,
+          "raw": "@Valid @RequestBody DictSaveReq req"
+        }
+      ],
+      "javadoc_params": {
+        "id": "字典项 ID"
+      },
+      "return": "R<SysDict>",
+      "require_perm": "\"system:dict\"",
+      "audit": "module = \"system\", action = \"updateDict\"",
+      "deprecated": false,
+      "file": "oa-backend/oa-system/src/main/java/com/hxj/oa/system/controller/DictController.java",
+      "line": 72
+    },
+    {
+      "controller": "DictController",
+      "group_doc": "",
+      "method": "delete",
+      "verb": "DELETE",
+      "path": "/api/dicts/{id}",
+      "path_tmpl": "/api/dicts/{id}",
+      "summary": "删除字典项（逻辑删除）。",
+      "desc": "字典项没有引用关系，所以不做引用守卫（前端按 dictType 现取列表）。",
+      "params": [
+        {
+          "name": "id",
+          "type": "Long",
+          "kind": "path",
+          "required": null,
+          "raw": "@PathVariable Long id"
+        }
+      ],
+      "javadoc_params": {
+        "id": "字典项 ID"
+      },
+      "return": "R<Void>",
+      "require_perm": "\"system:dict\"",
+      "audit": "module = \"system\", action = \"deleteDict\"",
+      "deprecated": false,
+      "file": "oa-backend/oa-system/src/main/java/com/hxj/oa/system/controller/DictController.java",
+      "line": 86
+    },
+    {
+      "controller": "PermissionController",
+      "group_doc": "",
+      "method": "all",
+      "verb": "GET",
+      "path": "/api/permissions",
+      "path_tmpl": "/api/permissions",
+      "summary": "全量权限点，按 sortNo 排序，前端按 permType 分「菜单/按钮/接口」分组渲染",
+      "desc": "",
+      "params": [],
+      "javadoc_params": {},
+      "return": "R<List<SysPermission>>",
+      "require_perm": "value = {\"system:role\", \"system:user\"}, logic = RequirePerm.Logic.OR",
+      "audit": "",
+      "deprecated": false,
+      "file": "oa-backend/oa-system/src/main/java/com/hxj/oa/system/controller/PermissionController.java",
+      "line": 30
+    },
+    {
+      "controller": "PostController",
+      "group_doc": "",
+      "method": "list",
+      "verb": "GET",
+      "path": "/api/posts",
+      "path_tmpl": "/api/posts",
+      "summary": "岗位列表（人员管理页与「选岗位」下拉的数据源）。",
+      "desc": "",
+      "params": [
+        {
+          "name": "companyId",
+          "type": "Long",
+          "kind": "query",
+          "required": false,
+          "raw": "@RequestParam(required = false) Long companyId"
+        }
+      ],
+      "javadoc_params": {
+        "companyId": "公司 ID；不传则取当前登录人的公司"
+      },
+      "return": "R<List<Post>>",
+      "require_perm": "",
+      "audit": "",
+      "deprecated": false,
+      "file": "oa-backend/oa-system/src/main/java/com/hxj/oa/system/controller/PostController.java",
+      "line": 45
+    },
+    {
+      "controller": "PostController",
+      "group_doc": "",
+      "method": "create",
+      "verb": "POST",
+      "path": "/api/posts",
+      "path_tmpl": "/api/posts",
+      "summary": "新建岗位。编码在同一公司内不允许重复。",
+      "desc": "",
+      "params": [
+        {
+          "name": "req",
+          "type": "PostSaveReq",
+          "kind": "body",
+          "required": null,
+          "raw": "@Valid @RequestBody PostSaveReq req"
+        }
+      ],
+      "javadoc_params": {},
+      "return": "R<Post>",
+      "require_perm": "\"system:dept\"",
+      "audit": "module = \"system\", action = \"createPost\"",
+      "deprecated": false,
+      "file": "oa-backend/oa-system/src/main/java/com/hxj/oa/system/controller/PostController.java",
+      "line": 55
+    },
+    {
+      "controller": "PostController",
+      "group_doc": "",
+      "method": "update",
+      "verb": "PUT",
+      "path": "/api/posts/{id}",
+      "path_tmpl": "/api/posts/{id}",
+      "summary": "修改岗位。",
+      "desc": "",
+      "params": [
+        {
+          "name": "id",
+          "type": "Long",
+          "kind": "path",
+          "required": null,
+          "raw": "@PathVariable Long id"
+        },
+        {
+          "name": "req",
+          "type": "PostSaveReq",
+          "kind": "body",
+          "required": null,
+          "raw": "@Valid @RequestBody PostSaveReq req"
+        }
+      ],
+      "javadoc_params": {
+        "id": "岗位 ID"
+      },
+      "return": "R<Post>",
+      "require_perm": "\"system:dept\"",
+      "audit": "module = \"system\", action = \"updatePost\"",
+      "deprecated": false,
+      "file": "oa-backend/oa-system/src/main/java/com/hxj/oa/system/controller/PostController.java",
+      "line": 67
+    },
+    {
+      "controller": "PostController",
+      "group_doc": "",
+      "method": "delete",
+      "verb": "DELETE",
+      "path": "/api/posts/{id}",
+      "path_tmpl": "/api/posts/{id}",
+      "summary": "删除岗位（逻辑删除）。",
+      "desc": "仍有员工在任、或仍挂在兼岗记录上时拒绝，并在 msg 里给出人数。",
+      "params": [
+        {
+          "name": "id",
+          "type": "Long",
+          "kind": "path",
+          "required": null,
+          "raw": "@PathVariable Long id"
+        }
+      ],
+      "javadoc_params": {
+        "id": "岗位 ID"
+      },
+      "return": "R<Void>",
+      "require_perm": "\"system:dept\"",
+      "audit": "module = \"system\", action = \"deletePost\"",
+      "deprecated": false,
+      "file": "oa-backend/oa-system/src/main/java/com/hxj/oa/system/controller/PostController.java",
+      "line": 81
+    },
+    {
+      "controller": "RoleController",
+      "group_doc": "",
+      "method": "list",
+      "verb": "GET",
+      "path": "/api/roles",
+      "path_tmpl": "/api/roles",
+      "summary": "角色列表（含已配权限点与数据范围，供「配置权限」弹窗回填）。",
+      "desc": "",
+      "params": [
+        {
+          "name": "companyId",
+          "type": "Long",
+          "kind": "query",
+          "required": false,
+          "raw": "@RequestParam(required = false) Long companyId"
+        }
+      ],
+      "javadoc_params": {
+        "companyId": "公司 ID；不传则取当前登录人的公司"
+      },
+      "return": "R<List<RoleVO>>",
+      "require_perm": "",
+      "audit": "",
+      "deprecated": false,
+      "file": "oa-backend/oa-system/src/main/java/com/hxj/oa/system/controller/RoleController.java",
+      "line": 38
+    },
+    {
+      "controller": "RoleController",
+      "group_doc": "",
+      "method": "detail",
+      "verb": "GET",
+      "path": "/api/roles/{id}",
+      "path_tmpl": "/api/roles/{id}",
+      "summary": "角色详情。",
+      "desc": "",
+      "params": [
+        {
+          "name": "id",
+          "type": "Long",
+          "kind": "path",
+          "required": null,
+          "raw": "@PathVariable Long id"
+        }
+      ],
+      "javadoc_params": {
+        "id": "角色 ID"
+      },
+      "return": "R<RoleVO>",
+      "require_perm": "",
+      "audit": "",
+      "deprecated": false,
+      "file": "oa-backend/oa-system/src/main/java/com/hxj/oa/system/controller/RoleController.java",
+      "line": 49
+    },
+    {
+      "controller": "RoleController",
+      "group_doc": "",
+      "method": "create",
+      "verb": "POST",
+      "path": "/api/roles",
+      "path_tmpl": "/api/roles",
+      "summary": "新建角色。角色编码在同一公司内不允许重复。",
+      "desc": "",
+      "params": [
+        {
+          "name": "req",
+          "type": "RoleSaveReq",
+          "kind": "body",
+          "required": null,
+          "raw": "@Valid @RequestBody RoleSaveReq req"
+        }
+      ],
+      "javadoc_params": {},
+      "return": "R<RoleVO>",
+      "require_perm": "\"system:role\"",
+      "audit": "module = \"permission\", action = \"createRole\"",
+      "deprecated": false,
+      "file": "oa-backend/oa-system/src/main/java/com/hxj/oa/system/controller/RoleController.java",
+      "line": 57
+    },
+    {
+      "controller": "RoleController",
+      "group_doc": "",
+      "method": "update",
+      "verb": "PUT",
+      "path": "/api/roles/{id}",
+      "path_tmpl": "/api/roles/{id}",
+      "summary": "修改角色。",
+      "desc": "⚠ 内置角色（如 ADMIN）同样可以被修改 —— 后端目前不拦，改之前请确认影响面。",
+      "params": [
+        {
+          "name": "id",
+          "type": "Long",
+          "kind": "path",
+          "required": null,
+          "raw": "@PathVariable Long id"
+        },
+        {
+          "name": "req",
+          "type": "RoleSaveReq",
+          "kind": "body",
+          "required": null,
+          "raw": "@Valid @RequestBody RoleSaveReq req"
+        }
+      ],
+      "javadoc_params": {
+        "id": "角色 ID"
+      },
+      "return": "R<RoleVO>",
+      "require_perm": "\"system:role\"",
+      "audit": "module = \"permission\", action = \"updateRole\"",
+      "deprecated": false,
+      "file": "oa-backend/oa-system/src/main/java/com/hxj/oa/system/controller/RoleController.java",
+      "line": 71
+    },
+    {
+      "controller": "RoleController",
+      "group_doc": "",
+      "method": "updatePermissions",
+      "verb": "PUT",
+      "path": "/api/roles/{id}/permissions",
+      "path_tmpl": "/api/roles/{id}/permissions",
+      "summary": "全量覆盖角色权限点（没传的会被移除，不是增量追加）",
+      "desc": "",
+      "params": [
+        {
+          "name": "id",
+          "type": "Long",
+          "kind": "path",
+          "required": null,
+          "raw": "@PathVariable Long id"
+        },
+        {
+          "name": "req",
+          "type": "PermAssignReq",
+          "kind": "body",
+          "required": null,
+          "raw": "@RequestBody PermAssignReq req"
+        }
+      ],
+      "javadoc_params": {},
+      "return": "R<RoleVO>",
+      "require_perm": "\"system:role\"",
+      "audit": "module = \"permission\", action = \"grantPerm\"",
+      "deprecated": false,
+      "file": "oa-backend/oa-system/src/main/java/com/hxj/oa/system/controller/RoleController.java",
+      "line": 79
+    },
+    {
+      "controller": "RoleController",
+      "group_doc": "",
+      "method": "updateDataScope",
+      "verb": "PUT",
+      "path": "/api/roles/{id}/data-scope",
+      "path_tmpl": "/api/roles/{id}/data-scope",
+      "summary": "配置数据范围（行级权限）",
+      "desc": "",
+      "params": [
+        {
+          "name": "id",
+          "type": "Long",
+          "kind": "path",
+          "required": null,
+          "raw": "@PathVariable Long id"
+        },
+        {
+          "name": "req",
+          "type": "DataScopeReq",
+          "kind": "body",
+          "required": null,
+          "raw": "@RequestBody DataScopeReq req"
+        }
+      ],
+      "javadoc_params": {},
+      "return": "R<RoleVO>",
+      "require_perm": "\"system:role\"",
+      "audit": "module = \"permission\", action = \"dataScope\"",
+      "deprecated": false,
+      "file": "oa-backend/oa-system/src/main/java/com/hxj/oa/system/controller/RoleController.java",
+      "line": 87
+    },
+    {
+      "controller": "RoleController",
+      "group_doc": "",
+      "method": "delete",
+      "verb": "DELETE",
+      "path": "/api/roles/{id}",
+      "path_tmpl": "/api/roles/{id}",
+      "summary": "删除角色。",
+      "desc": "内置角色（isBuiltin=1，如 ADMIN）受保护，不可删除。",
+      "params": [
+        {
+          "name": "id",
+          "type": "Long",
+          "kind": "path",
+          "required": null,
+          "raw": "@PathVariable Long id"
+        }
+      ],
+      "javadoc_params": {
+        "id": "角色 ID"
+      },
+      "return": "R<Void>",
+      "require_perm": "\"system:role\"",
+      "audit": "module = \"permission\", action = \"deleteRole\"",
+      "deprecated": false,
+      "file": "oa-backend/oa-system/src/main/java/com/hxj/oa/system/controller/RoleController.java",
+      "line": 102
+    },
+    {
+      "controller": "UserController",
+      "group_doc": "",
+      "method": "list",
+      "verb": "GET",
+      "path": "/api/users",
+      "path_tmpl": "/api/users",
+      "summary": "当前公司用户列表（含部门名/岗位名/角色，供前端「选择审批人/被代理人」与人员管理页共用）。",
+      "desc": "刻意保留全量：选人下拉要在客户端对全量做模糊搜索，分页反而做不了；\n量级受公司规模天然约束（一家公司几千人是上限），不构成无界增长表。",
+      "params": [
+        {
+          "name": "companyId",
+          "type": "Long",
+          "kind": "query",
+          "required": false,
+          "raw": "@RequestParam(required = false) Long companyId"
+        }
+      ],
+      "javadoc_params": {
+        "companyId": "公司 ID；不传则取当前登录人的公司"
+      },
+      "return": "R<List<UserVO>>",
+      "require_perm": "",
+      "audit": "",
+      "deprecated": false,
+      "file": "oa-backend/oa-system/src/main/java/com/hxj/oa/system/controller/UserController.java",
+      "line": 44
+    },
+    {
+      "controller": "UserController",
+      "group_doc": "",
+      "method": "page",
+      "verb": "GET",
+      "path": "/api/users/page",
+      "path_tmpl": "/api/users/page",
+      "summary": "人员管理表格的分页接口（过滤与分页都在 SQL 里完成）。",
+      "desc": "与 `GET /api/users} 刻意保留两份：后者给选人下拉用，**必须**全量\n（客户端要对全量做模糊搜索）；前者给表格用，必须服务端分页。合成一个接口会顾此失彼 ——\n要么下拉搜不全人，要么表格一次把全公司拉下来。",
+      "params": [
+        {
+          "name": "pageNum",
+          "type": "Integer",
+          "kind": "query",
+          "required": false,
+          "raw": "@RequestParam(required = false) Integer pageNum"
+        },
+        {
+          "name": "pageSize",
+          "type": "Integer",
+          "kind": "query",
+          "required": false,
+          "raw": "@RequestParam(required = false) Integer pageSize"
+        },
+        {
+          "name": "keyword",
+          "type": "String",
+          "kind": "query",
+          "required": false,
+          "raw": "@RequestParam(required = false) String keyword"
+        },
+        {
+          "name": "companyId",
+          "type": "Long",
+          "kind": "query",
+          "required": false,
+          "raw": "@RequestParam(required = false) Long companyId"
+        }
+      ],
+      "javadoc_params": {
+        "pageNum": "页码，从 1 开始",
+        "pageSize": "每页条数",
+        "keyword": "按姓名 / 账号 / 工号模糊搜索",
+        "companyId": "公司 ID；不传则取当前登录人的公司"
+      },
+      "return": "R<PageResult<UserVO>>",
+      "require_perm": "\"system:user\"",
+      "audit": "",
+      "deprecated": false,
+      "file": "oa-backend/oa-system/src/main/java/com/hxj/oa/system/controller/UserController.java",
+      "line": 62
+    },
+    {
+      "controller": "UserController",
+      "group_doc": "",
+      "method": "get",
+      "verb": "GET",
+      "path": "/api/users/{id}",
+      "path_tmpl": "/api/users/{id}",
+      "summary": "人员详情（含部门 / 岗位 / 角色）。",
+      "desc": "",
+      "params": [
+        {
+          "name": "id",
+          "type": "Long",
+          "kind": "path",
+          "required": null,
+          "raw": "@PathVariable Long id"
+        }
+      ],
+      "javadoc_params": {
+        "id": "用户 ID"
+      },
+      "return": "R<UserVO>",
+      "require_perm": "",
+      "audit": "",
+      "deprecated": false,
+      "file": "oa-backend/oa-system/src/main/java/com/hxj/oa/system/controller/UserController.java",
+      "line": 78
+    },
+    {
+      "controller": "UserController",
+      "group_doc": "",
+      "method": "roles",
+      "verb": "GET",
+      "path": "/api/users/roles",
+      "path_tmpl": "/api/users/roles",
+      "summary": "可选角色列表（「调整角色」弹窗的选项数据源）。",
+      "desc": "",
+      "params": [
+        {
+          "name": "companyId",
+          "type": "Long",
+          "kind": "query",
+          "required": false,
+          "raw": "@RequestParam(required = false) Long companyId"
+        }
+      ],
+      "javadoc_params": {
+        "companyId": "公司 ID；不传则取当前登录人的公司"
+      },
+      "return": "R<List<SysRole>>",
+      "require_perm": "",
+      "audit": "",
+      "deprecated": false,
+      "file": "oa-backend/oa-system/src/main/java/com/hxj/oa/system/controller/UserController.java",
+      "line": 88
+    },
+    {
+      "controller": "UserController",
+      "group_doc": "",
+      "method": "create",
+      "verb": "POST",
+      "path": "/api/users",
+      "path_tmpl": "/api/users",
+      "summary": "新建员工。",
+      "desc": "姓名 / 工号 / 账号 / 密码必填（密码即初始密码，后端会置\"待改密\"标记，\n登录响应里的 `mustChangePassword} 会告诉前端是否弹强制改密框）。\n部门与岗位支持「传 ID 或传名称」：传了 ID 用 ID，只传名称按「公司 + 名称」反查。",
+      "params": [
+        {
+          "name": "req",
+          "type": "UserSaveReq",
+          "kind": "body",
+          "required": null,
+          "raw": "@Valid @RequestBody UserSaveReq req"
+        }
+      ],
+      "javadoc_params": {},
+      "return": "R<UserVO>",
+      "require_perm": "\"system:user\"",
+      "audit": "module = \"permission\", action = \"createUser\"",
+      "deprecated": false,
+      "file": "oa-backend/oa-system/src/main/java/com/hxj/oa/system/controller/UserController.java",
+      "line": 102
+    },
+    {
+      "controller": "UserController",
+      "group_doc": "",
+      "method": "update",
+      "verb": "PUT",
+      "path": "/api/users/{id}",
+      "path_tmpl": "/api/users/{id}",
+      "summary": "修改员工信息。",
+      "desc": "⚠ 姓名 / 工号 / 账号是 `@NotBlank}，即使只想改手机号也必须一起传\n（缺任一 → 400 参数校验失败）。密码留空表示不改密码。\n⚠ 不能改「当前登录账号自己」的启停状态与角色，会明确报错。",
+      "params": [
+        {
+          "name": "id",
+          "type": "Long",
+          "kind": "path",
+          "required": null,
+          "raw": "@PathVariable Long id"
+        },
+        {
+          "name": "req",
+          "type": "UserSaveReq",
+          "kind": "body",
+          "required": null,
+          "raw": "@Valid @RequestBody UserSaveReq req"
+        }
+      ],
+      "javadoc_params": {
+        "id": "用户 ID"
+      },
+      "return": "R<UserVO>",
+      "require_perm": "\"system:user\"",
+      "audit": "module = \"permission\", action = \"updateUser\"",
+      "deprecated": false,
+      "file": "oa-backend/oa-system/src/main/java/com/hxj/oa/system/controller/UserController.java",
+      "line": 119
+    },
+    {
+      "controller": "UserController",
+      "group_doc": "",
+      "method": "updateRoles",
+      "verb": "PUT",
+      "path": "/api/users/{id}/roles",
+      "path_tmpl": "/api/users/{id}/roles",
+      "summary": "单独调整角色（界面上的「调整角色」入口）。⚠ 全量覆盖，未传的角色会被移除",
+      "desc": "",
+      "params": [
+        {
+          "name": "id",
+          "type": "Long",
+          "kind": "path",
+          "required": null,
+          "raw": "@PathVariable Long id"
+        },
+        {
+          "name": "req",
+          "type": "RoleAssignReq",
+          "kind": "body",
+          "required": null,
+          "raw": "@RequestBody RoleAssignReq req"
+        }
+      ],
+      "javadoc_params": {},
+      "return": "R<UserVO>",
+      "require_perm": "\"system:user\"",
+      "audit": "module = \"permission\", action = \"assignRoles\"",
+      "deprecated": false,
+      "file": "oa-backend/oa-system/src/main/java/com/hxj/oa/system/controller/UserController.java",
+      "line": 127
+    },
+    {
+      "controller": "UserController",
+      "group_doc": "",
+      "method": "delete",
+      "verb": "DELETE",
+      "path": "/api/users/{id}",
+      "path_tmpl": "/api/users/{id}",
+      "summary": "停用并删除员工（逻辑删除）。",
+      "desc": "",
+      "params": [
+        {
+          "name": "id",
+          "type": "Long",
+          "kind": "path",
+          "required": null,
+          "raw": "@PathVariable Long id"
+        }
+      ],
+      "javadoc_params": {
+        "id": "用户 ID"
+      },
+      "return": "R<Void>",
+      "require_perm": "\"system:user\"",
+      "audit": "module = \"permission\", action = \"deleteUser\"",
+      "deprecated": false,
+      "file": "oa-backend/oa-system/src/main/java/com/hxj/oa/system/controller/UserController.java",
+      "line": 139
+    }
+  ],
+  "models": {
+    "AttachmentVO": {
+      "fqn": "com.hxj.oa.document.dto.AttachmentVO",
+      "kind": "class",
+      "javadoc": "附件视图对象。\n刻意不包含 `fileKey} —— 存储键是实现细节，暴露出去等于把本地路径/对象存储桶名告诉前端，\n前端一律通过附件 id 走下载接口。",
+      "fields": [
+        {
+          "name": "id",
+          "type": "Long",
+          "comment": "附件 ID（下载 / 预览 / 删除都用它）"
+        },
+        {
+          "name": "documentId",
+          "type": "Long",
+          "comment": "所属单据 ID；null = 还没挂到单据上的草稿附件（仅上传者本人可见）"
+        },
+        {
+          "name": "nodeKey",
+          "type": "String",
+          "comment": "收附件的流程节点编码（如 n2）；申请阶段的资料为 null"
+        },
+        {
+          "name": "bizType",
+          "type": "String",
+          "comment": "apply 申请资料 / approve 审批凭证 / seal 用印文件 / receipt 付款回单"
+        },
+        {
+          "name": "bizTypeName",
+          "type": "String",
+          "comment": "业务类型中文名，前端直接展示，避免再维护一份映射"
+        },
+        {
+          "name": "fileName",
+          "type": "String",
+          "comment": "原始文件名"
+        },
+        {
+          "name": "fileSize",
+          "type": "Long",
+          "comment": "文件大小（字节）"
+        },
+        {
+          "name": "sizeText",
+          "type": "String",
+          "comment": "人类可读大小，如 1.2 MB"
+        },
+        {
+          "name": "mimeType",
+          "type": "String",
+          "comment": "上传时的 Content-Type（⚠ 客户端自报值，仅供展示，不要据此决定怎么解析）"
+        },
+        {
+          "name": "uploaderId",
+          "type": "Long",
+          "comment": "上传人用户 ID"
+        },
+        {
+          "name": "uploaderName",
+          "type": "String",
+          "comment": "上传人姓名"
+        },
+        {
+          "name": "createdAt",
+          "type": "LocalDateTime",
+          "comment": "上传时间"
+        },
+        {
+          "name": "previewable",
+          "type": "Boolean",
+          "comment": "能否在浏览器内直接预览（图片 / PDF），否则前端只给下载入口"
+        }
+      ],
+      "resolved": true,
+      "super": null
+    },
+    "ResponseEntity": {
+      "fqn": null,
+      "kind": "?",
+      "javadoc": "",
+      "fields": [],
+      "resolved": false
+    },
+    "Resource": {
+      "fqn": null,
+      "kind": "?",
+      "javadoc": "",
+      "fields": [],
+      "resolved": false
+    },
+    "Void": {
+      "fqn": null,
+      "kind": "?",
+      "javadoc": "",
+      "fields": [],
+      "resolved": false
+    },
+    "PageResult": {
+      "fqn": "com.hxj.oa.common.api.PageResult",
+      "kind": "class",
+      "javadoc": "分页结果。",
+      "fields": [
+        {
+          "name": "total",
+          "type": "long",
+          "comment": "总记录数（不是当前页条数）"
+        },
+        {
+          "name": "pageNum",
+          "type": "long",
+          "comment": "当前页码，从 1 开始"
+        },
+        {
+          "name": "pageSize",
+          "type": "long",
+          "comment": "每页条数"
+        },
+        {
+          "name": "pages",
+          "type": "long",
+          "comment": "总页数"
+        },
+        {
+          "name": "records",
+          "type": "List<T>",
+          "comment": "⚠ **列表数据在这里**，不在 data 上。返回空时为 []，不会为 null"
+        }
+      ],
+      "resolved": true,
+      "super": null
+    },
+    "AuditLog": {
+      "fqn": "com.hxj.oa.document.entity.AuditLog",
+      "kind": "class",
+      "javadoc": "审计日志。\n只插入、不更新、不删除（无 updated_at / deleted），因此不继承 BaseEntity。\n生产环境该表按月分区，见 sql/schema_partition.sql。",
+      "fields": [
+        {
+          "name": "id",
+          "type": "Long",
+          "comment": "主键"
+        },
+        {
+          "name": "companyId",
+          "type": "Long",
+          "comment": "公司 ID"
+        },
+        {
+          "name": "userId",
+          "type": "Long",
+          "comment": "操作人 ID"
+        },
+        {
+          "name": "userName",
+          "type": "String",
+          "comment": "操作人姓名"
+        },
+        {
+          "name": "module",
+          "type": "String",
+          "comment": "document / flow / permission / seal"
+        },
+        {
+          "name": "action",
+          "type": "String",
+          "comment": "create / submit / approve / reject / config"
+        },
+        {
+          "name": "bizId",
+          "type": "Long",
+          "comment": "业务对象 ID（如单据 ID）；部分动作无业务对象时为 null"
+        },
+        {
+          "name": "detail",
+          "type": "String",
+          "comment": "变更明细"
+        },
+        {
+          "name": "ip",
+          "type": "String",
+          "comment": "客户端 IP"
+        },
+        {
+          "name": "userAgent",
+          "type": "String",
+          "comment": "客户端 User-Agent"
+        },
+        {
+          "name": "createdAt",
+          "type": "LocalDateTime",
+          "comment": "操作时间"
+        }
+      ],
+      "resolved": true,
+      "super": null
+    },
+    "DocumentTypeVO": {
+      "fqn": "com.hxj.oa.document.dto.DocumentTypeVO",
+      "kind": "class",
+      "javadoc": "单据类型视图对象。\n与实体 `DocumentType} 的差别是多一个 `categoryLabel}：\n业务类型的中文标签由**后端**下发，前端不再维护「DAILY→日常付款」这类\n写死映射（映射写错/漏加新类别时，前端无从得知，显示就会开天窗）。",
+      "fields": [
+        {
+          "name": "id",
+          "type": "Long",
+          "comment": "单据类型 ID"
+        },
+        {
+          "name": "companyId",
+          "type": "Long",
+          "comment": "公司 ID"
+        },
+        {
+          "name": "code",
+          "type": "String",
+          "comment": "类型编码，提单时按 ID 关联，编码仅供展示与排查"
+        },
+        {
+          "name": "name",
+          "type": "String",
+          "comment": "类型名称，如「日常付款申请」"
+        },
+        {
+          "name": "category",
+          "type": "String",
+          "comment": "业务大类编码：DAILY / BIZ / REIMBURSE / SEAL"
+        },
+        {
+          "name": "categoryLabel",
+          "type": "String",
+          "comment": "业务大类中文标签（后端下发；未知编码时原样返回编码值，前端可直接渲染）"
+        },
+        {
+          "name": "mustLinkPrev",
+          "type": "Integer",
+          "comment": "1 = 提单时必须关联前置单据（如报销必须挂合同）"
+        },
+        {
+          "name": "status",
+          "type": "Integer",
+          "comment": "1 启用 0 停用"
+        },
+        {
+          "name": "sortNo",
+          "type": "Integer",
+          "comment": "排序号，小的在前"
+        }
+      ],
+      "resolved": true,
+      "super": null
+    },
+    "DocumentCreateRequest": {
+      "fqn": "com.hxj.oa.document.dto.DocumentCreateRequest",
+      "kind": "class",
+      "javadoc": "单据创建 / 保存草稿请求",
+      "fields": [
+        {
+          "name": "docTypeId",
+          "type": "Long",
+          "comment": "单据类型 ID（取自 GET /api/document-types/enabled）"
+        },
+        {
+          "name": "formData",
+          "type": "Map<String,Object>",
+          "comment": "动态表单字段值（key 见 GET /api/forms/schema 返回的字段定义）"
+        },
+        {
+          "name": "title",
+          "type": "String",
+          "comment": "单据标题"
+        },
+        {
+          "name": "amount",
+          "type": "BigDecimal",
+          "comment": "金额（元）。⚠ 金额会影响流程条件分支的走向（如「大额走公司领导」）"
+        },
+        {
+          "name": "reason",
+          "type": "String",
+          "comment": "申请事由"
+        },
+        {
+          "name": "invoiceSummary",
+          "type": "String",
+          "comment": "发票摘要"
+        },
+        {
+          "name": "linkedDocIds",
+          "type": "List<Long>",
+          "comment": "关联的前置单据"
+        },
+        {
+          "name": "needPostMaterial",
+          "type": "Integer",
+          "comment": "是否需要事后补料（1 需要 / 0 不需要）。⚠ 目前后端未消费该字段，传了不改变流程走向"
+        },
+        {
+          "name": "priority",
+          "type": "Integer",
+          "comment": "0 普通 1 紧急"
+        }
+      ],
+      "resolved": true,
+      "super": null
+    },
+    "Document": {
+      "fqn": "com.hxj.oa.document.entity.Document",
+      "kind": "class",
+      "javadoc": "单据主表。\n高频查询字段（doc_type_id / company_id / dept_id / status / amount）已从 JSON 中提为独立列，\n避免 MySQL 上对 JSON 做业务条件查询导致全表扫。",
+      "fields": [
+        {
+          "name": "id",
+          "type": "Long",
+          "comment": "主键，数据库自增。前端做详情 / 修改 / 删除时用的就是这个 id"
+        },
+        {
+          "name": "createdAt",
+          "type": "LocalDateTime",
+          "comment": "创建时间，由数据库默认值写入，前端只读"
+        },
+        {
+          "name": "updatedAt",
+          "type": "LocalDateTime",
+          "comment": "最后更新时间，由数据库 ON UPDATE 维护，前端只读"
+        },
+        {
+          "name": "deleted",
+          "type": "Integer",
+          "comment": "⚠ 逻辑删除标记（0 未删 / 1 已删）。查询已自动过滤，前端**忽略该字段**即可"
+        },
+        {
+          "name": "docNo",
+          "type": "String",
+          "comment": "单据编号（唯一），如 FK202601010001"
+        },
+        {
+          "name": "companyId",
+          "type": "Long",
+          "comment": "所属公司 ID"
+        },
+        {
+          "name": "docTypeId",
+          "type": "Long",
+          "comment": "单据类型 ID，对应 GET /api/documents/types 返回的 id"
+        },
+        {
+          "name": "businessCategory",
+          "type": "String",
+          "comment": "DAILY / BIZ / REIMBURSE / SEAL"
+        },
+        {
+          "name": "title",
+          "type": "String",
+          "comment": "申请事项 / 对应项目"
+        },
+        {
+          "name": "applicantId",
+          "type": "Long",
+          "comment": "申请人 ID"
+        },
+        {
+          "name": "applicantName",
+          "type": "String",
+          "comment": "申请人姓名（后端冗余，列表可直接展示）"
+        },
+        {
+          "name": "deptId",
+          "type": "Long",
+          "comment": "申请部门 ID"
+        },
+        {
+          "name": "deptName",
+          "type": "String",
+          "comment": "申请部门名称（冗余）"
+        },
+        {
+          "name": "amount",
+          "type": "BigDecimal",
+          "comment": "申请金额（元）"
+        },
+        {
+          "name": "reason",
+          "type": "String",
+          "comment": "申请事由"
+        },
+        {
+          "name": "invoiceSummary",
+          "type": "String",
+          "comment": "简易发票明细"
+        },
+        {
+          "name": "formData",
+          "type": "String",
+          "comment": "动态表单字段值 JSON（按 form_template.schema_json 渲染与校验）。\n⚠ 这里是 **JSON 字符串**，不是对象，前端要 JSON.parse 一次。"
+        },
+        {
+          "name": "formTemplateId",
+          "type": "Long",
+          "comment": "表单模板 ID"
+        },
+        {
+          "name": "formTemplateVer",
+          "type": "Integer",
+          "comment": "提交时快照的表单模板版本；之后改模板不影响在途单据"
+        },
+        {
+          "name": "needPostMaterial",
+          "type": "Integer",
+          "comment": "⚠ 是否需要付款后置材料 1 是 0 否。当前后端只落库、**无任何消费逻辑**，前端仅需回显"
+        },
+        {
+          "name": "postMaterialStatus",
+          "type": "Integer",
+          "comment": "0 无需 1 待补 2 已补"
+        },
+        {
+          "name": "status",
+          "type": "Integer",
+          "comment": "0 草稿 1 待审批 2 审批中 3 已通过 4 已驳回 5 已撤回 6 已归档。⚠ **2 表示在途，不是办结**；办结看 closedAt"
+        },
+        {
+          "name": "currentNodeKey",
+          "type": "String",
+          "comment": "当前节点标识（nodeKey）；无在途流程时为 null"
+        },
+        {
+          "name": "currentNodeName",
+          "type": "String",
+          "comment": "当前节点名称，后端已翻译成中文，前端直接展示"
+        },
+        {
+          "name": "flowInstanceId",
+          "type": "Long",
+          "comment": "当前流程实例 ID；无在途流程时为 null"
+        },
+        {
+          "name": "priority",
+          "type": "Integer",
+          "comment": "紧急度 0 普通 1 紧急"
+        },
+        {
+          "name": "deadline",
+          "type": "LocalDateTime",
+          "comment": "时效截止时间（超时预警用）；未设置时限为 null"
+        },
+        {
+          "name": "submittedAt",
+          "type": "LocalDateTime",
+          "comment": "提交时间；未提交为 null"
+        },
+        {
+          "name": "closedAt",
+          "type": "LocalDateTime",
+          "comment": "*办结时间**（通过 / 驳回 / 撤回 / 归档时写入）；在途为 null"
+        },
+        {
+          "name": "createdBy",
+          "type": "Long",
+          "comment": "创建人 ID"
+        },
+        {
+          "name": "updatedBy",
+          "type": "Long",
+          "comment": "最后更新人 ID"
+        }
+      ],
+      "resolved": true,
+      "super": "BaseEntity"
+    },
+    "DocumentDetailVO": {
+      "fqn": "com.hxj.oa.document.dto.DocumentDetailVO",
+      "kind": "class",
+      "javadoc": "单据详情：单据 + 按节点裁剪的表单 + 流转记录 + 附件",
+      "fields": [
+        {
+          "name": "document",
+          "type": "Document",
+          "comment": "单据本体（含 status 状态机字段，⚠ formData 在这里是 JSON **字符串**，前端要 JSON.parse 一次）"
+        },
+        {
+          "name": "docTypeName",
+          "type": "String",
+          "comment": "单据类型名称"
+        },
+        {
+          "name": "flowName",
+          "type": "String",
+          "comment": "流程名称（定位「跑的是哪一版流程」请用这个字段匹配流程配置）"
+        },
+        {
+          "name": "flowVersion",
+          "type": "Integer",
+          "comment": "⚠ 字段名是「流程版本」，实际来源是**表单模板版本**（doc.formTemplateVer）—— 不要拿它去比对流程配置的版本"
+        },
+        {
+          "name": "viewingNodeKey",
+          "type": "String",
+          "comment": "当前节点标识（决定字段可见/可编辑）"
+        },
+        {
+          "name": "formSchema",
+          "type": "Map<String,Object>",
+          "comment": "按 viewingNodeKey 裁剪后的表单 Schema"
+        },
+        {
+          "name": "flowHistory",
+          "type": "List<FlowInstanceNode>",
+          "comment": "流转记录（时间线）"
+        },
+        {
+          "name": "availableActions",
+          "type": "List<String>",
+          "comment": "当前用户在该单据上可执行的动作：approve / reject / countersign / supplement / withdraw"
+        },
+        {
+          "name": "pendingTaskId",
+          "type": "String",
+          "comment": "当前用户待办的任务 ID（若该单据正在等他处理）"
+        },
+        {
+          "name": "requireAttachment",
+          "type": "Boolean",
+          "comment": "当前待办节点是否必须上传办理凭证（前端据此显示「(必填)」并本地拦截）"
+        },
+        {
+          "name": "attachments",
+          "type": "List<AttachmentVO>",
+          "comment": "附件列表"
+        },
+        {
+          "name": "links",
+          "type": "List<DocumentLinkVO>",
+          "comment": "关联的前置单据/合同（已补齐编号与标题，前端可直接展示）"
+        }
+      ],
+      "resolved": true,
+      "super": null
+    },
+    "DocumentQuery": {
+      "fqn": "com.hxj.oa.document.dto.DocumentQuery",
+      "kind": "class",
+      "javadoc": "单据列表查询条件",
+      "fields": [
+        {
+          "name": "docTypeId",
+          "type": "Long",
+          "comment": "单据类型 ID"
+        },
+        {
+          "name": "businessCategory",
+          "type": "String",
+          "comment": "业务大类编码（DAILY / BIZ / REIMBURSE / SEAL，标签见 GET /api/document-types/categories）"
+        },
+        {
+          "name": "status",
+          "type": "Integer",
+          "comment": "0 草稿 1 待审批 2 审批中 3 已通过 4 已驳回 5 已撤回 6 已归档；null = 不限"
+        },
+        {
+          "name": "statusList",
+          "type": "List<Integer>",
+          "comment": "多值状态（GET 传 `statusList=3,6} 即可，Spring 按逗号拆分）。\n台账页「已通过+已归档」、快捷视图「审批中+待审批」都需要多值 ——\n单值 status 满足不了，前端就只能拉 200 条本地筛，\"搜不全\"问题由此而来。\n与 `#status} 同时给时取并集语义由 service 保证（各自 in/eq，互不冲突）。"
+        },
+        {
+          "name": "applicant",
+          "type": "String",
+          "comment": "申请人姓名模糊（台账页专用筛选；搜索框的\"申请人\"走 keyword）"
+        },
+        {
+          "name": "department",
+          "type": "String",
+          "comment": "申请部门精确（页面下拉给的是部门名）"
+        },
+        {
+          "name": "docNo",
+          "type": "String",
+          "comment": "单据编号模糊（台账页\"单据编号\"筛选；like doc_no，不会误中标题/申请人）"
+        },
+        {
+          "name": "updatedAtFrom",
+          "type": "LocalDateTime",
+          "comment": "台账按「归档/最后更新时间」筛 —— 与列表列、导出口径一致"
+        },
+        {
+          "name": "updatedAtTo",
+          "type": "LocalDateTime",
+          "comment": "更新时间上限（ISO-8601，如 2026-09-30T23:59:59）"
+        },
+        {
+          "name": "keyword",
+          "type": "String",
+          "comment": "关键字（模糊匹配标题 / 单据编号 / 申请人等）"
+        },
+        {
+          "name": "amountFrom",
+          "type": "BigDecimal",
+          "comment": "金额下限（含）"
+        },
+        {
+          "name": "amountTo",
+          "type": "BigDecimal",
+          "comment": "金额上限（含）"
+        },
+        {
+          "name": "scope",
+          "type": "String",
+          "comment": "mine 我发起的 / todo 待我处理 / done 我已处理 / all 全部（按数据范围）"
+        },
+        {
+          "name": "pageNum",
+          "type": "Integer",
+          "comment": "页码，从 1 开始，默认 1"
+        },
+        {
+          "name": "pageSize",
+          "type": "Integer",
+          "comment": "每页条数，默认 20"
+        }
+      ],
+      "resolved": true,
+      "super": null
+    },
+    "DocumentStatsVO": {
+      "fqn": "com.hxj.oa.document.dto.DocumentStatsVO",
+      "kind": "class",
+      "javadoc": "单据统计（按当前登录用户的行级数据范围汇总）。\nstatus 分组口径与前端展示一一对应，刻意把两个「同类状态」合并，\n避免前端再拼一次判断逻辑（两端各写一遍必然漂移）：\n\n\n- `running} = 1 待审 + 2 审批中 → 前端「审批中」\n\n- `approved} = 3 已通过 + 6 已归档 → 前端「已通过 / 已办结」\n\n这些数字一律来自数据库聚合，不是前端拿「当前这一页列表」数出来的\n——列表只加载了一页，按列表数出来的分布是错的（页大小一改就变）。",
+      "fields": [
+        {
+          "name": "total",
+          "type": "long",
+          "comment": "全部（当前用户可见范围内）"
+        },
+        {
+          "name": "draft",
+          "type": "long",
+          "comment": "0 草稿"
+        },
+        {
+          "name": "running",
+          "type": "long",
+          "comment": "1 待审 + 2 审批中"
+        },
+        {
+          "name": "approved",
+          "type": "long",
+          "comment": "3 已通过 + 6 已归档"
+        },
+        {
+          "name": "rejected",
+          "type": "long",
+          "comment": "4 已驳回"
+        },
+        {
+          "name": "withdrawn",
+          "type": "long",
+          "comment": "5 已撤回"
+        },
+        {
+          "name": "weekTotal",
+          "type": "long",
+          "comment": "近 7 天发起量合计 = dailyCounts 各项之和"
+        }
+      ],
+      "resolved": true,
+      "super": null
+    },
+    "LedgerExportQuery": {
+      "fqn": "com.hxj.oa.document.dto.LedgerExportQuery",
+      "kind": "class",
+      "javadoc": "台账导出筛选条件。\n与「台账档案」页面的筛选栏一一对应。台账口径固定为**已通过 / 已归档**的单据\n（页面上写的「仅归档全部审批通过的单据」），因此条件里没有 status —— 不然前端能传个\nstatus=0，导出一份满是草稿的「台账」。",
+      "fields": [
+        {
+          "name": "applicant",
+          "type": "String",
+          "comment": "申请人姓名，模糊匹配"
+        },
+        {
+          "name": "department",
+          "type": "String",
+          "comment": "申请部门名称，精确匹配（页面上的下拉来自部门清单）"
+        },
+        {
+          "name": "docNo",
+          "type": "String",
+          "comment": "单据编号，模糊匹配"
+        },
+        {
+          "name": "dateFrom",
+          "type": "LocalDate",
+          "comment": "归档时间起（含当天）—— 与台账列表「归档时间」列取的是同一个字段（updated_at）"
+        },
+        {
+          "name": "dateTo",
+          "type": "LocalDate",
+          "comment": "归档时间止（含当天，内部按次日 0 点开区间处理）"
+        }
+      ],
+      "resolved": true,
+      "super": null
+    },
+    "byte": {
+      "fqn": null,
+      "kind": "?",
+      "javadoc": "",
+      "fields": [],
+      "resolved": false
+    },
+    "Map": {
+      "fqn": null,
+      "kind": "?",
+      "javadoc": "",
+      "fields": [],
+      "resolved": false
+    },
+    "String": {
+      "fqn": null,
+      "kind": "?",
+      "javadoc": "",
+      "fields": [],
+      "resolved": false
+    },
+    "DocumentTypeSaveReq": {
+      "fqn": "com.hxj.oa.document.dto.DocumentTypeSaveReq",
+      "kind": "class",
+      "javadoc": "单据类型创建/编辑请求。\ncategory} 是系统级枚举（DAILY/BIZ/REIMBURSE/SEAL），前端下拉只是\n后端白名单的回显 —— 真正的合法性校验在 `DocumentTypeAdminService}，\n注解只做第一道格式挡板（管理员不能发明新的业务大类）。",
+      "fields": [
+        {
+          "name": "code",
+          "type": "String",
+          "comment": "类型编码，如 PROCURE_REQ；创建后即被表单/流程/单据按此引用，只允许字母数字下划线"
+        },
+        {
+          "name": "name",
+          "type": "String",
+          "comment": "类型名称"
+        },
+        {
+          "name": "category",
+          "type": "String",
+          "comment": "业务大类：必须来自后端白名单，见 DocumentTypeAdminService#CATEGORY_LABELS"
+        },
+        {
+          "name": "mustLinkPrev",
+          "type": "Integer",
+          "comment": "是否必须关联前置单据：1 是 0 否"
+        },
+        {
+          "name": "status",
+          "type": "Integer",
+          "comment": "状态：1 启用 0 停用（停用后不在发起菜单出现，历史单据不受影响）"
+        },
+        {
+          "name": "sortNo",
+          "type": "Integer",
+          "comment": "排序号，小的在前"
+        }
+      ],
+      "resolved": true,
+      "super": null
+    },
+    "EscalationResultVO": {
+      "fqn": "com.hxj.oa.document.dto.EscalationResultVO",
+      "kind": "class",
+      "javadoc": "超时升级执行结果（定时与手动共用同一份统计，便于排查\"为什么没升级\"）",
+      "fields": [
+        {
+          "name": "autoEnabled",
+          "type": "boolean",
+          "comment": "自动升级开关是否打开（需求未确认前默认关闭；手动触发不受它限制）"
+        },
+        {
+          "name": "scanned",
+          "type": "int",
+          "comment": "本次扫描到的超时节点数"
+        },
+        {
+          "name": "escalated",
+          "type": "int",
+          "comment": "已升级（把上级加签进来）"
+        },
+        {
+          "name": "noLeader",
+          "type": "int",
+          "comment": "未找到上级部门负责人（已记台账，不会反复重试）"
+        },
+        {
+          "name": "alreadyEscalated",
+          "type": "int",
+          "comment": "之前已经升级过（幂等跳过）"
+        },
+        {
+          "name": "staleTask",
+          "type": "int",
+          "comment": "节点状态与引擎不一致（任务已不存在），跳过并记台账"
+        }
+      ],
+      "resolved": true,
+      "super": null
+    },
+    "FlowEscalation": {
+      "fqn": "com.hxj.oa.document.entity.FlowEscalation",
+      "kind": "class",
+      "javadoc": "超时升级台账。\nuk_escalation_node(node_id, deleted)} 是幂等的**结构性保证**：\n一个节点最多一条升级记录，重复执行只会撞唯一键（代码把撞键当作\"已升级过\"），\n比\"先查再插\"可靠 —— 后者在定时任务与手动触发并发时会重复升级。",
+      "fields": [
+        {
+          "name": "id",
+          "type": "Long",
+          "comment": "主键，数据库自增。前端做详情 / 修改 / 删除时用的就是这个 id"
+        },
+        {
+          "name": "createdAt",
+          "type": "LocalDateTime",
+          "comment": "创建时间，由数据库默认值写入，前端只读"
+        },
+        {
+          "name": "updatedAt",
+          "type": "LocalDateTime",
+          "comment": "最后更新时间，由数据库 ON UPDATE 维护，前端只读"
+        },
+        {
+          "name": "deleted",
+          "type": "Integer",
+          "comment": "⚠ 逻辑删除标记（0 未删 / 1 已删）。查询已自动过滤，前端**忽略该字段**即可"
+        },
+        {
+          "name": "companyId",
+          "type": "Long",
+          "comment": "公司 ID"
+        },
+        {
+          "name": "documentId",
+          "type": "Long",
+          "comment": "单据 ID"
+        },
+        {
+          "name": "instanceId",
+          "type": "Long",
+          "comment": "流程实例 ID"
+        },
+        {
+          "name": "nodeId",
+          "type": "Long",
+          "comment": "flow_instance_node.id"
+        },
+        {
+          "name": "nodeKey",
+          "type": "String",
+          "comment": "节点标识"
+        },
+        {
+          "name": "nodeName",
+          "type": "String",
+          "comment": "节点名称"
+        },
+        {
+          "name": "taskId",
+          "type": "String",
+          "comment": "引擎任务 ID"
+        },
+        {
+          "name": "fromAssigneeId",
+          "type": "Long",
+          "comment": "原承办人 ID"
+        },
+        {
+          "name": "toAssigneeId",
+          "type": "Long",
+          "comment": "升级给谁；未找到上级时为空"
+        },
+        {
+          "name": "status",
+          "type": "Integer",
+          "comment": "1 已升级 0 未找到上级负责人"
+        },
+        {
+          "name": "reason",
+          "type": "String",
+          "comment": "说明 / 未升级原因"
+        },
+        {
+          "name": "createdBy",
+          "type": "Long",
+          "comment": "创建人 ID"
+        },
+        {
+          "name": "updatedBy",
+          "type": "Long",
+          "comment": "最后更新人 ID"
+        }
+      ],
+      "resolved": true,
+      "super": "BaseEntity"
+    },
+    "Object": {
+      "fqn": null,
+      "kind": "?",
+      "javadoc": "",
+      "fields": [],
+      "resolved": false
+    },
+    "FormTemplate": {
+      "fqn": "com.hxj.oa.document.entity.FormTemplate",
+      "kind": "class",
+      "javadoc": "表单模板（动态表单 Schema 宿主）",
+      "fields": [
+        {
+          "name": "id",
+          "type": "Long",
+          "comment": "主键，数据库自增。前端做详情 / 修改 / 删除时用的就是这个 id"
+        },
+        {
+          "name": "createdAt",
+          "type": "LocalDateTime",
+          "comment": "创建时间，由数据库默认值写入，前端只读"
+        },
+        {
+          "name": "updatedAt",
+          "type": "LocalDateTime",
+          "comment": "最后更新时间，由数据库 ON UPDATE 维护，前端只读"
+        },
+        {
+          "name": "deleted",
+          "type": "Integer",
+          "comment": "⚠ 逻辑删除标记（0 未删 / 1 已删）。查询已自动过滤，前端**忽略该字段**即可"
+        },
+        {
+          "name": "companyId",
+          "type": "Long",
+          "comment": "所属公司 ID；null = 全局通用"
+        },
+        {
+          "name": "docTypeId",
+          "type": "Long",
+          "comment": "单据类型 ID"
+        },
+        {
+          "name": "name",
+          "type": "String",
+          "comment": "模板名称"
+        },
+        {
+          "name": "version",
+          "type": "Integer",
+          "comment": "版本号：单据提交时快照，配置变更不影响在途单据"
+        },
+        {
+          "name": "schemaJson",
+          "type": "String",
+          "comment": "表单 Schema JSON：字段定义 + 显隐规则 + 校验规则。⚠ 是字符串，前端要 JSON.parse"
+        },
+        {
+          "name": "status",
+          "type": "Integer",
+          "comment": "0 草稿 1 生效 2 废弃"
+        },
+        {
+          "name": "effectiveFrom",
+          "type": "LocalDateTime",
+          "comment": "生效开始时间；null = 立即生效"
+        },
+        {
+          "name": "effectiveTo",
+          "type": "LocalDateTime",
+          "comment": "生效结束时间；null = 长期有效"
+        },
+        {
+          "name": "createdBy",
+          "type": "Long",
+          "comment": "创建人 ID"
+        },
+        {
+          "name": "updatedBy",
+          "type": "Long",
+          "comment": "最后更新人 ID"
+        }
+      ],
+      "resolved": true,
+      "super": "BaseEntity"
+    },
+    "FormTemplateDetailVO": {
+      "fqn": "com.hxj.oa.document.dto.FormTemplateDetailVO",
+      "kind": "class",
+      "javadoc": "表单模板详情：模板本体（schema 已解析）+ 字段级权限",
+      "fields": [
+        {
+          "name": "id",
+          "type": "Long",
+          "comment": "模板 ID"
+        },
+        {
+          "name": "docTypeId",
+          "type": "Long",
+          "comment": "所属单据类型 ID"
+        },
+        {
+          "name": "docTypeName",
+          "type": "String",
+          "comment": "所属单据类型名称"
+        },
+        {
+          "name": "name",
+          "type": "String",
+          "comment": "模板名称"
+        },
+        {
+          "name": "version",
+          "type": "Integer",
+          "comment": "版本号，从 1 开始；生效版本要改必须新建版本"
+        },
+        {
+          "name": "status",
+          "type": "Integer",
+          "comment": "0 草稿 1 生效 2 废弃"
+        },
+        {
+          "name": "statusText",
+          "type": "String",
+          "comment": "状态中文名（后端下发，前端直接展示）"
+        },
+        {
+          "name": "editable",
+          "type": "Boolean",
+          "comment": "是否可编辑：只有草稿能改（生效版本要改必须新建版本，见 FormAdminService 的说明）"
+        },
+        {
+          "name": "schema",
+          "type": "Map<String,Object>",
+          "comment": "表单 Schema：{ docType, layout, fields:[{key,type,label,...}], rules:[{when,then}] }"
+        },
+        {
+          "name": "fieldPermissions",
+          "type": "List<Map<String,Object>>",
+          "comment": "字段级权限：每项含 nodeKey（* 表示全部节点）、fieldKey、visible、editable"
+        }
+      ],
+      "resolved": true,
+      "super": null
+    },
+    "FormTemplateSaveReq": {
+      "fqn": "com.hxj.oa.document.dto.FormTemplateSaveReq",
+      "kind": "class",
+      "javadoc": "表单模板保存请求（新建 / 改草稿）。\nschema 用 `Map} 而不是字符串接收：服务端必须**结构化校验**它\n（字段 key 唯一、type 在白名单内、rules 引用的字段确实存在），\n拿到一个字符串就只能当黑盒存进去 —— 而 schema 是前端渲染与提交校验的共同依据，\n写坏了表现为\"表单渲染崩\"或\"提交永远校验不过\"，都属于很难反查的那一类。",
+      "fields": [
+        {
+          "name": "docTypeId",
+          "type": "Long",
+          "comment": "所属单据类型 ID"
+        },
+        {
+          "name": "name",
+          "type": "String",
+          "comment": "模板名称"
+        },
+        {
+          "name": "schema",
+          "type": "Map<String,Object>",
+          "comment": "表单 Schema：{ docType, layout, fields:[{key,type,label,...}], rules:[{when,then}] }"
+        },
+        {
+          "name": "fieldPermissions",
+          "type": "List<FieldPerm>",
+          "comment": "字段级权限（可选，随模板一起存）。为空表示不动已有配置"
+        }
+      ],
+      "resolved": true,
+      "super": null
+    },
+    "FormTemplateSaveReq.FieldPerm": {
+      "fqn": "com.hxj.oa.document.dto.FieldPerm",
+      "kind": "class",
+      "javadoc": "字段级权限：控制「某个流程节点上、某个表单字段」是否可见 / 可编辑",
+      "fields": [
+        {
+          "name": "nodeKey",
+          "type": "String",
+          "comment": "节点标识：* 表示所有节点，其余为流程节点 key（如 n3）"
+        },
+        {
+          "name": "fieldKey",
+          "type": "String",
+          "comment": "字段标识（对应 schema.fields[].key）"
+        },
+        {
+          "name": "visible",
+          "type": "Boolean",
+          "comment": "该节点是否可见"
+        },
+        {
+          "name": "editable",
+          "type": "Boolean",
+          "comment": "该节点是否可编辑"
+        }
+      ],
+      "resolved": true,
+      "super": null
+    },
+    "Notification": {
+      "fqn": "com.hxj.oa.document.entity.Notification",
+      "kind": "class",
+      "javadoc": "站内通知",
+      "fields": [
+        {
+          "name": "id",
+          "type": "Long",
+          "comment": "主键，数据库自增。前端做详情 / 修改 / 删除时用的就是这个 id"
+        },
+        {
+          "name": "createdAt",
+          "type": "LocalDateTime",
+          "comment": "创建时间，由数据库默认值写入，前端只读"
+        },
+        {
+          "name": "updatedAt",
+          "type": "LocalDateTime",
+          "comment": "最后更新时间，由数据库 ON UPDATE 维护，前端只读"
+        },
+        {
+          "name": "deleted",
+          "type": "Integer",
+          "comment": "⚠ 逻辑删除标记（0 未删 / 1 已删）。查询已自动过滤，前端**忽略该字段**即可"
+        },
+        {
+          "name": "companyId",
+          "type": "Long",
+          "comment": "公司 ID"
+        },
+        {
+          "name": "receiverId",
+          "type": "Long",
+          "comment": "接收人用户 ID；只有本人能查自己的通知"
+        },
+        {
+          "name": "title",
+          "type": "String",
+          "comment": "通知标题"
+        },
+        {
+          "name": "content",
+          "type": "String",
+          "comment": "通知正文"
+        },
+        {
+          "name": "notifyType",
+          "type": "String",
+          "comment": "todo 待办 / cc 抄送 / risk 风险 / result 结果"
+        },
+        {
+          "name": "bizType",
+          "type": "String",
+          "comment": "业务类型 document / seal"
+        },
+        {
+          "name": "bizId",
+          "type": "Long",
+          "comment": "业务对象 ID，配合 bizType 跳转详情"
+        },
+        {
+          "name": "channel",
+          "type": "String",
+          "comment": "inner 站内 / mail 邮件 / sms 短信"
+        },
+        {
+          "name": "isRead",
+          "type": "Integer",
+          "comment": "是否已读 1 已读 0 未读"
+        },
+        {
+          "name": "readAt",
+          "type": "LocalDateTime",
+          "comment": "阅读时间；未读为 null"
+        }
+      ],
+      "resolved": true,
+      "super": "BaseEntity"
+    },
+    "Long": {
+      "fqn": null,
+      "kind": "?",
+      "javadoc": "",
+      "fields": [],
+      "resolved": false
+    },
+    "Integer": {
+      "fqn": null,
+      "kind": "?",
+      "javadoc": "",
+      "fields": [],
+      "resolved": false
+    },
+    "RiskOverviewVO": {
+      "fqn": "com.hxj.oa.document.dto.RiskOverviewVO",
+      "kind": "class",
+      "javadoc": "风险预警总览。\n「风险」在本系统里只有一种客观来源：流程节点的处理时限（sla_hours）已经或即将用尽。\n时限由 `AssigneeTaskListener} 在任务创建时写进 `flow_instance_node.deadline}，\n这里只做盘点，不重新计算规则 —— 换一套口径就会和待办页的「超期」标记对不上。",
+      "fields": [
+        {
+          "name": "overdue",
+          "type": "int",
+          "comment": "已超期节点数"
+        },
+        {
+          "name": "dueSoon",
+          "type": "int",
+          "comment": "即将到期（剩余时间小于阈值）节点数"
+        },
+        {
+          "name": "runningTotal",
+          "type": "int",
+          "comment": "进行中节点总数（含无时限的）"
+        },
+        {
+          "name": "noDeadline",
+          "type": "int",
+          "comment": "无处理时限的进行中节点数 —— 「没有时限」本身是需要披露的风险"
+        },
+        {
+          "name": "riskTotal",
+          "type": "int",
+          "comment": "超期 + 临期，前端顶部汇总用"
+        },
+        {
+          "name": "dueSoonHours",
+          "type": "int",
+          "comment": "临期判定阈值（小时），前端展示「24 小时内到期」的说明文案要与它一致"
+        }
+      ],
+      "resolved": true,
+      "super": null
+    },
+    "SealQuery": {
+      "fqn": "com.hxj.oa.document.dto.SealQuery",
+      "kind": "class",
+      "javadoc": "用印台账查询条件",
+      "fields": [
+        {
+          "name": "sealType",
+          "type": "String",
+          "comment": "用章类型（字典 seal_type：OFFICIAL/CONTRACT/LEGAL/FINANCE/INVOICE）"
+        },
+        {
+          "name": "returnStatus",
+          "type": "Integer",
+          "comment": "归还状态 0 待用印 1 已用印 2 已归还；null = 不限"
+        },
+        {
+          "name": "keyword",
+          "type": "String",
+          "comment": "关键字：匹配用印项目"
+        },
+        {
+          "name": "dateFrom",
+          "type": "String",
+          "comment": "创建时间区间（含端点），格式 yyyy-MM-dd"
+        },
+        {
+          "name": "dateTo",
+          "type": "String",
+          "comment": "创建时间上限（含端点），格式 yyyy-MM-dd"
+        },
+        {
+          "name": "pageNum",
+          "type": "Integer",
+          "comment": "页码，从 1 开始，默认 1"
+        },
+        {
+          "name": "pageSize",
+          "type": "Integer",
+          "comment": "每页条数，默认 20"
+        }
+      ],
+      "resolved": true,
+      "super": null
+    },
+    "SealLedgerVO": {
+      "fqn": "com.hxj.oa.document.dto.SealLedgerVO",
+      "kind": "class",
+      "javadoc": "用印台账行（申请 + 关联单据的可读信息）。\n刻意把单据的 `docNo/title/applicantName} 带出来：印章管理岗看台账时，\n关心的是\"哪张单、谁申请的、盖什么章、还没还\"，而不是一串 id。",
+      "fields": [
+        {
+          "name": "id",
+          "type": "Long",
+          "comment": "seal_apply.id。**为 null 表示该单据还没有登记过用印**（见 by-document 接口）"
+        },
+        {
+          "name": "documentId",
+          "type": "Long",
+          "comment": "关联单据 ID"
+        },
+        {
+          "name": "docNo",
+          "type": "String",
+          "comment": "单据编号"
+        },
+        {
+          "name": "title",
+          "type": "String",
+          "comment": "单据标题"
+        },
+        {
+          "name": "applicantName",
+          "type": "String",
+          "comment": "申请人姓名"
+        },
+        {
+          "name": "deptName",
+          "type": "String",
+          "comment": "申请部门名称"
+        },
+        {
+          "name": "sealProject",
+          "type": "String",
+          "comment": "用印项目（盖什么文件 / 什么用途）"
+        },
+        {
+          "name": "sealType",
+          "type": "String",
+          "comment": "用章类型编码（字典 seal_type）"
+        },
+        {
+          "name": "sealTypeName",
+          "type": "String",
+          "comment": "用章类型中文名（来自字典 seal_type），前端直接展示"
+        },
+        {
+          "name": "sealReason",
+          "type": "String",
+          "comment": "用印事由"
+        },
+        {
+          "name": "fileName",
+          "type": "String",
+          "comment": "用印文件名"
+        },
+        {
+          "name": "sealTime",
+          "type": "LocalDateTime",
+          "comment": "用印时间"
+        },
+        {
+          "name": "returnStatus",
+          "type": "Integer",
+          "comment": "0 待用印 1 已用印 2 已归还"
+        },
+        {
+          "name": "returnStatusText",
+          "type": "String",
+          "comment": "归还状态中文名（后端下发，前端直接展示）"
+        },
+        {
+          "name": "returnAt",
+          "type": "LocalDateTime",
+          "comment": "归还时间"
+        },
+        {
+          "name": "createdAt",
+          "type": "LocalDateTime",
+          "comment": "申请创建时间"
+        },
+        {
+          "name": "records",
+          "type": "List<SealRecord>",
+          "comment": "用印/归还动作台账，**仅详情接口填充**（列表接口为 null，避免 N+1 拉一堆动作）"
+        }
+      ],
+      "resolved": true,
+      "super": null
+    },
+    "SealActionReq": {
+      "fqn": "com.hxj.oa.document.dto.SealActionReq",
+      "kind": "class",
+      "javadoc": "用印 / 归还动作请求。\n以 `documentId} 为主键而非 seal_apply.id：界面上的操作人是在**单据**上点\n「登记用印」「归还」的，他手里只有单据；用印申请行由服务端按需派生（见\nSealService#act}）。这样前端不需要先查一次\"这张单有没有用印申请行\"，\n也就不会出现\"没查到 → 报 404\"这种把正常业务说成故障的体验。",
+      "fields": [
+        {
+          "name": "documentId",
+          "type": "Long",
+          "comment": "单据 ID（界面是在**单据**上点「登记用印」「归还」，不是用印申请行 ID）"
+        },
+        {
+          "name": "remark",
+          "type": "String",
+          "comment": "备注（台账里留痕，例如\"已当面归还\"）"
+        }
+      ],
+      "resolved": true,
+      "super": null
+    },
+    "TodoVO": {
+      "fqn": "com.hxj.oa.flow.dto.TodoVO",
+      "kind": "class",
+      "javadoc": "待办/已办条目",
+      "fields": [
+        {
+          "name": "documentId",
+          "type": "Long",
+          "comment": "单据 ID（点开详情用 GET /api/documents/{id}）"
+        },
+        {
+          "name": "docNo",
+          "type": "String",
+          "comment": "单据编号"
+        },
+        {
+          "name": "docTypeName",
+          "type": "String",
+          "comment": "单据类型名称，如「日常付款申请」"
+        },
+        {
+          "name": "businessCategory",
+          "type": "String",
+          "comment": "业务大类编码（中文标签取 GET /api/document-types/categories）"
+        },
+        {
+          "name": "title",
+          "type": "String",
+          "comment": "单据标题"
+        },
+        {
+          "name": "applicantName",
+          "type": "String",
+          "comment": "申请人姓名"
+        },
+        {
+          "name": "deptName",
+          "type": "String",
+          "comment": "申请人部门名称"
+        },
+        {
+          "name": "amount",
+          "type": "BigDecimal",
+          "comment": "金额（元）"
+        },
+        {
+          "name": "instanceId",
+          "type": "Long",
+          "comment": "流程侧信息"
+        },
+        {
+          "name": "nodeKey",
+          "type": "String",
+          "comment": "当前节点编码，如 n2"
+        },
+        {
+          "name": "nodeName",
+          "type": "String",
+          "comment": "当前节点名称，如「直属部门负责人」"
+        },
+        {
+          "name": "taskId",
+          "type": "String",
+          "comment": "审批任务 ID（调 /api/todos/approve、/countersign 时回传）"
+        },
+        {
+          "name": "nodeStatus",
+          "type": "Integer",
+          "comment": "节点状态：0 待处理 1 处理中 2 已通过 3 已驳回 4 已跳过 5 已抄送 6 已撤回"
+        },
+        {
+          "name": "deadline",
+          "type": "LocalDateTime",
+          "comment": "该节点要求完成的时间（可能为 null）"
+        },
+        {
+          "name": "overdue",
+          "type": "boolean",
+          "comment": "是否已超时"
+        },
+        {
+          "name": "submittedAt",
+          "type": "LocalDateTime",
+          "comment": "提交时间"
+        },
+        {
+          "name": "assigneeId",
+          "type": "Long",
+          "comment": "该待办原本的承办人（代办的场景下与当前登录用户不同）"
+        },
+        {
+          "name": "onBehalfOf",
+          "type": "String",
+          "comment": "代谁办理；null = 这是自己的待办"
+        },
+        {
+          "name": "viaCandidate",
+          "type": "boolean",
+          "comment": "是否只是「候选人」（既不是我的待办、也不是委托给我的）。\n典型来源：**超时升级**把上级加签成候选人 —— 不加这个标记的话，\n升级进来的待办会与\"自己的待办\"长得一模一样，界面无从区分。"
+        },
+        {
+          "name": "allowCountersign",
+          "type": "boolean",
+          "comment": "是否允许加签"
+        },
+        {
+          "name": "allowReject",
+          "type": "boolean",
+          "comment": "是否允许驳回"
+        },
+        {
+          "name": "requireAttachment",
+          "type": "boolean",
+          "comment": "该节点是否必须上传办理凭证（前端据此决定是否显示「(必填)」并本地拦截）"
+        }
+      ],
+      "resolved": true,
+      "super": null
+    },
+    "FlowInstanceNode": {
+      "fqn": "com.hxj.oa.flow.entity.FlowInstanceNode",
+      "kind": "class",
+      "javadoc": "流程节点实例（审批记录 + 待办投影）",
+      "fields": [
+        {
+          "name": "id",
+          "type": "Long",
+          "comment": "主键，数据库自增。前端做详情 / 修改 / 删除时用的就是这个 id"
+        },
+        {
+          "name": "createdAt",
+          "type": "LocalDateTime",
+          "comment": "创建时间，由数据库默认值写入，前端只读"
+        },
+        {
+          "name": "updatedAt",
+          "type": "LocalDateTime",
+          "comment": "最后更新时间，由数据库 ON UPDATE 维护，前端只读"
+        },
+        {
+          "name": "deleted",
+          "type": "Integer",
+          "comment": "⚠ 逻辑删除标记（0 未删 / 1 已删）。查询已自动过滤，前端**忽略该字段**即可"
+        },
+        {
+          "name": "instanceId",
+          "type": "Long",
+          "comment": "流程实例 ID"
+        },
+        {
+          "name": "documentId",
+          "type": "Long",
+          "comment": "单据 ID（冗余，便于直接按单据查审批记录）"
+        },
+        {
+          "name": "nodeKey",
+          "type": "String",
+          "comment": "节点标识（nodeKey），如 n1 / n2"
+        },
+        {
+          "name": "nodeName",
+          "type": "String",
+          "comment": "节点名称，如「核算会计」"
+        },
+        {
+          "name": "nodeType",
+          "type": "Integer",
+          "comment": "节点类型 1 审批 2 抄送 3 条件网关 4 办理 5 发起"
+        },
+        {
+          "name": "seqNo",
+          "type": "Integer",
+          "comment": "节点顺序号，按流程顺序递增（前端按此排序展示审批时间线）"
+        },
+        {
+          "name": "status",
+          "type": "Integer",
+          "comment": "0 待处理 1 处理中 2 已通过 3 已驳回 4 已跳过 5 已抄送 6 已撤回"
+        },
+        {
+          "name": "assigneeId",
+          "type": "Long",
+          "comment": "实际处理人 ID；未处理为 null"
+        },
+        {
+          "name": "assigneeName",
+          "type": "String",
+          "comment": "实际处理人姓名"
+        },
+        {
+          "name": "candidateIds",
+          "type": "String",
+          "comment": "候选处理人 ID 集合 JSON（会签/或签场景）"
+        },
+        {
+          "name": "taskId",
+          "type": "String",
+          "comment": "Flowable 任务 ID"
+        },
+        {
+          "name": "nodeSource",
+          "type": "Integer",
+          "comment": "1 引擎投影 2 手工补录"
+        },
+        {
+          "name": "action",
+          "type": "String",
+          "comment": "处理动作 approve / reject / countersign / supplement / cc；未处理为 null"
+        },
+        {
+          "name": "commentText",
+          "type": "String",
+          "comment": "审批意见（列名是 comment_text，因为 comment 是保留字）"
+        },
+        {
+          "name": "rejectLevel",
+          "type": "String",
+          "comment": "驳回目标层级（驳回动作才有值）"
+        },
+        {
+          "name": "materials",
+          "type": "String",
+          "comment": "要求补充的材料说明"
+        },
+        {
+          "name": "deadline",
+          "type": "LocalDateTime",
+          "comment": "本节点处理时限；未设置为 null"
+        },
+        {
+          "name": "actionAt",
+          "type": "LocalDateTime",
+          "comment": "处理时间；未处理为 null"
+        }
+      ],
+      "resolved": true,
+      "super": "BaseEntity"
+    },
+    "ApprovalRequest": {
+      "fqn": "com.hxj.oa.flow.dto.ApprovalRequest",
+      "kind": "class",
+      "javadoc": "审批动作请求",
+      "fields": [
+        {
+          "name": "taskId",
+          "type": "String",
+          "comment": "Flowable 任务 ID"
+        },
+        {
+          "name": "action",
+          "type": "String",
+          "comment": "approve 通过 / reject 驳回"
+        },
+        {
+          "name": "comment",
+          "type": "String",
+          "comment": "审批意见"
+        },
+        {
+          "name": "rejectTo",
+          "type": "String",
+          "comment": "驳回目标。**只有两种行为**，别按名字想当然：\n\n\n- 不传 / 空 / `START} → 终止当前流程实例，退回发起人（改后需重新提交）\n\n- `nodeKey}（如 `n3}）→ 用 changeState **跳回该节点**，由该节点审批人重审\n\n⚠ `PREV} 名义上是\"上一节点\"，但**当前实现与 `START} 等价**\n（见 `FlowRuntimeService.doReject}：PREV 与 START 一起被排除在\"跳回指定节点\"之外）。\n需要\"退回上一节点\"时请传具体 nodeKey，不要传 PREV。"
+        },
+        {
+          "name": "countersignUserId",
+          "type": "Long",
+          "comment": "加签：把某人加入当前任务候选人"
+        },
+        {
+          "name": "materials",
+          "type": "String",
+          "comment": "要求补充的材料说明（会退回发起人并标记待补材料）"
+        }
+      ],
+      "resolved": true,
+      "super": null
+    },
+    "BatchApproveReq": {
+      "fqn": "com.hxj.oa.document.dto.BatchApproveReq",
+      "kind": "class",
+      "javadoc": "批量审批请求。\n刻意只支持「通过」，不提供批量驳回：驳回需要单独的理由与退回目标\n（上一节点 / 退回发起人 / 指定节点），批量操作很容易误伤一整批单据，\n而事后逐条纠正的成本远高于逐条驳回的成本。要驳回请走单条接口。\n没有 `action} 字段也是这个意思 —— 让\"这个接口只能通过\"成为类型层面的事实，\n而不是运行时才校验的约定。",
+      "fields": [
+        {
+          "name": "taskIds",
+          "type": "List<String>",
+          "comment": "要审批的任务 ID 列表（来自 GET /api/todos 的 taskId），一次最多 50 条"
+        },
+        {
+          "name": "comment",
+          "type": "String",
+          "comment": "统一审批意见（可选，会写进每条任务的审批记录）"
+        }
+      ],
+      "resolved": true,
+      "super": null
+    },
+    "BatchApproveResultVO": {
+      "fqn": "com.hxj.oa.document.dto.BatchApproveResultVO",
+      "kind": "class",
+      "javadoc": "批量审批结果：**逐条返回**成败与原因。\n为什么不搞\"全成功才提交\"：OA 里\"3 条通过、1 条因状态已变而失败\"是很有用的结果 ——\n全回滚会让用户白等一遍，还得自己找出是哪一条挡住了。逐条返回让用户看到\n\"哪条成功了、哪条为什么没成功\"，剩下的单独处理即可。",
+      "fields": [
+        {
+          "name": "total",
+          "type": "int",
+          "comment": "本次请求的任务总数"
+        },
+        {
+          "name": "succeeded",
+          "type": "int",
+          "comment": "处理成功条数（HTTP 仍是 200 + code=0，是否成功看这里）"
+        },
+        {
+          "name": "failed",
+          "type": "int",
+          "comment": "处理失败条数"
+        }
+      ],
+      "resolved": true,
+      "super": null
+    },
+    "CountersignRequest": {
+      "fqn": "com.hxj.oa.document.controller.CountersignRequest",
+      "kind": "class",
+      "javadoc": "加签请求",
+      "fields": [
+        {
+          "name": "taskId",
+          "type": "String",
+          "comment": "当前待办任务 ID（来自 GET /api/todos 的 taskId）"
+        },
+        {
+          "name": "userId",
+          "type": "Long",
+          "comment": "要加签进去的用户 ID"
+        }
+      ],
+      "resolved": true,
+      "super": null
+    },
+    "DelegationVO": {
+      "fqn": "com.hxj.oa.flow.dto.DelegationVO",
+      "kind": "class",
+      "javadoc": "委托条目（带出姓名，便于界面直接展示）",
+      "fields": [
+        {
+          "name": "id",
+          "type": "Long",
+          "comment": "委托 ID"
+        },
+        {
+          "name": "delegatorId",
+          "type": "Long",
+          "comment": "委托人（把审批权交出去的人）用户 ID"
+        },
+        {
+          "name": "delegatorName",
+          "type": "String",
+          "comment": "委托人姓名"
+        },
+        {
+          "name": "delegateId",
+          "type": "Long",
+          "comment": "受托人（替人审批的人）用户 ID"
+        },
+        {
+          "name": "delegateName",
+          "type": "String",
+          "comment": "受托人姓名"
+        },
+        {
+          "name": "bizCategory",
+          "type": "String",
+          "comment": "限定的业务类别编码；null = 全部类别"
+        },
+        {
+          "name": "bizCategoryText",
+          "type": "String",
+          "comment": "业务类别中文名（后端下发，前端直接展示）"
+        },
+        {
+          "name": "startAt",
+          "type": "LocalDateTime",
+          "comment": "生效开始时间"
+        },
+        {
+          "name": "endAt",
+          "type": "LocalDateTime",
+          "comment": "生效结束时间"
+        },
+        {
+          "name": "status",
+          "type": "Integer",
+          "comment": "1 生效 0 已撤销"
+        },
+        {
+          "name": "remark",
+          "type": "String",
+          "comment": "说明 / 委托原因"
+        },
+        {
+          "name": "active",
+          "type": "boolean",
+          "comment": "此刻是否在有效期内（含 status=1）"
+        },
+        {
+          "name": "createdAt",
+          "type": "LocalDateTime",
+          "comment": "创建时间"
+        }
+      ],
+      "resolved": true,
+      "super": null
+    },
+    "DelegationSaveReq": {
+      "fqn": "com.hxj.oa.flow.dto.DelegationSaveReq",
+      "kind": "class",
+      "javadoc": "新建审批委托。**委托人固定为当前登录用户**，请求里没有 delegatorId 字段 ——\n让别人替你设置\"我把权限交给谁\"本身就是越权，用字段缺失来表达比运行时校验更硬。",
+      "fields": [
+        {
+          "name": "delegateId",
+          "type": "Long",
+          "comment": "受托人（代理人）用户 ID"
+        },
+        {
+          "name": "bizCategory",
+          "type": "String",
+          "comment": "限定单据业务类别（SEAL/DAILY/REIMBURSE...）；留空 = 全部"
+        },
+        {
+          "name": "startAt",
+          "type": "LocalDateTime",
+          "comment": "生效开始时间（ISO-8601，如 2026-09-24T09:00:00）"
+        },
+        {
+          "name": "endAt",
+          "type": "LocalDateTime",
+          "comment": "生效结束时间（ISO-8601）"
+        },
+        {
+          "name": "remark",
+          "type": "String",
+          "comment": "说明 / 委托原因"
+        }
+      ],
+      "resolved": true,
+      "super": null
+    },
+    "FlowConfig": {
+      "fqn": "com.hxj.oa.flow.entity.FlowConfig",
+      "kind": "class",
+      "javadoc": "流程定义（业务配置层）。\n这是业务方视角的「流程模板」，Flowable 是实现引擎；\nflow_config_node + flow_node_assignee 是配置源，bpmn_xml 是生成的引擎产物。",
+      "fields": [
+        {
+          "name": "id",
+          "type": "Long",
+          "comment": "主键，数据库自增。前端做详情 / 修改 / 删除时用的就是这个 id"
+        },
+        {
+          "name": "createdAt",
+          "type": "LocalDateTime",
+          "comment": "创建时间，由数据库默认值写入，前端只读"
+        },
+        {
+          "name": "updatedAt",
+          "type": "LocalDateTime",
+          "comment": "最后更新时间，由数据库 ON UPDATE 维护，前端只读"
+        },
+        {
+          "name": "deleted",
+          "type": "Integer",
+          "comment": "⚠ 逻辑删除标记（0 未删 / 1 已删）。查询已自动过滤，前端**忽略该字段**即可"
+        },
+        {
+          "name": "companyId",
+          "type": "Long",
+          "comment": "所属公司 ID；null = 全局配置"
+        },
+        {
+          "name": "docTypeId",
+          "type": "Long",
+          "comment": "单据类型 ID —— 流程是「按单据类型」生效的"
+        },
+        {
+          "name": "name",
+          "type": "String",
+          "comment": "流程名称"
+        },
+        {
+          "name": "category",
+          "type": "String",
+          "comment": "DAILY / BIZ / REIMBURSE / SEAL"
+        },
+        {
+          "name": "version",
+          "type": "Integer",
+          "comment": "版本号：单据提交时快照，在途单据不受配置变更影响"
+        },
+        {
+          "name": "status",
+          "type": "Integer",
+          "comment": "0 草稿 1 生效 2 废弃"
+        },
+        {
+          "name": "effectiveFrom",
+          "type": "LocalDateTime",
+          "comment": "生效开始时间；null = 立即生效"
+        },
+        {
+          "name": "effectiveTo",
+          "type": "LocalDateTime",
+          "comment": "生效结束时间；null = 长期有效"
+        },
+        {
+          "name": "engineType",
+          "type": "String",
+          "comment": "flowable / native"
+        },
+        {
+          "name": "procDefKey",
+          "type": "String",
+          "comment": "Flowable 流程定义 KEY，如 DAILY_PAYMENT_V1（每次改结构都会新建版本）"
+        },
+        {
+          "name": "procDefId",
+          "type": "String",
+          "comment": "Flowable 流程定义 ID（形如 key:version:id），部署后回填"
+        },
+        {
+          "name": "deploymentId",
+          "type": "String",
+          "comment": "Flowable 部署 ID"
+        },
+        {
+          "name": "bpmnXml",
+          "type": "String",
+          "comment": "BPMN 2.0 XML 快照（由 flow_config_node 生成，可重部署 / 可审计）。\n⚠ 内容很大（每份可能几十 KB）。`GET /api/flows/configs} 目前**会带上该字段**，\n前端列表渲染前请丢弃它，别塞进表格 / 本地缓存。"
+        },
+        {
+          "name": "deployStatus",
+          "type": "Integer",
+          "comment": "部署状态 0 未部署 1 已部署 2 部署失败"
+        },
+        {
+          "name": "deployMessage",
+          "type": "String",
+          "comment": "部署失败原因；成功时为 null"
+        },
+        {
+          "name": "createdBy",
+          "type": "Long",
+          "comment": "创建人 ID"
+        },
+        {
+          "name": "updatedBy",
+          "type": "Long",
+          "comment": "最后更新人 ID"
+        }
+      ],
+      "resolved": true,
+      "super": "BaseEntity"
+    },
+    "PreviewRequest": {
+      "fqn": "com.hxj.oa.flow.controller.PreviewRequest",
+      "kind": "class",
+      "javadoc": "流程预览入参：用「这份表单的上下文」试算会走到哪些节点、每步谁审",
+      "fields": [
+        {
+          "name": "applicantId",
+          "type": "Long",
+          "comment": "申请人用户 ID；不传则按当前登录人算"
+        },
+        {
+          "name": "bizCategory",
+          "type": "String",
+          "comment": "业务大类 DAILY / BIZ / REIMBURSE / SEAL，影响条件分支取值"
+        },
+        {
+          "name": "amount",
+          "type": "BigDecimal",
+          "comment": "金额（元），条件分支表达式里的 doc.amount 取自这里"
+        },
+        {
+          "name": "formData",
+          "type": "Map<String,Object>",
+          "comment": "动态表单字段值，条件分支可据此判断"
+        }
+      ],
+      "resolved": true,
+      "super": null
+    },
+    "FlowPreviewVO": {
+      "fqn": "com.hxj.oa.flow.dto.FlowPreviewVO",
+      "kind": "class",
+      "javadoc": "流程预览：把配置链路 + 每个节点「实际会由谁审」一次算给前端",
+      "fields": [
+        {
+          "name": "flowConfigId",
+          "type": "Long",
+          "comment": "流程配置 ID"
+        },
+        {
+          "name": "flowName",
+          "type": "String",
+          "comment": "流程名称"
+        },
+        {
+          "name": "procDefKey",
+          "type": "String",
+          "comment": "流程定义 key（部署到引擎后的 procDefKey）"
+        },
+        {
+          "name": "version",
+          "type": "Integer",
+          "comment": "流程配置版本号"
+        },
+        {
+          "name": "deployStatus",
+          "type": "Integer",
+          "comment": "部署状态：0 未部署 1 已部署 2 已废弃"
+        },
+        {
+          "name": "nodes",
+          "type": "List<NodePreview>",
+          "comment": "节点列表（**完整配置链路**，条件分支的两侧目标都会返回，不按金额裁剪）"
+        }
+      ],
+      "resolved": true,
+      "super": null
+    },
+    "FlowNodeAssignee": {
+      "fqn": "com.hxj.oa.flow.entity.FlowNodeAssignee",
+      "kind": "class",
+      "javadoc": "节点指派规则。节点不挂「允许角色」，而挂「指派规则」，\n运行时按单据上下文解析出真正的处理人。",
+      "fields": [
+        {
+          "name": "id",
+          "type": "Long",
+          "comment": "主键，数据库自增。前端做详情 / 修改 / 删除时用的就是这个 id"
+        },
+        {
+          "name": "createdAt",
+          "type": "LocalDateTime",
+          "comment": "创建时间，由数据库默认值写入，前端只读"
+        },
+        {
+          "name": "updatedAt",
+          "type": "LocalDateTime",
+          "comment": "最后更新时间，由数据库 ON UPDATE 维护，前端只读"
+        },
+        {
+          "name": "deleted",
+          "type": "Integer",
+          "comment": "⚠ 逻辑删除标记（0 未删 / 1 已删）。查询已自动过滤，前端**忽略该字段**即可"
+        },
+        {
+          "name": "nodeId",
+          "type": "Long",
+          "comment": "流程节点定义 ID（flow_config_node.id）"
+        },
+        {
+          "name": "ruleType",
+          "type": "String",
+          "comment": "initiator_leader 发起人主管 / dept_role 部门+角色 / biztype_role 业务类型+角色\nrole 指定角色 / user 指定人 / condition 条件触发"
+        },
+        {
+          "name": "ruleValue",
+          "type": "String",
+          "comment": "规则参数 JSON，如 {\"roleCode\":\"ACCOUNTANT\",\"fallback\":\"company\"}"
+        },
+        {
+          "name": "signMode",
+          "type": "Integer",
+          "comment": "1 或签 2 会签 3 依次审批"
+        },
+        {
+          "name": "sortNo",
+          "type": "Integer",
+          "comment": "同级规则排序号"
+        }
+      ],
+      "resolved": true,
+      "super": "BaseEntity"
+    },
+    "FlowNodeTemplate.NodeTemplate": {
+      "fqn": "com.hxj.oa.flow.service.NodeTemplate",
+      "kind": "class",
+      "javadoc": "节点模板：前端下拉直接用它渲染，每个候选都对应一条确定的规则",
+      "fields": [
+        {
+          "name": "name",
+          "type": "String",
+          "comment": "节点名称（中文，客户看到的）"
+        },
+        {
+          "name": "nodeType",
+          "type": "Integer",
+          "comment": "1 审批 2 抄送 3 条件分支 4 办理 5 发起"
+        },
+        {
+          "name": "nodeTypeLabel",
+          "type": "String",
+          "comment": "节点类型的中文名，前端直接展示"
+        },
+        {
+          "name": "ruleType",
+          "type": "String",
+          "comment": "指派规则类型，见 rule_type 取值"
+        },
+        {
+          "name": "ruleValue",
+          "type": "String",
+          "comment": "规则参数 JSON"
+        },
+        {
+          "name": "ruleLabel",
+          "type": "String",
+          "comment": "规则的人话说明"
+        },
+        {
+          "name": "slaHours",
+          "type": "Double",
+          "comment": "处理时限（小时）"
+        },
+        {
+          "name": "allowCountersign",
+          "type": "Boolean",
+          "comment": "该节点是否允许加签"
+        },
+        {
+          "name": "requireAttachment",
+          "type": "Boolean",
+          "comment": "是否必须上传办理凭证：办理类节点（出纳付款回单、用印盖章件）默认为真"
+        },
+        {
+          "name": "branches",
+          "type": "List<Branch>",
+          "comment": "条件分支节点已解析好的分支（target 已是最终 nodeKey）。\n仅 `nodeType=3} 的节点会有值，其余节点为 null。"
+        }
+      ],
+      "resolved": true,
+      "super": null
+    },
+    "FlowSaveReq": {
+      "fqn": "com.hxj.oa.flow.dto.FlowSaveReq",
+      "kind": "class",
+      "javadoc": "流程新增 / 修改请求。\n两种提交形态：\n\n\n- 简化形态：只给 `nodes}（节点名称数组），后端按节点模板库翻译成类型与指派规则。\n      这是联调版原型当前用的方式。\n\n- 结构化形态：给 `nodeItems}，每个节点显式带上 nodeType / ruleType / ruleValue；\n      条件分支节点（nodeType=3）再带上 `branches}。\n      这是流程编辑器的提交形态，优先级高于 nodes。",
+      "fields": [
+        {
+          "name": "name",
+          "type": "String",
+          "comment": "流程名称（同一单据类型下按版本管理；已生效流程要改结构必须新建版本）"
+        },
+        {
+          "name": "category",
+          "type": "String",
+          "comment": "DAILY / BIZ / REIMBURSE / SEAL，也兼容前端传「日常审批」「业务单据」；留空则跟随单据类型"
+        },
+        {
+          "name": "docTypeId",
+          "type": "Long",
+          "comment": "关联的单据类型（必填：flow_config.doc_type_id 非空，且流程定义 KEY 由它拼出）"
+        },
+        {
+          "name": "nodes",
+          "type": "List<String>",
+          "comment": "节点名称列表，按审批顺序排列"
+        },
+        {
+          "name": "nodeItems",
+          "type": "List<NodeItem>",
+          "comment": "结构化节点定义，优先级高于 nodes"
+        }
+      ],
+      "resolved": true,
+      "super": null
+    },
+    "FlowConfigAdminService.NodeAssignReq": {
+      "fqn": "com.hxj.oa.flow.service.NodeAssignReq",
+      "kind": "class",
+      "javadoc": "单独调整某节点的指派规则（界面上的「调整角色」入口）；rules 为**全量覆盖**，漏传即删",
+      "fields": [
+        {
+          "name": "nodeId",
+          "type": "Long",
+          "comment": "流程节点定义 ID"
+        },
+        {
+          "name": "nodeKey",
+          "type": "String",
+          "comment": "节点标识，如 n2"
+        },
+        {
+          "name": "nodeName",
+          "type": "String",
+          "comment": "节点名称"
+        },
+        {
+          "name": "rules",
+          "type": "List<RuleItem>",
+          "comment": "该节点的全部指派规则（全量覆盖，不是增量追加）"
+        }
+      ],
+      "resolved": true,
+      "super": null
+    },
+    "LoginRequest": {
+      "fqn": "com.hxj.oa.system.dto.LoginRequest",
+      "kind": "class",
+      "javadoc": "登录请求",
+      "fields": [
+        {
+          "name": "account",
+          "type": "String",
+          "comment": "登录账号"
+        },
+        {
+          "name": "password",
+          "type": "String",
+          "comment": "登录密码（明文传输依赖 HTTPS，请勿在日志里打印）"
+        }
+      ],
+      "resolved": true,
+      "super": null
+    },
+    "LoginResp": {
+      "fqn": "com.hxj.oa.system.dto.LoginResp",
+      "kind": "class",
+      "javadoc": "登录响应",
+      "fields": [
+        {
+          "name": "token",
+          "type": "String",
+          "comment": "JWT，后续所有请求放在请求头 Authorization: Bearer {token}"
+        },
+        {
+          "name": "expiresIn",
+          "type": "long",
+          "comment": "有效期（秒），当前为 43200（12 小时）；⚠ 没有刷新接口，到期须重新登录"
+        },
+        {
+          "name": "user",
+          "type": "LoginUser",
+          "comment": "当前登录用户（含 roleCodes、permCodes、deptId 等；⚠ 这些是登录时刻的快照，改完角色/部门要重新登录才生效）"
+        },
+        {
+          "name": "menus",
+          "type": "List<MenuItem>",
+          "comment": "可见菜单（permType=1 的权限点，平铺列表，前端按 parentCode 组树）"
+        },
+        {
+          "name": "mustChangePassword",
+          "type": "boolean",
+          "comment": "true=管理员创建账号/重置口令后的首次登录，前端必须先强制改密（见 AuthService#changePassword）"
+        }
+      ],
+      "resolved": true,
+      "super": null
+    },
+    "LoginUser": {
+      "fqn": "com.hxj.oa.common.security.LoginUser",
+      "kind": "class",
+      "javadoc": "登录用户上下文（由 JWT 解析得到）。GET /api/auth/me 返回的就是它。\n⚠ 这里是「登录那一刻」的快照：token 里装的就是下面这些字段，\n后端不查库。所以管理员改了某人的角色 / 部门 / 权限之后，\n该用户必须重新登录才会生效（没有 refresh 接口）。\n前端不要把 permCodes / roleCodes 当作\"实时权限\"去做安全判断 —— 它只够用来控制菜单显隐。",
+      "fields": [
+        {
+          "name": "userId",
+          "type": "Long",
+          "comment": "用户 ID"
+        },
+        {
+          "name": "account",
+          "type": "String",
+          "comment": "登录账号（唯一）"
+        },
+        {
+          "name": "realName",
+          "type": "String",
+          "comment": "姓名"
+        },
+        {
+          "name": "companyId",
+          "type": "Long",
+          "comment": "所属公司 ID"
+        },
+        {
+          "name": "deptId",
+          "type": "Long",
+          "comment": "所属部门 ID；管理员账号可能为 null（未挂部门）"
+        },
+        {
+          "name": "deptName",
+          "type": "String",
+          "comment": "所属部门名称；与 deptId 同为登录时快照"
+        },
+        {
+          "name": "deptPath",
+          "type": "String",
+          "comment": "部门物化路径，如 /8/，用于「本部门及下级」数据范围判定"
+        },
+        {
+          "name": "roleCodes",
+          "type": "Set<String>",
+          "comment": "角色编码集合"
+        },
+        {
+          "name": "permCodes",
+          "type": "Set<String>",
+          "comment": "权限点编码集合"
+        },
+        {
+          "name": "dataScope",
+          "type": "DataScopeType",
+          "comment": "生效的数据范围（多角色取最宽）"
+        },
+        {
+          "name": "scopeDeptIds",
+          "type": "Set<Long>",
+          "comment": "自定义部门范围（custom_dept 时使用）"
+        }
+      ],
+      "resolved": true,
+      "super": null
+    },
+    "com.hxj.oa.system.dto.ChangePasswordReq": {
+      "fqn": "com.hxj.oa.system.dto.ChangePasswordReq",
+      "kind": "class",
+      "javadoc": "用户自助修改密码请求（区别于管理员的 `PUT /api/users/{id}} 重置）。\n必须验证旧密码：自助改密的唯一凭据就是「我知道旧密码」，\n跳过这一步等于任何拿到已登录 token 的人都能改掉账号口令。",
+      "fields": [
+        {
+          "name": "oldPassword",
+          "type": "String",
+          "comment": "原密码"
+        },
+        {
+          "name": "newPassword",
+          "type": "String",
+          "comment": "8~64 位。下限 8 是底线（此前演示环境 6 位弱口令挂公网的教训）；\n不做「必须含大小写数字符号」之类的复杂度规则 —— 实测那只会逼出\n「Abc@1234」这种模式化口令，不如把长度和「不得与原密码相同」守住。"
+        }
+      ],
+      "resolved": true,
+      "super": null
+    },
+    "LoginResp.MenuItem": {
+      "fqn": "com.hxj.oa.system.dto.MenuItem",
+      "kind": "class",
+      "javadoc": "菜单项",
+      "fields": [
+        {
+          "name": "code",
+          "type": "String",
+          "comment": "菜单权限点编码，如 document:menu"
+        },
+        {
+          "name": "name",
+          "type": "String",
+          "comment": "菜单名称，如「单据中心」"
+        },
+        {
+          "name": "parentCode",
+          "type": "String",
+          "comment": "上级菜单编码，顶级为 null"
+        },
+        {
+          "name": "sortNo",
+          "type": "Integer",
+          "comment": "排序号，小的在前"
+        }
+      ],
+      "resolved": true,
+      "super": null
+    },
+    "SysPermission": {
+      "fqn": "com.hxj.oa.system.entity.SysPermission",
+      "kind": "class",
+      "javadoc": "权限点（功能权限）。code 为稳定英文标识，中文只做展示",
+      "fields": [
+        {
+          "name": "id",
+          "type": "Long",
+          "comment": "主键，数据库自增。前端做详情 / 修改 / 删除时用的就是这个 id"
+        },
+        {
+          "name": "createdAt",
+          "type": "LocalDateTime",
+          "comment": "创建时间，由数据库默认值写入，前端只读"
+        },
+        {
+          "name": "updatedAt",
+          "type": "LocalDateTime",
+          "comment": "最后更新时间，由数据库 ON UPDATE 维护，前端只读"
+        },
+        {
+          "name": "deleted",
+          "type": "Integer",
+          "comment": "⚠ 逻辑删除标记（0 未删 / 1 已删）。查询已自动过滤，前端**忽略该字段**即可"
+        },
+        {
+          "name": "code",
+          "type": "String",
+          "comment": "权限点编码，如 document:view:all"
+        },
+        {
+          "name": "name",
+          "type": "String",
+          "comment": "权限点名称，如「查看全部表单」（展示用，中文不是判权依据）"
+        },
+        {
+          "name": "permType",
+          "type": "Integer",
+          "comment": "1 菜单 2 按钮 3 接口"
+        },
+        {
+          "name": "parentCode",
+          "type": "String",
+          "comment": "父权限点编码，用于构建菜单树"
+        },
+        {
+          "name": "sortNo",
+          "type": "Integer",
+          "comment": "同级排序号"
+        }
+      ],
+      "resolved": true,
+      "super": "BaseEntity"
+    },
+    "DeptTreeVO": {
+      "fqn": "com.hxj.oa.system.dto.DeptTreeVO",
+      "kind": "class",
+      "javadoc": "部门树节点（children 递归）",
+      "fields": [
+        {
+          "name": "id",
+          "type": "Long",
+          "comment": "部门 ID"
+        },
+        {
+          "name": "parentId",
+          "type": "Long",
+          "comment": "上级部门 ID；0 或 null = 顶级"
+        },
+        {
+          "name": "code",
+          "type": "String",
+          "comment": "部门编码"
+        },
+        {
+          "name": "name",
+          "type": "String",
+          "comment": "部门名称"
+        },
+        {
+          "name": "deptType",
+          "type": "Integer",
+          "comment": "1 一级中心 2 二级部门（由有没有上级决定，接口不接收该参数）"
+        },
+        {
+          "name": "level",
+          "type": "Integer",
+          "comment": "层级，从 1 开始"
+        },
+        {
+          "name": "path",
+          "type": "String",
+          "comment": "物化路径，形如 /8/12/"
+        },
+        {
+          "name": "leaderId",
+          "type": "Long",
+          "comment": "部门负责人用户 ID；「取发起人主管」的指派规则依赖它。null = 未设负责人"
+        },
+        {
+          "name": "leaderName",
+          "type": "String",
+          "comment": "部门负责人姓名"
+        }
+      ],
+      "resolved": true,
+      "super": null
+    },
+    "Department": {
+      "fqn": "com.hxj.oa.system.entity.Department",
+      "kind": "class",
+      "javadoc": "部门（中心 → 二级部门）",
+      "fields": [
+        {
+          "name": "id",
+          "type": "Long",
+          "comment": "主键，数据库自增。前端做详情 / 修改 / 删除时用的就是这个 id"
+        },
+        {
+          "name": "createdAt",
+          "type": "LocalDateTime",
+          "comment": "创建时间，由数据库默认值写入，前端只读"
+        },
+        {
+          "name": "updatedAt",
+          "type": "LocalDateTime",
+          "comment": "最后更新时间，由数据库 ON UPDATE 维护，前端只读"
+        },
+        {
+          "name": "deleted",
+          "type": "Integer",
+          "comment": "⚠ 逻辑删除标记（0 未删 / 1 已删）。查询已自动过滤，前端**忽略该字段**即可"
+        },
+        {
+          "name": "companyId",
+          "type": "Long",
+          "comment": "所属公司 ID"
+        },
+        {
+          "name": "parentId",
+          "type": "Long",
+          "comment": "上级部门 ID，0 = 顶级"
+        },
+        {
+          "name": "code",
+          "type": "String",
+          "comment": "部门编码，同公司内唯一；留空由后端按 D0xx 规则生成"
+        },
+        {
+          "name": "name",
+          "type": "String",
+          "comment": "部门名称，同公司内唯一"
+        },
+        {
+          "name": "deptType",
+          "type": "Integer",
+          "comment": "1 一级中心 2 二级部门"
+        },
+        {
+          "name": "level",
+          "type": "Integer",
+          "comment": "层级深度，从 1 开始。level 在部分 SQL 方言中是关键字，故加反引号"
+        },
+        {
+          "name": "path",
+          "type": "String",
+          "comment": "物化路径，如 /2/3/"
+        },
+        {
+          "name": "leaderId",
+          "type": "Long",
+          "comment": "部门负责人用户 ID —— 「取发起人主管」规则依赖此字段"
+        },
+        {
+          "name": "status",
+          "type": "Integer",
+          "comment": "状态 1 启用 0 停用"
+        },
+        {
+          "name": "sortNo",
+          "type": "Integer",
+          "comment": "排序号，同级内升序"
+        },
+        {
+          "name": "createdBy",
+          "type": "Long",
+          "comment": "创建人 ID"
+        },
+        {
+          "name": "updatedBy",
+          "type": "Long",
+          "comment": "最后更新人 ID"
+        }
+      ],
+      "resolved": true,
+      "super": "BaseEntity"
+    },
+    "DeptSaveReq": {
+      "fqn": "com.hxj.oa.system.dto.DeptSaveReq",
+      "kind": "class",
+      "javadoc": "部门新建 / 编辑请求。\n刻意不加 `@NotBlank}：同一个 DTO 同时服务「新建」和「局部编辑」，\n编辑时前端只会传要改的那几个字段。上一轮给字典的 DTO 加了 `@NotBlank}，\n结果「PUT 只改名称」这种完全正常的请求被判 400「不能为空」，而报错信息\n指向的是字段校验、看不出是\"新增/编辑共用一个 DTO\"导致的。\n所以必填校验一律放在 service 的**新建分支**里做，不靠 DTO 注解。\nparentId} 与 `code} 只在新建立时生效，编辑时传了会被明确拒绝\n（见 `OrgAdminService}：刻意不做部门移动、不改编码，理由写在那里）。",
+      "fields": [
+        {
+          "name": "name",
+          "type": "String",
+          "comment": "部门名称"
+        },
+        {
+          "name": "code",
+          "type": "String",
+          "comment": "部门编码。新建时留空由后端按 D0xx 规则生成"
+        },
+        {
+          "name": "parentId",
+          "type": "Long",
+          "comment": "上级部门 ID。null 或 0 = 顶级（一级中心）；新建时生效，编辑时不允许改"
+        },
+        {
+          "name": "leaderId",
+          "type": "Long",
+          "comment": "部门负责人用户 ID，可空。「取发起人主管」的指派规则依赖它"
+        },
+        {
+          "name": "sortNo",
+          "type": "Integer",
+          "comment": "排序号，小的在前"
+        },
+        {
+          "name": "status",
+          "type": "Integer",
+          "comment": "1 启用 0 停用"
+        }
+      ],
+      "resolved": true,
+      "super": null
+    },
+    "SysDict": {
+      "fqn": "com.hxj.oa.system.entity.SysDict",
+      "kind": "class",
+      "javadoc": "数据字典",
+      "fields": [
+        {
+          "name": "id",
+          "type": "Long",
+          "comment": "主键，数据库自增。前端做详情 / 修改 / 删除时用的就是这个 id"
+        },
+        {
+          "name": "createdAt",
+          "type": "LocalDateTime",
+          "comment": "创建时间，由数据库默认值写入，前端只读"
+        },
+        {
+          "name": "updatedAt",
+          "type": "LocalDateTime",
+          "comment": "最后更新时间，由数据库 ON UPDATE 维护，前端只读"
+        },
+        {
+          "name": "deleted",
+          "type": "Integer",
+          "comment": "⚠ 逻辑删除标记（0 未删 / 1 已删）。查询已自动过滤，前端**忽略该字段**即可"
+        },
+        {
+          "name": "companyId",
+          "type": "Long",
+          "comment": "所属公司 ID；null = 全局通用"
+        },
+        {
+          "name": "dictType",
+          "type": "String",
+          "comment": "字典类型 project / seal_type / pay_type / expense_type ..."
+        },
+        {
+          "name": "dictCode",
+          "type": "String",
+          "comment": "字典项编码，存的是它，界面显示的是 dictLabel"
+        },
+        {
+          "name": "dictLabel",
+          "type": "String",
+          "comment": "字典项名称（展示用）"
+        },
+        {
+          "name": "sortNo",
+          "type": "Integer",
+          "comment": "排序号，升序"
+        },
+        {
+          "name": "status",
+          "type": "Integer",
+          "comment": "状态 1 启用 0 停用"
+        }
+      ],
+      "resolved": true,
+      "super": "BaseEntity"
+    },
+    "DictSaveReq": {
+      "fqn": "com.hxj.oa.system.dto.DictSaveReq",
+      "kind": "class",
+      "javadoc": "字典项新建 / 编辑请求。\n同 `DeptSaveReq}：**不加 `@NotBlank}**。\n这条正是上一轮踩出来的坑：原本给 `dictLabel} 加了 `@NotBlank}，\n于是「PUT 只改名称」之外的所有局部编辑（例如只改排序号）都会被判 400「不能为空」，\n报错指向字段校验，看不出根因是\"新增与局部编辑共用一个 DTO\"。\n字典的唯一性不能指望数据库索引：`uk_dict(dict_type, dict_code,\ncompany_id, deleted)} 里 `company_id} 允许为 NULL，而 MySQL 的唯一索引\n**认为多个 NULL 互不相同** —— 也就是说同一个 dict_code 可以重复插进去而索引不报错。\n而本项目的字典恰好都是全局字典（company_id 全为 NULL）。所以唯一性必须在\nservice 里显式查一次（见 `OrgAdminService#assertDictFree}）。",
+      "fields": [
+        {
+          "name": "dictType",
+          "type": "String",
+          "comment": "字典类型，如 docCategory、businessCategory"
+        },
+        {
+          "name": "dictCode",
+          "type": "String",
+          "comment": "字典项编码（同类型内唯一）"
+        },
+        {
+          "name": "dictLabel",
+          "type": "String",
+          "comment": "字典项显示名称"
+        },
+        {
+          "name": "sortNo",
+          "type": "Integer",
+          "comment": "排序号，小的在前"
+        },
+        {
+          "name": "status",
+          "type": "Integer",
+          "comment": "1 启用 0 停用"
+        }
+      ],
+      "resolved": true,
+      "super": null
+    },
+    "Post": {
+      "fqn": "com.hxj.oa.system.entity.Post",
+      "kind": "class",
+      "javadoc": "岗位",
+      "fields": [
+        {
+          "name": "id",
+          "type": "Long",
+          "comment": "主键，数据库自增。前端做详情 / 修改 / 删除时用的就是这个 id"
+        },
+        {
+          "name": "createdAt",
+          "type": "LocalDateTime",
+          "comment": "创建时间，由数据库默认值写入，前端只读"
+        },
+        {
+          "name": "updatedAt",
+          "type": "LocalDateTime",
+          "comment": "最后更新时间，由数据库 ON UPDATE 维护，前端只读"
+        },
+        {
+          "name": "deleted",
+          "type": "Integer",
+          "comment": "⚠ 逻辑删除标记（0 未删 / 1 已删）。查询已自动过滤，前端**忽略该字段**即可"
+        },
+        {
+          "name": "companyId",
+          "type": "Long",
+          "comment": "所属公司 ID"
+        },
+        {
+          "name": "code",
+          "type": "String",
+          "comment": "岗位编码，同公司内唯一"
+        },
+        {
+          "name": "name",
+          "type": "String",
+          "comment": "岗位名称，如 部门负责人岗 / 财务核算岗"
+        },
+        {
+          "name": "status",
+          "type": "Integer",
+          "comment": "状态 1 启用 0 停用"
+        },
+        {
+          "name": "sortNo",
+          "type": "Integer",
+          "comment": "排序号，升序"
+        },
+        {
+          "name": "createdBy",
+          "type": "Long",
+          "comment": "创建人 ID"
+        },
+        {
+          "name": "updatedBy",
+          "type": "Long",
+          "comment": "最后更新人 ID"
+        }
+      ],
+      "resolved": true,
+      "super": "BaseEntity"
+    },
+    "PostSaveReq": {
+      "fqn": "com.hxj.oa.system.dto.PostSaveReq",
+      "kind": "class",
+      "javadoc": "岗位新建 / 编辑请求。\n同 `DeptSaveReq}：**不加 `@NotBlank}**，必填校验在 service 的新建分支里做，\n以免「局部编辑只传一个字段」被判 400。\n岗位表有唯一键 `uk_post_company_code(company_id, code, deleted)} ——\n注意 deleted 也在键里，所以逻辑删除一个岗位前必须先让编码让位\n（`UniqueKeys.release}），否则\"建 → 删 → 再建 → 再删\"第二次删除会撞键报 500。",
+      "fields": [
+        {
+          "name": "name",
+          "type": "String",
+          "comment": "岗位名称"
+        },
+        {
+          "name": "code",
+          "type": "String",
+          "comment": "岗位编码。新建时留空由后端按 P0xx 规则生成"
+        },
+        {
+          "name": "sortNo",
+          "type": "Integer",
+          "comment": "排序号，小的在前"
+        },
+        {
+          "name": "status",
+          "type": "Integer",
+          "comment": "1 启用 0 停用"
+        }
+      ],
+      "resolved": true,
+      "super": null
+    },
+    "RoleVO": {
+      "fqn": "com.hxj.oa.system.dto.RoleVO",
+      "kind": "class",
+      "javadoc": "角色视图对象。\n相比 `SysRole} 补了三样前端配置页必须要的东西：\n权限点明细、数据范围、成员列表——否则「配置权限」弹窗只能显示占位文案。",
+      "fields": [
+        {
+          "name": "id",
+          "type": "Long",
+          "comment": "角色 ID"
+        },
+        {
+          "name": "companyId",
+          "type": "Long",
+          "comment": "公司 ID"
+        },
+        {
+          "name": "code",
+          "type": "String",
+          "comment": "角色编码，如 ADMIN、CUSTOM_01（后端按编码判权，改名不影响）"
+        },
+        {
+          "name": "name",
+          "type": "String",
+          "comment": "角色名称"
+        },
+        {
+          "name": "deptId",
+          "type": "Long",
+          "comment": "归属部门 ID（可空）"
+        },
+        {
+          "name": "deptName",
+          "type": "String",
+          "comment": "归属部门名称"
+        },
+        {
+          "name": "postName",
+          "type": "String",
+          "comment": "对应岗位名称（展示用）"
+        },
+        {
+          "name": "scopeType",
+          "type": "String",
+          "comment": "数据范围编码：self / dept / center / custom_dept / company"
+        },
+        {
+          "name": "scopeLabel",
+          "type": "String",
+          "comment": "数据范围中文名，前端直接展示，不必自己维护映射"
+        },
+        {
+          "name": "scopeDeptIds",
+          "type": "List<Long>",
+          "comment": "custom_dept 时生效的部门集合"
+        },
+        {
+          "name": "permCodes",
+          "type": "List<String>",
+          "comment": "已授予的权限点编码"
+        },
+        {
+          "name": "permNames",
+          "type": "List<String>",
+          "comment": "已授予的权限点中文名，用于卡片上的标签展示"
+        },
+        {
+          "name": "members",
+          "type": "List<String>",
+          "comment": "拥有该角色的成员姓名"
+        },
+        {
+          "name": "isBuiltin",
+          "type": "Integer",
+          "comment": "1 内置角色（不可删除）"
+        },
+        {
+          "name": "status",
+          "type": "Integer",
+          "comment": "1 启用 0 停用"
+        },
+        {
+          "name": "remark",
+          "type": "String",
+          "comment": "备注"
+        }
+      ],
+      "resolved": true,
+      "super": null
+    },
+    "RoleSaveReq": {
+      "fqn": "com.hxj.oa.system.dto.RoleSaveReq",
+      "kind": "class",
+      "javadoc": "角色新建 / 编辑请求。字段语义同 `UserSaveReq}：ID 优先、名称兜底",
+      "fields": [
+        {
+          "name": "name",
+          "type": "String",
+          "comment": "角色名称"
+        },
+        {
+          "name": "code",
+          "type": "String",
+          "comment": "角色编码。留空则由后端按 CUSTOM_nn 规则生成"
+        },
+        {
+          "name": "deptId",
+          "type": "Long",
+          "comment": "归属部门 ID（可空）；与 deptName 二选一，ID 优先"
+        },
+        {
+          "name": "deptName",
+          "type": "String",
+          "comment": "归属部门名称（deptId 为空时按名称解析）"
+        },
+        {
+          "name": "postName",
+          "type": "String",
+          "comment": "对应岗位名称（展示用）"
+        },
+        {
+          "name": "scopeType",
+          "type": "String",
+          "comment": "数据范围：self / dept / center / custom_dept / company，留空默认 self"
+        },
+        {
+          "name": "scopeDeptIds",
+          "type": "List<Long>",
+          "comment": "custom_dept 时生效的部门集合"
+        },
+        {
+          "name": "permCodes",
+          "type": "List<String>",
+          "comment": "权限点编码全量覆盖"
+        },
+        {
+          "name": "remark",
+          "type": "String",
+          "comment": "备注"
+        }
+      ],
+      "resolved": true,
+      "super": null
+    },
+    "PermAssignReq": {
+      "fqn": "com.hxj.oa.system.controller.PermAssignReq",
+      "kind": "class",
+      "javadoc": "权限点分配请求",
+      "fields": [
+        {
+          "name": "permCodes",
+          "type": "List<String>",
+          "comment": "要保留的权限点 code 列表；**全量覆盖**，未传的会被移除"
+        }
+      ],
+      "resolved": true,
+      "super": null
+    },
+    "DataScopeReq": {
+      "fqn": "com.hxj.oa.system.controller.DataScopeReq",
+      "kind": "class",
+      "javadoc": "数据范围配置请求",
+      "fields": [
+        {
+          "name": "scopeType",
+          "type": "String",
+          "comment": "SELF 仅本人 / DEPT 本部门及下级 / CENTER 本中心（⚠ 当前实现与 DEPT 等价）/ CUSTOM_DEPT 指定部门 / COMPANY 全公司。传非法值不报错，会静默降级为 SELF"
+        },
+        {
+          "name": "scopeDeptIds",
+          "type": "List<Long>",
+          "comment": "scopeType=CUSTOM_DEPT 时的部门 ID 列表，其余类型忽略"
+        }
+      ],
+      "resolved": true,
+      "super": null
+    },
+    "UserVO": {
+      "fqn": "com.hxj.oa.system.dto.UserVO",
+      "kind": "class",
+      "javadoc": "人员视图对象。\n字段名刻意与 `SysUser} 保持一致（realName / jobNo / account / deptId / postId …），\n因为前端既有代码直接按这些名字取值；这里只是把「部门名、岗位名、角色」一并补上，\n免得前端为了显示一列\"部门\"再单独请求一次。",
+      "fields": [
+        {
+          "name": "id",
+          "type": "Long",
+          "comment": "用户 ID"
+        },
+        {
+          "name": "companyId",
+          "type": "Long",
+          "comment": "公司 ID"
+        },
+        {
+          "name": "realName",
+          "type": "String",
+          "comment": "姓名"
+        },
+        {
+          "name": "jobNo",
+          "type": "String",
+          "comment": "工号"
+        },
+        {
+          "name": "account",
+          "type": "String",
+          "comment": "登录账号"
+        },
+        {
+          "name": "deptId",
+          "type": "Long",
+          "comment": "部门 ID"
+        },
+        {
+          "name": "deptName",
+          "type": "String",
+          "comment": "部门名称，由 deptId 反查得到"
+        },
+        {
+          "name": "postId",
+          "type": "Long",
+          "comment": "岗位 ID"
+        },
+        {
+          "name": "postName",
+          "type": "String",
+          "comment": "岗位名称，由 postId 反查得到"
+        },
+        {
+          "name": "phone",
+          "type": "String",
+          "comment": "手机号"
+        },
+        {
+          "name": "email",
+          "type": "String",
+          "comment": "邮箱"
+        },
+        {
+          "name": "status",
+          "type": "Integer",
+          "comment": "1 在职 0 离职"
+        },
+        {
+          "name": "lastLoginAt",
+          "type": "LocalDateTime",
+          "comment": "最后一次登录时间"
+        },
+        {
+          "name": "roleCodes",
+          "type": "List<String>",
+          "comment": "已分配角色编码"
+        },
+        {
+          "name": "roleNames",
+          "type": "List<String>",
+          "comment": "已分配角色名称，供「分配角色」列直接展示"
+        }
+      ],
+      "resolved": true,
+      "super": null
+    },
+    "SysRole": {
+      "fqn": "com.hxj.oa.system.entity.SysRole",
+      "kind": "class",
+      "javadoc": "角色",
+      "fields": [
+        {
+          "name": "id",
+          "type": "Long",
+          "comment": "主键，数据库自增。前端做详情 / 修改 / 删除时用的就是这个 id"
+        },
+        {
+          "name": "createdAt",
+          "type": "LocalDateTime",
+          "comment": "创建时间，由数据库默认值写入，前端只读"
+        },
+        {
+          "name": "updatedAt",
+          "type": "LocalDateTime",
+          "comment": "最后更新时间，由数据库 ON UPDATE 维护，前端只读"
+        },
+        {
+          "name": "deleted",
+          "type": "Integer",
+          "comment": "⚠ 逻辑删除标记（0 未删 / 1 已删）。查询已自动过滤，前端**忽略该字段**即可"
+        },
+        {
+          "name": "companyId",
+          "type": "Long",
+          "comment": "所属公司 ID"
+        },
+        {
+          "name": "code",
+          "type": "String",
+          "comment": "角色编码，如 ACCOUNTANT / DEPT_HEAD。流程指派规则按此编码解析"
+        },
+        {
+          "name": "name",
+          "type": "String",
+          "comment": "角色名称，如 核算会计"
+        },
+        {
+          "name": "deptId",
+          "type": "Long",
+          "comment": "归属部门 ID，可空（表示不限部门）"
+        },
+        {
+          "name": "postName",
+          "type": "String",
+          "comment": "对应岗位名称（展示用）"
+        },
+        {
+          "name": "isBuiltin",
+          "type": "Integer",
+          "comment": "是否内置角色 1 是 0 否；内置角色不可删"
+        },
+        {
+          "name": "status",
+          "type": "Integer",
+          "comment": "状态 1 启用 0 停用"
+        },
+        {
+          "name": "remark",
+          "type": "String",
+          "comment": "备注"
+        },
+        {
+          "name": "createdBy",
+          "type": "Long",
+          "comment": "创建人 ID"
+        },
+        {
+          "name": "updatedBy",
+          "type": "Long",
+          "comment": "最后更新人 ID"
+        }
+      ],
+      "resolved": true,
+      "super": "BaseEntity"
+    },
+    "UserSaveReq": {
+      "fqn": "com.hxj.oa.system.dto.UserSaveReq",
+      "kind": "class",
+      "javadoc": "人员新建 / 编辑请求。\n组织归属类字段一律支持「ID 优先、名称兜底」：\n前端原型的下拉框绑的是中文名称（如「综合管理中心」），\n而库表里存的是 ID。与其让前端拼一遍映射，不如让接口两头都认——\n传了 ID 就用 ID，只传名称就按「公司 + 名称」反查，查不到给出明确报错。",
+      "fields": [
+        {
+          "name": "realName",
+          "type": "String",
+          "comment": "姓名"
+        },
+        {
+          "name": "jobNo",
+          "type": "String",
+          "comment": "工号，同公司内唯一"
+        },
+        {
+          "name": "account",
+          "type": "String",
+          "comment": "登录账号，同公司内唯一"
+        },
+        {
+          "name": "password",
+          "type": "String",
+          "comment": "新建时必填；编辑时留空表示不修改密码"
+        },
+        {
+          "name": "deptId",
+          "type": "Long",
+          "comment": "部门 ID；与 deptName 二选一，ID 优先"
+        },
+        {
+          "name": "deptName",
+          "type": "String",
+          "comment": "deptId 为空时按名称解析"
+        },
+        {
+          "name": "postId",
+          "type": "Long",
+          "comment": "岗位 ID；与 postName 二选一，ID 优先"
+        },
+        {
+          "name": "postName",
+          "type": "String",
+          "comment": "postId 为空时按名称解析，解析不到则自动在 post 表建一条"
+        },
+        {
+          "name": "roleCodes",
+          "type": "List<String>",
+          "comment": "分配角色的编码，优先级高于 roleNames"
+        },
+        {
+          "name": "roleNames",
+          "type": "List<String>",
+          "comment": "分配角色的名称（按名称解析为编码）"
+        },
+        {
+          "name": "phone",
+          "type": "String",
+          "comment": "手机号"
+        },
+        {
+          "name": "email",
+          "type": "String",
+          "comment": "邮箱"
+        },
+        {
+          "name": "status",
+          "type": "Integer",
+          "comment": "1 在职 0 离职；不传默认在职"
+        }
+      ],
+      "resolved": true,
+      "super": null
+    },
+    "RoleAssignReq": {
+      "fqn": "com.hxj.oa.system.controller.RoleAssignReq",
+      "kind": "class",
+      "javadoc": "角色调整请求",
+      "fields": [
+        {
+          "name": "roleCodes",
+          "type": "List<String>",
+          "comment": "要设置的角色编码列表；**全量覆盖**，未传的会被移除"
+        }
+      ],
+      "resolved": true,
+      "super": null
+    },
+    "LocalDateTime": {
+      "fqn": null,
+      "kind": "?",
+      "javadoc": "",
+      "fields": [],
+      "resolved": false
+    },
+    "Boolean": {
+      "fqn": null,
+      "kind": "?",
+      "javadoc": "",
+      "fields": [],
+      "resolved": false
+    },
+    "long": {
+      "fqn": null,
+      "kind": "?",
+      "javadoc": "",
+      "fields": [],
+      "resolved": false
+    },
+    "T": {
+      "fqn": null,
+      "kind": "?",
+      "javadoc": "",
+      "fields": [],
+      "resolved": false
+    },
+    "BigDecimal": {
+      "fqn": null,
+      "kind": "?",
+      "javadoc": "",
+      "fields": [],
+      "resolved": false
+    },
+    "DocumentLinkVO": {
+      "fqn": "com.hxj.oa.document.dto.DocumentLinkVO",
+      "kind": "class",
+      "javadoc": "单据关联的展示对象。\ndocument_link} 里只存 `linked_id}（关联单据的主键）。\n前端直接渲染数字主键对用户毫无意义 —— 界面上要看到的是\n「FK202609180001 采购付款申请」这样的编号 + 标题。\n所以在服务端一次性把编号/标题补上，而不是让前端再按 id 逐个回查\n（N 次请求，而且前端拿不到他人单据的详情时会静默失败）。",
+      "fields": [
+        {
+          "name": "id",
+          "type": "Long",
+          "comment": "关联记录 ID"
+        },
+        {
+          "name": "linkedId",
+          "type": "Long",
+          "comment": "被关联单据的 ID"
+        },
+        {
+          "name": "linkedDocNo",
+          "type": "String",
+          "comment": "被关联单据的编号"
+        },
+        {
+          "name": "linkedTitle",
+          "type": "String",
+          "comment": "被关联单据的标题"
+        },
+        {
+          "name": "linkType",
+          "type": "String",
+          "comment": "prev_doc 前置单据 / contract 合同"
+        },
+        {
+          "name": "linkedStatus",
+          "type": "Integer",
+          "comment": "被关联单据的状态（前端可据此提示「关联的不是已通过单据」）"
+        }
+      ],
+      "resolved": true,
+      "super": null
+    },
+    "LocalDate": {
+      "fqn": null,
+      "kind": "?",
+      "javadoc": "",
+      "fields": [],
+      "resolved": false
+    },
+    "boolean": {
+      "fqn": null,
+      "kind": "?",
+      "javadoc": "",
+      "fields": [],
+      "resolved": false
+    },
+    "int": {
+      "fqn": null,
+      "kind": "?",
+      "javadoc": "",
+      "fields": [],
+      "resolved": false
+    },
+    "FieldPerm": {
+      "fqn": "com.hxj.oa.document.dto.FieldPerm",
+      "kind": "class",
+      "javadoc": "字段级权限：控制「某个流程节点上、某个表单字段」是否可见 / 可编辑",
+      "fields": [
+        {
+          "name": "nodeKey",
+          "type": "String",
+          "comment": "节点标识：* 表示所有节点，其余为流程节点 key（如 n3）"
+        },
+        {
+          "name": "fieldKey",
+          "type": "String",
+          "comment": "字段标识（对应 schema.fields[].key）"
+        },
+        {
+          "name": "visible",
+          "type": "Boolean",
+          "comment": "该节点是否可见"
+        },
+        {
+          "name": "editable",
+          "type": "Boolean",
+          "comment": "该节点是否可编辑"
+        }
+      ],
+      "resolved": true,
+      "super": null
+    },
+    "SealRecord": {
+      "fqn": "com.hxj.oa.document.entity.SealRecord",
+      "kind": "class",
+      "javadoc": "用印台账（每次用印 / 归还动作）",
+      "fields": [
+        {
+          "name": "id",
+          "type": "Long",
+          "comment": "主键，数据库自增。前端做详情 / 修改 / 删除时用的就是这个 id"
+        },
+        {
+          "name": "createdAt",
+          "type": "LocalDateTime",
+          "comment": "创建时间，由数据库默认值写入，前端只读"
+        },
+        {
+          "name": "updatedAt",
+          "type": "LocalDateTime",
+          "comment": "最后更新时间，由数据库 ON UPDATE 维护，前端只读"
+        },
+        {
+          "name": "deleted",
+          "type": "Integer",
+          "comment": "⚠ 逻辑删除标记（0 未删 / 1 已删）。查询已自动过滤，前端**忽略该字段**即可"
+        },
+        {
+          "name": "sealApplyId",
+          "type": "Long",
+          "comment": "用印申请 ID"
+        },
+        {
+          "name": "documentId",
+          "type": "Long",
+          "comment": "单据 ID（冗余）"
+        },
+        {
+          "name": "action",
+          "type": "String",
+          "comment": "use 用印 / return 归还"
+        },
+        {
+          "name": "operatorId",
+          "type": "Long",
+          "comment": "操作人 ID"
+        },
+        {
+          "name": "operatorName",
+          "type": "String",
+          "comment": "操作人姓名"
+        },
+        {
+          "name": "actionAt",
+          "type": "LocalDateTime",
+          "comment": "操作时间"
+        },
+        {
+          "name": "remark",
+          "type": "String",
+          "comment": "备注"
+        },
+        {
+          "name": "createdBy",
+          "type": "Long",
+          "comment": "创建人 ID"
+        }
+      ],
+      "resolved": true,
+      "super": "BaseEntity"
+    },
+    "NodePreview": {
+      "fqn": "com.hxj.oa.flow.dto.NodePreview",
+      "kind": "class",
+      "javadoc": "节点预览",
+      "fields": [
+        {
+          "name": "nodeKey",
+          "type": "String",
+          "comment": "节点编码，如 n1、gw1"
+        },
+        {
+          "name": "nodeName",
+          "type": "String",
+          "comment": "节点名称，如「直属部门负责人」"
+        },
+        {
+          "name": "nodeType",
+          "type": "Integer",
+          "comment": "节点类型：1 审批 2 抄送 3 条件分支 4 办理 5 发起"
+        },
+        {
+          "name": "seqNo",
+          "type": "Integer",
+          "comment": "节点顺序号"
+        },
+        {
+          "name": "conditionExpr",
+          "type": "String",
+          "comment": "条件表达式（仅条件分支节点有值，如 doc.amount >= 20000）"
+        },
+        {
+          "name": "slaHours",
+          "type": "BigDecimal",
+          "comment": "该节点的处理时限（小时）；null = 无时限"
+        },
+        {
+          "name": "candidateIds",
+          "type": "List<Long>",
+          "comment": "解析出的审批人"
+        },
+        {
+          "name": "candidateNames",
+          "type": "List<String>",
+          "comment": "解析出的审批人姓名（⚠ 没有 assignees 字段，那是另一件事：按 nodeId 索引的指派规则表）"
+        },
+        {
+          "name": "hitRules",
+          "type": "List<String>",
+          "comment": "命中的规则，便于排查「为什么是他审」"
+        },
+        {
+          "name": "selfSkipped",
+          "type": "boolean",
+          "comment": "该节点在当前单据上下文中是否会被跳过"
+        },
+        {
+          "name": "unresolved",
+          "type": "boolean",
+          "comment": "是否压根解析不出人"
+        }
+      ],
+      "resolved": true,
+      "super": null
+    },
+    "Double": {
+      "fqn": null,
+      "kind": "?",
+      "javadoc": "",
+      "fields": [],
+      "resolved": false
+    },
+    "Branch": {
+      "fqn": "com.hxj.oa.flow.service.Branch",
+      "kind": "class",
+      "javadoc": "已解析的分支：`target} 是最终 nodeKey（如 n4），可以直接写进 condition_expr。",
+      "fields": [
+        {
+          "name": "expr",
+          "type": "String",
+          "comment": "条件表达式；「否则」分支为空"
+        },
+        {
+          "name": "target",
+          "type": "String",
+          "comment": "⚠ 已是**最终 nodeKey**（如 n4），前端不要再做位置号换算"
+        },
+        {
+          "name": "defaultBranch",
+          "type": "boolean",
+          "comment": "是否「否则」（else）分支；一条分支链上只会有一条为 true"
+        }
+      ],
+      "resolved": true,
+      "super": null
+    },
+    "NodeItem": {
+      "fqn": "com.hxj.oa.flow.dto.NodeItem",
+      "kind": "class",
+      "javadoc": "一个流程节点的结构化定义（含条件分支时用 branches）",
+      "fields": [
+        {
+          "name": "nodeName",
+          "type": "String",
+          "comment": "节点名称，如「直属部门负责人」"
+        },
+        {
+          "name": "nodeType",
+          "type": "Integer",
+          "comment": "1 审批 2 抄送 3 条件分支 4 办理 5 发起"
+        },
+        {
+          "name": "ruleType",
+          "type": "String",
+          "comment": "指派规则（「谁是审批人」的唯一来源）：initiator_leader 发起人部门负责人 / dept_role 某部门某角色 / biztype_role 某业务类型某角色 / role 某角色 / user 指定人 / condition"
+        },
+        {
+          "name": "ruleValue",
+          "type": "String",
+          "comment": "规则参数（JSON 字符串，含义随 ruleType 变化）"
+        },
+        {
+          "name": "signMode",
+          "type": "Integer",
+          "comment": "会签模式：1 或签（一人通过即可）2 会签（需全部通过）"
+        },
+        {
+          "name": "slaHours",
+          "type": "Double",
+          "comment": "处理时限（小时），用于风险预警与超时升级；留空 = 无时限"
+        },
+        {
+          "name": "allowCountersign",
+          "type": "Boolean",
+          "comment": "该节点是否允许加签"
+        },
+        {
+          "name": "requireAttachment",
+          "type": "Boolean",
+          "comment": "该节点办理是否必须上传凭证；留空则按节点类型推默认（办理节点为真）"
+        },
+        {
+          "name": "branches",
+          "type": "List<BranchItem>",
+          "comment": "条件分支节点的分支定义，仅 `nodeType=3} 的节点可填。\n为什么目标用「位置号」而不是 nodeKey：nodeKey 是服务端按顺序分配的\n（`n1..nN}），客户端并不知道也不该猜；位置号就是本数组的下标 + 1，\n服务端据此翻译成最终 nodeKey。前端从库里读已有流程时，用\n「nodeKey → 行号」的映射把存量 `target} 还原成位置号，不要做算术。"
+        }
+      ],
+      "resolved": true,
+      "super": null
+    },
+    "RuleItem": {
+      "fqn": "com.hxj.oa.flow.service.RuleItem",
+      "kind": "class",
+      "javadoc": "一条节点指派规则",
+      "fields": [
+        {
+          "name": "ruleType",
+          "type": "String",
+          "comment": "规则类型：initiator_leader / dept_role / biztype_role / role / user / condition"
+        },
+        {
+          "name": "ruleValue",
+          "type": "String",
+          "comment": "规则参数 JSON，如 {\"roleCode\":\"ACCOUNTANT\"}"
+        },
+        {
+          "name": "signMode",
+          "type": "Integer",
+          "comment": "1 或签 2 会签 3 依次审批；多规则时生效"
+        }
+      ],
+      "resolved": true,
+      "super": null
+    },
+    "MenuItem": {
+      "fqn": "com.hxj.oa.system.dto.MenuItem",
+      "kind": "class",
+      "javadoc": "菜单项",
+      "fields": [
+        {
+          "name": "code",
+          "type": "String",
+          "comment": "菜单权限点编码，如 document:menu"
+        },
+        {
+          "name": "name",
+          "type": "String",
+          "comment": "菜单名称，如「单据中心」"
+        },
+        {
+          "name": "parentCode",
+          "type": "String",
+          "comment": "上级菜单编码，顶级为 null"
+        },
+        {
+          "name": "sortNo",
+          "type": "Integer",
+          "comment": "排序号，小的在前"
+        }
+      ],
+      "resolved": true,
+      "super": null
+    },
+    "DataScopeType": {
+      "fqn": "com.hxj.oa.common.security.DataScopeType",
+      "kind": "enum",
+      "javadoc": "数据范围类型（行级权限）。层级由窄到宽，多角色时取最宽者生效。",
+      "fields": [
+        {
+          "name": "level",
+          "type": "int",
+          "comment": "宽度等级，数字越大范围越宽；多角色时取最宽者生效"
+        },
+        {
+          "name": "code",
+          "type": "String",
+          "comment": "接口里传的字符串编码（小写）"
+        }
+      ],
+      "resolved": true,
+      "super": null
+    },
+    "BranchItem": {
+      "fqn": "com.hxj.oa.flow.dto.BranchItem",
+      "kind": "class",
+      "javadoc": "条件分支的一条分支",
+      "fields": [
+        {
+          "name": "expr",
+          "type": "String",
+          "comment": "条件表达式，形如 `doc.amount >= 20000}。\n「否则」分支留空。语法受 `ConditionExprValidator} 白名单限制。"
+        },
+        {
+          "name": "target",
+          "type": "Integer",
+          "comment": "目标节点在 nodeItems 中的位置，从 1 开始；必须位于本网关之后、且不是发起节点"
+        },
+        {
+          "name": "defaultBranch",
+          "type": "Boolean",
+          "comment": "是否「否则」（else）分支。只能有一条；\n一条都不给时服务端会自动补一条指向紧随其后的节点，保证 else 有去处。"
+        }
+      ],
+      "resolved": true,
+      "super": null
+    }
+  }
+}

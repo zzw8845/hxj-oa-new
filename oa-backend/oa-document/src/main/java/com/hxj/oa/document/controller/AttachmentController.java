@@ -37,6 +37,7 @@ public class AttachmentController {
     /**
      * 上传附件。
      *
+     * @param file       要上传的文件（form-data 字段名固定为 {@code file}）
      * @param documentId 所属单据；草稿已创建的情况下由前端传入
      * @param nodeKey    所属流程节点（审批凭证需要，申请资料可空）
      * @param bizType    apply 申请 / approve 审批凭证 / seal 用印 / receipt 付款回单
@@ -74,6 +75,13 @@ public class AttachmentController {
         return stream(content, inline, true);
     }
 
+    /**
+     * 删除附件。
+     *
+     * <p>只能删本人上传的（管理员例外）；单据已提交后附件属于审批留痕，不允许再删。
+     *
+     * @param id 附件 ID
+     */
     @DeleteMapping("/{id}")
     @Audit(module = "document", action = "deleteAttachment")
     public R<Void> delete(@PathVariable Long id) {

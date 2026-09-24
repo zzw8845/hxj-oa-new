@@ -19,9 +19,11 @@ import java.util.Map;
 @Data
 public class FormTemplateSaveReq {
 
+    /** 所属单据类型 ID */
     @NotNull(message = "单据类型不能为空")
     private Long docTypeId;
 
+    /** 模板名称 */
     @NotBlank(message = "模板名称不能为空")
     @Size(max = 64, message = "模板名称不能超过 64 字")
     private String name;
@@ -33,14 +35,21 @@ public class FormTemplateSaveReq {
     /** 字段级权限（可选，随模板一起存）。为空表示不动已有配置 */
     private List<FieldPerm> fieldPermissions;
 
+    /** 字段级权限：控制「某个流程节点上、某个表单字段」是否可见 / 可编辑 */
     @Data
     public static class FieldPerm {
         /** 节点标识：* 表示所有节点，其余为流程节点 key（如 n3） */
         @NotBlank(message = "节点标识不能为空")
         private String nodeKey;
+
+        /** 字段标识（对应 schema.fields[].key） */
         @NotBlank(message = "字段标识不能为空")
         private String fieldKey;
+
+        /** 该节点是否可见 */
         private Boolean visible;
+
+        /** 该节点是否可编辑 */
         private Boolean editable;
     }
 }

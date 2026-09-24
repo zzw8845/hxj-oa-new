@@ -15,11 +15,13 @@
   · 委托让 B 看得见，升级让 C 也能批 —— 两人同时看到同一条，
     谁先批谁成功，另一个应当得到"任务已被处理"而不是 500。
 
-用例自建夹具（申请人所在部门必须有"有负责人的上级部门"），跑完物理清理。
+用例自建夹具（申请人所在部门必须有"有负责人的上级部门"），跑完物理清理
+（含临时夹具申请人账号，按记下的 id 删）。
 """
 import json
 import os
 import subprocess
+import time
 import urllib.error
 import urllib.request
 
@@ -28,13 +30,24 @@ os.environ['NO_PROXY'] = os.environ['no_proxy']
 B = 'http://127.0.0.1:8080'
 DB = 'haixiajin_oa'
 
-APPLICANT = 'zhaocs'
+# ---- 夹具申请人：**必须"不是本部门负责人"**（同 verify_escalation_api 的夹具前提）------
+# 首审批节点规则是 initiator_leader（＝申请人所在部门的负责人）。申请人若就是该部门
+# 负责人，自审被移除 ⇒ 首节点没有真实承办人 ⇒ 本用例后面「原承办人登录」「委托给 B」
+# 「升级给 C」全部连锁失败。实测演示组织架构里没有现成账号同时满足
+# 「本人≠本部门负责人」与「上级部门负责人≠本部门负责人」，故临时建一个 dept 4 的
+# 非负责人账号（dept 4 是唯一满足第二条的部门）。
+FIXTURE_DEPT = 4
+FIXTURE_ROLE = 'EMPLOYEE'
+FIXTURE_PWD = '123456'
+FIX_ACCOUNT = 'e2efix%s%s' % (int(time.time()) % 1000000, os.getpid() % 1000)
+APPLICANT = FIX_ACCOUNT          # 下面所有按 account 反查的 SQL 都跟着它走
 DELEGATE = 'linjl'
-EXPECTED_TOTAL = 30
+EXPECTED_TOTAL = 34
 
 PASS, FAIL = [], []
 fixture = []
 delegation_ids = []
+fixture_user_id = None   # 临时夹具申请人 id（收尾按它删）
 
 
 def call(method, path, token=None, body=None):
@@ -72,6 +85,29 @@ def scalar(stmt):
 def login(account, pwd='123456'):
     st, r = call('POST', '/api/auth/login', body={'account': account, 'password': pwd})
     return (r.get('data') or {}).get('token') if st == 200 and r.get('code') == 0 else None
+
+
+def create_fixture_applicant(admin_tk):
+    """临时建一个「非部门负责人」的申请人账号，返回其 id（走接口，保证角色/快照齐全）。"""
+    global fixture_user_id
+    st, r = call('POST', '/api/users', token=admin_tk, body={
+        'realName': 'E2E夹具申请人', 'jobNo': FIX_ACCOUNT, 'account': FIX_ACCOUNT,
+        'password': FIXTURE_PWD, 'deptId': FIXTURE_DEPT, 'roleCodes': [FIXTURE_ROLE]})
+    if st == 200 and r.get('code') == 0:
+        fixture_user_id = (r.get('data') or {}).get('id')
+    else:
+        print('  [夹具] 建临时申请人失败：HTTP %s / %s' % (st, r.get('msg', r)))
+    return fixture_user_id
+
+
+def remove_fixture_applicant():
+    """按**创建时记下的 id** 删掉夹具账号（不给任何"按模式删"的口子）。"""
+    if not fixture_user_id:
+        return
+    call('DELETE', '/api/users/%s' % fixture_user_id, token=admin)
+    sql('DELETE FROM user_role WHERE user_id=%s' % fixture_user_id)
+    sql('DELETE FROM user_post WHERE user_id=%s' % fixture_user_id)
+    sql('DELETE FROM sys_user WHERE id=%s' % fixture_user_id)
 
 
 def todos_of(tk):
@@ -115,6 +151,7 @@ def cleanup():
     # 只删本次创建的那条委托（**不要整表删**）
     if dg.get('id'):
         sql('DELETE FROM flow_delegation WHERE id=%s' % dg['id'])
+    remove_fixture_applicant()
 
 
 print('=' * 72)
@@ -126,8 +163,11 @@ before = {k: scalar('SELECT COUNT(*) FROM %s' % t)
                        ('notify', 'notification'), ('esc', 'flow_escalation'))}
 
 admin = login('admin')
-applicant = login(APPLICANT)
-check('账号登录成功（执行方 admin / 申请人 %s）' % APPLICANT, bool(admin and applicant))
+create_fixture_applicant(admin)
+applicant = login(APPLICANT, FIXTURE_PWD)
+check('账号登录成功（执行方 admin / 申请人 %s，dept %s 的临时非负责人账号）'
+      % (APPLICANT, FIXTURE_DEPT), bool(admin and applicant and fixture_user_id),
+      '夹具 id=%s' % fixture_user_id)
 
 # ---- 夹具 ----
 st, r = call('POST', '/api/documents', token=applicant, body={
@@ -145,8 +185,8 @@ node_id = scalar('SELECT id FROM flow_instance_node WHERE document_id=%s ORDER B
 task_id = scalar('SELECT task_id FROM flow_instance_node WHERE document_id=%s ORDER BY id DESC LIMIT 1' % doc_id)
 assignee_id = scalar('SELECT assignee_id FROM flow_instance_node WHERE document_id=%s ORDER BY id DESC LIMIT 1' % doc_id)
 assignee_acct = scalar('SELECT account FROM sys_user WHERE id=%s' % (assignee_id or 0))
-check('夹具就绪（单据 + 待办 + 承办人）', bool(doc_id and task_id and assignee_id),
-      'docNo=%s 承办人=%s' % (doc_no, assignee_acct))
+check('夹具就绪（单据 + 待办 + **真实承办人**）', bool(doc_id and task_id and assignee_id),
+      'docNo=%s 承办人=%s' % (doc_no, assignee_acct or '(空 ⇒ 申请人就是本部门负责人，夹具前提不成立)'))
 
 owner_tk = login(assignee_acct)          # 原承办人 A
 delegate_tk = login(DELEGATE)            # 受托人 B（也是升级引入的候选人之外的第三人）
@@ -200,6 +240,40 @@ seen_c = [t for t in todos_of(leader_tk) if t.get('taskId') == task_id]
 check('★ C 的待办列表里也能看到该任务（升级要真的"看得见"，否则等于没升级）',
       len(seen_c) == 1,
       'C(%s) 待办数=%d，命中=%d' % (leader_acct, len(todos_of(leader_tk)), len(seen_c)))
+
+# ---------------------------------------------------------------- 二之一、审批动作白名单
+print()
+print('=' * 72)
+print('二之一、审批动作白名单：未知 action 必须报错，不能静默当"通过"')
+print('=' * 72)
+
+# 【为什么必须有用例守住这一条】原实现是「除 reject 外一律走通过分支」，
+# 于是 action 拼错（aprove）、传了别的动作名（withdraw）、或将来新增动作而调用方先上线，
+# 都会**静默批准** —— 审批是不可逆动作，一个 typo 等于替审批人签了字，且不留痕迹。
+# 这类缺陷靠读代码看不出来（代码"看着能跑"），只有断言"必须报错 + 状态不许动"才守得住。
+#
+# 用**真实承办人 A** 去打：换别人会先被 assertAssignee 拦下，就走不到 action 分派那一步，
+# 断言会假绿（验的是"你不是承办人"而不是"action 非法"）。
+status_before = scalar("SELECT status FROM flow_instance_node WHERE task_id='%s'" % task_id)
+st, r = call('POST', '/api/todos/approve', token=owner_tk,
+             body={'taskId': task_id, 'action': 'aprove', 'comment': 'E2E 拼错的 action'})
+check('★ 拼错的 action（aprove）被拒绝，不是静默通过',
+      st == 200 and r.get('code') != 0 and '不支持的审批动作' in str(r.get('msg') or ''),
+      'HTTP %d code=%s msg=%s' % (st, r.get('code'), (r.get('msg') or '')[:44]))
+
+st, r = call('POST', '/api/todos/approve', token=owner_tk,
+             body={'taskId': task_id, 'action': 'withdraw', 'comment': 'E2E 非法 action'})
+check('★ 非审批语义的 action（withdraw）同样被拒绝',
+      st == 200 and r.get('code') != 0,
+      'HTTP %d code=%s' % (st, r.get('code')))
+
+# 两条都被拒之后，节点状态与待办归属都必须**原封不动** ——
+# 这一条才是"没有静默推进"的真正证据；只看返回码不足以排除"报错了但也批了"。
+check('★ 两次非法 action 之后该节点状态未变、仍是 A 的待办',
+      scalar("SELECT status FROM flow_instance_node WHERE task_id='%s'" % task_id) == status_before
+      and bool([t for t in todos_of(owner_tk) if t.get('taskId') == task_id]),
+      'status %s→%s' % (status_before,
+                        scalar("SELECT status FROM flow_instance_node WHERE task_id='%s'" % task_id)))
 
 # ---------------------------------------------------------------- 三、批量审批
 print()
@@ -368,6 +442,10 @@ check('单据/任务/通知/升级台账 全部回到基线',
          before['task'], scalar('SELECT COUNT(*) FROM ACT_RU_TASK'),
          before['notify'], scalar('SELECT COUNT(*) FROM notification'),
          before['esc'], scalar('SELECT COUNT(*) FROM flow_escalation')))
+check('临时夹具申请人已删净（可登录账号数归零、角色绑定已解）',
+      scalar("SELECT COUNT(*) FROM sys_user WHERE account='%s' AND deleted=0" % FIX_ACCOUNT) == '0'
+      and scalar('SELECT COUNT(*) FROM user_role WHERE user_id=%s' % (fixture_user_id or 0)) == '0',
+      'id=%s account=%s' % (fixture_user_id, FIX_ACCOUNT))
 
 print()
 print('=' * 72)

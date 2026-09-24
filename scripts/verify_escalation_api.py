@@ -16,11 +16,12 @@
   4. **可追溯**：台账记录升级给了谁；上级与原承办人各收到一条通知。
 
 夹具自建（申请人所在部门必须有"有负责人的上级部门"，否则只会走"未找到上级"分支），
-跑完把单据、流程痕迹、升级台账、通知全部物理清干净。
+跑完把单据、流程痕迹、升级台账、通知、以及对夹具申请人账号全部物理清干净。
 """
 import json
 import os
 import subprocess
+import time
 import urllib.error
 import urllib.request
 
@@ -29,14 +30,30 @@ os.environ['NO_PROXY'] = os.environ['no_proxy']
 B = 'http://127.0.0.1:8080'
 DB = 'haixiajin_oa'
 
-# 申请人 zhaocs（资金结算部 dept 4，该部门负责人=他自己 5）
-#   → 首节点承办人 = 5；沿部门树往上：dept 4 的父 = dept 2（财务中心，负责人=3 李财务）
-#   → 升级对象应为 3（且 3 ≠ 承办人 5，不会被排除）
-APPLICANT = 'zhaocs'
-EXPECTED_TOTAL = 22
+# ---- 夹具申请人：**必须"不是本部门负责人"** -----------------------------------
+# 首审批节点的规则是 initiator_leader（＝申请人所在部门的负责人）。若申请人自己就是
+# 该部门负责人，**自审会被移除** ⇒ 该节点没有真实承办人、引擎直接把节点判完成
+# ⇒ 下面"把 deadline 改到过去造出超时"这个前提根本不成立。
+# （本用例在 2026-09-24 之前一直红着，就是这个原因 —— 当时误当成"既有问题"记着。）
+#
+# 实测演示组织架构里**没有任何现成账号**同时满足两条：
+#   ① 本人 ≠ 本部门负责人          ② 本部门的上级部门负责人 ≠ 本部门负责人
+# （dept 4 资金结算部是唯一满足②的部门：父 dept 2 财务中心，负责人=3 李财务；
+#   但它在编人员只有负责人本人 zhaocs(id=5)）
+# ⇒ 临时建一个 dept 4 的非负责人账号当申请人，收尾按记下的 id 删净。
+#
+# 目标格局：申请人=临时账号(dept 4) → 首节点承办人 = 5 zhaocs（≠ 申请人，不会被移除）
+#          → 升级目标 = dept 4 的父 dept 2 的负责人 = 3 lifinance（≠ 承办人，不会被排除）
+FIXTURE_DEPT = 4
+FIXTURE_ROLE = 'EMPLOYEE'
+FIXTURE_PWD = '123456'
+FIX_ACCOUNT = 'e2efix%s%s' % (int(time.time()) % 1000000, os.getpid() % 1000)
+APPLICANT = FIX_ACCOUNT          # 下面所有按 account 反查的 SQL 都跟着它走
+EXPECTED_TOTAL = 23
 
 PASS, FAIL = [], []
 fixture = []       # [(documentId, docNo)]
+fixture_user_id = None   # 临时夹具申请人 id（收尾按它删）
 
 
 def call(method, path, token=None, body=None):
@@ -76,6 +93,36 @@ def login(account, pwd='123456'):
     return (r.get('data') or {}).get('token') if st == 200 and r.get('code') == 0 else None
 
 
+def create_fixture_applicant(admin_tk):
+    """临时建一个「非部门负责人」的申请人账号，返回其 id。
+
+    刻意走 `POST /api/users` 而不是直接 INSERT：新建员工要同时写 user_role、
+    user_post、并失效权限快照缓存；直接写库会造出一个"能登录但没有任何角色"的账号，
+    那种账号一旦被用在夹具里，失败原因会指向一个与本次改动无关的地方。
+    """
+    global fixture_user_id
+    st, r = call('POST', '/api/users', token=admin_tk, body={
+        'realName': 'E2E夹具申请人', 'jobNo': FIX_ACCOUNT, 'account': FIX_ACCOUNT,
+        'password': FIXTURE_PWD, 'deptId': FIXTURE_DEPT, 'roleCodes': [FIXTURE_ROLE]})
+    if st == 200 and r.get('code') == 0:
+        fixture_user_id = (r.get('data') or {}).get('id')
+    else:
+        print('  [夹具] 建临时申请人失败：HTTP %s / %s' % (st, r.get('msg', r)))
+    return fixture_user_id
+
+
+def remove_fixture_applicant():
+    """按**创建时记下的 id** 删掉夹具账号（不给任何"按模式删"的口子）。"""
+    if not fixture_user_id:
+        return
+    call('DELETE', '/api/users/%s' % fixture_user_id, token=admin)
+    # 接口删除语义 = 停用 + 逻辑删 + 释放账号/工号 + 真删角色绑定；对业务已不可见，
+    # 但会在 sys_user 里留一行 deleted=1 逐渐发胖 ⇒ 再按 id 物理删掉这一行。
+    sql('DELETE FROM user_role WHERE user_id=%s' % fixture_user_id)
+    sql('DELETE FROM user_post WHERE user_id=%s' % fixture_user_id)
+    sql('DELETE FROM sys_user WHERE id=%s' % fixture_user_id)
+
+
 def cleanup():
     for doc_id, doc_no in fixture:
         # 流程实例 id 从**两张表**取并集：flow_instance（业务侧，永远有）与
@@ -112,6 +159,7 @@ def cleanup():
             sql('DELETE FROM %s WHERE document_id=%s' % (t, doc_id))
         sql("DELETE FROM notification WHERE biz_type='document' AND biz_id=%s" % doc_id)
         sql('DELETE FROM document WHERE id=%s' % doc_id)
+    remove_fixture_applicant()
 
 
 print('=' * 72)
@@ -124,8 +172,11 @@ before_notify = scalar('SELECT COUNT(*) FROM notification')
 before_esc = scalar('SELECT COUNT(*) FROM flow_escalation')
 
 admin = login('admin')
-applicant = login(APPLICANT)
-check('两个账号登录成功（执行升级 admin / 申请人 %s）' % APPLICANT, bool(admin and applicant))
+create_fixture_applicant(admin)
+applicant = login(APPLICANT, FIXTURE_PWD)
+check('两个账号登录成功（执行升级 admin / 申请人 %s，dept %s 的临时非负责人账号）'
+      % (APPLICANT, FIXTURE_DEPT), bool(admin and applicant and fixture_user_id),
+      '夹具 id=%s' % fixture_user_id)
 
 leader_id = scalar("SELECT leader_id FROM department WHERE id="
                    "(SELECT parent_id FROM department WHERE id="
@@ -149,8 +200,9 @@ if doc_id:
 node_id = scalar('SELECT id FROM flow_instance_node WHERE document_id=%s ORDER BY id DESC LIMIT 1' % doc_id)
 task_id = scalar('SELECT task_id FROM flow_instance_node WHERE document_id=%s ORDER BY id DESC LIMIT 1' % doc_id)
 assignee = scalar('SELECT assignee_id FROM flow_instance_node WHERE document_id=%s ORDER BY id DESC LIMIT 1' % doc_id)
-check('夹具单据已提交且首节点待办生成', bool(doc_id and node_id and task_id),
-      'docNo=%s nodeId=%s' % (doc_no, node_id))
+check('夹具单据已提交，首节点有**真实承办人**（申请人≠本部门负责人，未被自审移除）',
+      bool(doc_id and node_id and task_id and assignee),
+      'docNo=%s nodeId=%s 承办人=%s' % (doc_no, node_id, assignee or '(空 ⇒ 夹具前提不成立，见文件头注释)'))
 
 # 造出超时：把该夹具节点的 deadline 改到过去（只动自己的夹具）
 sql('UPDATE flow_instance_node SET deadline = NOW() - INTERVAL 2 HOUR WHERE id=%s' % node_id)
@@ -234,6 +286,10 @@ check('夹具待办已从 Flowable 运行表撤净', scalar('SELECT COUNT(*) FRO
 check('通知数回到原值（夹具产生的通知已删）',
       scalar('SELECT COUNT(*) FROM notification') == before_notify,
       '%s → %s' % (before_notify, scalar('SELECT COUNT(*) FROM notification')))
+check('临时夹具申请人已删净（可登录账号数归零、角色绑定已解）',
+      scalar("SELECT COUNT(*) FROM sys_user WHERE account='%s' AND deleted=0" % FIX_ACCOUNT) == '0'
+      and scalar('SELECT COUNT(*) FROM user_role WHERE user_id=%s' % (fixture_user_id or 0)) == '0',
+      'id=%s account=%s' % (fixture_user_id, FIX_ACCOUNT))
 
 print()
 print('=' * 72)

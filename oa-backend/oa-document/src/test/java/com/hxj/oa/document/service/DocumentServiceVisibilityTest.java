@@ -51,11 +51,16 @@ import static org.mockito.Mockito.when;
  * 原样套回本单据，因此本测试有两个层面的断言：
  *
  * <ol>
- *   <li><b>行为层</b>：跨部门（且非参与人）必须 403；部门内/本人/管理员/参与者必须放行。</li>
+ *   <li><b>行为层</b>：跨部门（且非参与人）必须 403；部门内/本人/范围覆盖到/流程参与者必须放行；
+ *       <b>仅凭 ADMIN 角色不构成放行</b>（2026-09-23 删掉 `hasRole("ADMIN")` 旁路后的新增约束）。</li>
  *   <li><b>结构层</b>：真正发给数据库的 {@code Wrapper} 里，必须逐字包含
  *       {@code DataScopeHelper.buildClause("", user)} —— 这条断言让「口径漂移」在编译期之后
  *       依然能被测试拦住；只要有人再往 assertVisible 里塞第二种判定，它就会红。</li>
  * </ol>
+ *
+ * <p>⚠ 提醒：本项目的构建入口全部带 {@code -DskipTests}，所以下面的断言**不会**在
+ * deploy / 启动脚本里跑。要它生效必须显式 {@code mvn test}。它防的是"改坏了没人知道"，
+ * 不是"改坏了编译不过" —— 后者靠删方法（见 {@link LoginUser} 里的说明）。
  */
 @ExtendWith(MockitoExtension.class)
 class DocumentServiceVisibilityTest {
@@ -244,15 +249,43 @@ class DocumentServiceVisibilityTest {
 
     @Nested
     @DisplayName("管理员与无限制场景")
-    class Bypass {
+    class AdminAndUnrestricted {
 
+        /**
+         * 【2026-09-23 行为变更】本方法原先叫 adminBypassesWithoutQuery，断言
+         * {@code assertVisible} 里有一行 {@code if (user.hasRole("ADMIN")) return;}
+         * —— 即"管理员根本不查库"。那行旁路已删除：它带来的不是能力，而是**遮蔽**
+         * （管理员可见范围的真实来源是 role_data_scope，旁路在的时候配置缺失永远暴露不出来）。
+         * 现在管理员走的是与所有人完全相同的范围判定，只是它的范围恰好配成了 company。
+         */
         @Test
-        @DisplayName("ADMIN 直接放行，一次库都不用查（避免管理端被范围判定拖慢）")
-        void adminBypassesWithoutQuery() {
+        @DisplayName("ADMIN 的可见性来自 role_data_scope（company），而且**确实查了库**")
+        void adminSeesThroughDataScope() {
+            when(documentMapper.selectCount(any())).thenReturn(1L);
+
             assertThatCode(() -> documentService.assertVisible(otherDeptDoc(),
                     user(DataScopeType.COMPANY, 1L, 1L, 6L, "/6/", "ADMIN")))
                     .doesNotThrowAnyException();
-            verifyNoInteractions(documentMapper);
+
+            // 与旧断言相反：必须真的用范围片段查一次 —— 查了才说明没有旁路
+            ArgumentCaptor<Wrapper> captor = ArgumentCaptor.forClass(Wrapper.class);
+            verify(documentMapper).selectCount(captor.capture());
+            String sql = ((QueryWrapper<Document>) captor.getValue()).getSqlSegment();
+            assertThat(sql).contains("company_id = 1");
+            // 角色字符串不得出现在任何判定里（护栏：这是被删掉的那行旁路的等价物）
+            assertThat(sql).doesNotContain("ADMIN");
+        }
+
+        @Test
+        @DisplayName("★收口回归：ADMIN 角色本身不再构成放行 —— 范围是 self 且非本人发起 → 403")
+        void adminRoleAloneGrantsNothing() {
+            when(documentMapper.selectCount(any())).thenReturn(0L);
+            when(flowInstanceNodeMapper.selectHistoryByDocument(anyLong())).thenReturn(List.of());
+
+            // 单据申请人是 9，这里 userId=1 且范围 self ⇒ 仅凭 ADMIN 角色必须拿不到
+            BizException ex = assertForbidden(() -> documentService.assertVisible(otherDeptDoc(),
+                    user(DataScopeType.SELF, 1L, 1L, 6L, "/6/", "ADMIN")));
+            assertThat(ex.getCode()).isEqualTo(403);
         }
 
         @Test

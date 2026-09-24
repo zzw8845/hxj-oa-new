@@ -4,12 +4,14 @@ import com.hxj.oa.common.api.R;
 import com.hxj.oa.common.exception.BizException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.servlet.NoHandlerFoundException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
@@ -82,6 +84,38 @@ public class GlobalExceptionHandler {
         return R.fail(413, limit == null
                 ? "文件超过大小上限，请压缩后重试"
                 : "文件超过大小上限（" + limit + "），请压缩后重试");
+    }
+
+    /**
+     * 请求体读不出来（JSON 语法错、字段类型对不上、body 为空）。
+     *
+     * <p>与 {@link MaxUploadSizeExceededException} 同一类问题：**错在客户端**，
+     * 但如果不单独接住就会落到下面的兜底分支变成「HTTP 500 + 服务异常，请联系管理员」。
+     * 后果有两层：① 对接方明明是自己拼错了 JSON，却去查服务端日志、怀疑服务不稳定；
+     * ② 真实的服务端故障被这类噪音淹没（与 {@code NoResourceFoundException} 那段注释同一个理由）。
+     *
+     * <p>顺带把 Jackson 的原始报错收到 debug：它包含类名与字段路径，对接方**需要**它来定位，
+     * 但不适合放进给终端用户的提示里。
+     */
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public R<Void> handleUnreadableBody(HttpMessageNotReadableException e) {
+        log.debug("请求体无法解析: {}", e.getMessage());
+        return R.fail(400, "请求体格式不正确：请检查是否为合法 JSON、字段类型是否与接口一致");
+    }
+
+    /**
+     * 路径变量 / 查询参数类型转换失败（例如 {@code /api/users/abc} 而接口要 Long）。
+     *
+     * <p>同上：这是调用方把参数传错了，不是服务故障。原先落到兜底分支报 500，
+     * 对接方会以为"这个接口坏了"，而实际是自己拼错了 URL。
+     */
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public R<Void> handleTypeMismatch(MethodArgumentTypeMismatchException e) {
+        log.debug("参数类型不匹配 name={} value={}", e.getName(), e.getValue());
+        return R.fail(400, "参数类型不正确：" + e.getName()
+                + (e.getValue() == null ? "" : "（收到 " + e.getValue() + "）"));
     }
 
     @ExceptionHandler(Exception.class)

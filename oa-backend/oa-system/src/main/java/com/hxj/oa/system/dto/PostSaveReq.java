@@ -16,6 +16,7 @@ import lombok.Data;
 @Data
 public class PostSaveReq {
 
+    /** 岗位名称 */
     @Size(max = 64, message = "岗位名称不能超过 64 字")
     private String name;
 
@@ -23,6 +24,7 @@ public class PostSaveReq {
     @Size(max = 64, message = "岗位编码不能超过 64 字")
     private String code;
 
+    /** 排序号，小的在前 */
     private Integer sortNo;
 
     /** 1 启用 0 停用 */

@@ -56,6 +56,7 @@ public class AuthController {
         return R.ok(null, "密码已修改");
     }
 
+    /** 当前用户拥有的菜单权限点（permType=1，平铺列表，前端按 parentCode 自行组树） */
     @GetMapping("/menus")
     public R<List<LoginResp.MenuItem>> menus() {
         return R.ok(authService.loadMenus(UserContext.require().getUserId()));
@@ -76,6 +77,8 @@ public class AuthController {
      *
      * <p>头缺失或 token 已过期时**不报错** —— 登出的语义是"尽力作废"，
      * 前端随后无论如何都会清掉本地 token。
+     *
+     * @param authorization 当前令牌，形如 {@code Bearer eyJ...}；不传也能调通
      */
     @PostMapping("/logout")
     @Audit(module = "auth", action = "logout")

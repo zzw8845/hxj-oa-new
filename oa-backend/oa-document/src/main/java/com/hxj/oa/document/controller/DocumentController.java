@@ -82,7 +82,13 @@ public class DocumentController {
         return R.ok(documentService.detail(id, UserContext.require()));
     }
 
-    /** 列表（受行级数据范围约束） */
+    /**
+     * 列表（受行级数据范围约束）。
+     *
+     * <p>筛选条件走 query string 平铺（不是 JSON body），字段见 {@code DocumentQuery}。
+     *
+     * @param query 筛选与分页条件
+     */
     @GetMapping
     public R<PageResult<Document>> page(DocumentQuery query) {
         return R.ok(documentService.page(query, UserContext.require()));
@@ -110,6 +116,8 @@ public class DocumentController {
      *
      * <p>前端文件名走 RFC 5987 的 {@code filename*}：中文文件名直接塞 {@code filename=}
      * 会被截断或乱码（与附件下载同一处理）。
+     *
+     * @param query 导出筛选条件（字段见 {@code LedgerExportQuery}）
      */
     @GetMapping("/export")
     @RequirePerm("document:export")

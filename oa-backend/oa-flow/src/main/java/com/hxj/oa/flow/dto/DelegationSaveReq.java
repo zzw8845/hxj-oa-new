@@ -13,6 +13,7 @@ import java.time.LocalDateTime;
 @Data
 public class DelegationSaveReq {
 
+    /** 受托人（代理人）用户 ID */
     @NotNull(message = "受托人不能为空")
     private Long delegateId;
 
@@ -20,12 +21,15 @@ public class DelegationSaveReq {
     @Size(max = 32, message = "业务类别不能超过 32 字")
     private String bizCategory;
 
+    /** 生效开始时间（ISO-8601，如 2026-09-24T09:00:00） */
     @NotNull(message = "生效开始时间不能为空")
     private LocalDateTime startAt;
 
+    /** 生效结束时间（ISO-8601） */
     @NotNull(message = "生效结束时间不能为空")
     private LocalDateTime endAt;
 
+    /** 说明 / 委托原因 */
     @Size(max = 255, message = "说明不能超过 255 字")
     private String remark;
 }

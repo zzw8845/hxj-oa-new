@@ -18,19 +18,29 @@ public class AttachmentVO {
 
     private static final Set<String> PREVIEWABLE = Set.of("jpg", "jpeg", "png", "gif", "bmp", "webp", "pdf");
 
+    /** 附件 ID（下载 / 预览 / 删除都用它） */
     private Long id;
+    /** 所属单据 ID；null = 还没挂到单据上的草稿附件（仅上传者本人可见） */
     private Long documentId;
+    /** 收附件的流程节点编码（如 n2）；申请阶段的资料为 null */
     private String nodeKey;
+    /** apply 申请资料 / approve 审批凭证 / seal 用印文件 / receipt 付款回单 */
     private String bizType;
     /** 业务类型中文名，前端直接展示，避免再维护一份映射 */
     private String bizTypeName;
+    /** 原始文件名 */
     private String fileName;
+    /** 文件大小（字节） */
     private Long fileSize;
     /** 人类可读大小，如 1.2 MB */
     private String sizeText;
+    /** 上传时的 Content-Type（⚠ 客户端自报值，仅供展示，不要据此决定怎么解析） */
     private String mimeType;
+    /** 上传人用户 ID */
     private Long uploaderId;
+    /** 上传人姓名 */
     private String uploaderName;
+    /** 上传时间 */
     private LocalDateTime createdAt;
     /** 能否在浏览器内直接预览（图片 / PDF），否则前端只给下载入口 */
     private Boolean previewable;

@@ -17,20 +17,30 @@ import lombok.EqualsAndHashCode;
 @TableName("flow_escalation")
 public class FlowEscalation extends BaseEntity {
 
+    /** 公司 ID */
     private Long companyId;
+    /** 单据 ID */
     private Long documentId;
+    /** 流程实例 ID */
     private Long instanceId;
     /** flow_instance_node.id */
     private Long nodeId;
+    /** 节点标识 */
     private String nodeKey;
+    /** 节点名称 */
     private String nodeName;
+    /** 引擎任务 ID */
     private String taskId;
+    /** 原承办人 ID */
     private Long fromAssigneeId;
     /** 升级给谁；未找到上级时为空 */
     private Long toAssigneeId;
     /** 1 已升级 0 未找到上级负责人 */
     private Integer status;
+    /** 说明 / 未升级原因 */
     private String reason;
+    /** 创建人 ID */
     private Long createdBy;
+    /** 最后更新人 ID */
     private Long updatedBy;
 }

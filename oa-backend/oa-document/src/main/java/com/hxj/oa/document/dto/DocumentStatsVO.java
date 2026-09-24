@@ -53,6 +53,7 @@ public class DocumentStatsVO {
     public static class DailyCount {
         /** yyyy-MM-dd */
         private String date;
+        /** 当日发起量（提交口径） */
         private long count;
 
         public DailyCount() {

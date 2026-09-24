@@ -47,8 +47,10 @@ import java.util.stream.Collectors;
  * </ul>
  * 两者都会在响应里带出「需重新登录」的提示，避免用户改完发现"没生效"而困惑。
  *
- * <p><b>内置角色（is_builtin=1）不可删除</b>：它们是流程指派规则的锚点
- * （如 ACCOUNTANT / CASHIER / GM），删掉会让已部署的流程解析不出审批人。
+ * <p><b>内置角色（is_builtin=1）受保护</b>：它们是流程指派规则的锚点（如 ACCOUNTANT / CASHIER / GM）——
+ * 删掉会让已部署流程解析不出审批人；改名 / 改绑定的部门岗位会让解析结果**静默漂移**；
+ * 清空权限点或摘掉 {@value #ROLE_MANAGE_PERM} 会造成**全局自锁**（系统内再无人能进角色管理，只能改库恢复）。
+ * 详见下面三处 C6 护栏。
  */
 @Slf4j
 @Service
@@ -70,6 +72,16 @@ public class RoleAdminService {
      * 失效点集中在本类与 {@code UserAdminService}，新增写入口时请一并处理。
      */
     private final AuthSnapshotCache snapshotCache;
+
+    /**
+     * 角色管理入口权限点。内置角色一旦丢掉它，系统里**再没有人能进入角色管理**
+     * —— 这是比"管理员把自己停用"更严重的全局自锁，只能改库恢复。
+     */
+    private static final String ROLE_MANAGE_PERM = "system:role";
+
+    private static boolean isBuiltin(SysRole r) {
+        return r.getIsBuiltin() != null && r.getIsBuiltin() == 1;
+    }
 
     /* ------------------------------------------------------------------ 查询 */
 
@@ -154,6 +166,25 @@ public class RoleAdminService {
         String name = req.getName().trim();
         assertNameFree(companyId, name, id);
 
+        // 内置角色保护（C6 第二层）：内置角色是流程指派规则的锚点
+        // （selectUserIdsByDeptAndRole / 按名解析角色）。改名或改绑定的部门岗位，
+        // 会让**已部署流程**的解析结果静默漂移 —— 不报错，只在某天变成"审批人不对"。
+        // 备注可以改；部门/岗位只在显式传入且与现值不同时才拦，避免界面回传原值被误伤。
+        if (isBuiltin(exist)) {
+            boolean deptProvided = req.getDeptId() != null || StringUtils.hasText(req.getDeptName());
+            boolean postProvided = StringUtils.hasText(req.getPostName());
+            Long newDeptId = deptProvided
+                    ? orgResolver.resolveDeptId(companyId, req.getDeptId(), req.getDeptName())
+                    : exist.getDeptId();
+            String newPostName = postProvided ? emptyToNull(req.getPostName()) : exist.getPostName();
+            if (!Objects.equals(name, exist.getName())
+                    || !Objects.equals(newDeptId, exist.getDeptId())
+                    || !Objects.equals(newPostName, exist.getPostName())) {
+                throw BizException.of("「%s」是内置角色，名称与绑定的部门/岗位是流程指派规则的锚点，不允许修改",
+                        exist.getName());
+            }
+        }
+
         SysRole upd = new SysRole();
         upd.setId(id);
         upd.setName(name);
@@ -178,7 +209,21 @@ public class RoleAdminService {
     /** 全量覆盖角色的权限点 */
     @Transactional(rollbackFor = Exception.class)
     public RoleVO updatePermissions(Long id, List<String> permCodes) {
-        requireRole(id);
+        SysRole r = requireRole(id);
+        // 内置角色保护（C6 第二层）：只加"不能改自己"是不够的 —— 系统有两个管理员时，
+        // A 仍可把内置角色的权限点清空，B 一起废：这是**全局自锁**，只能改库恢复。
+        // 刻意不一刀切禁改：新增权限点后需要给内置角色补授，一刀切会把人逼去改库。
+        if (isBuiltin(r)) {
+            if (permCodes == null || permCodes.isEmpty()) {
+                throw BizException.of("「%s」是内置角色，不允许清空权限点（清空后系统内无人能再进入管理功能）",
+                        r.getName());
+            }
+            List<String> current = detail(id).getPermCodes();
+            if (current != null && current.contains(ROLE_MANAGE_PERM) && !permCodes.contains(ROLE_MANAGE_PERM)) {
+                throw BizException.of("「%s」是内置角色，不允许移除权限点 %s（移除后系统内无人能再管理角色）",
+                        r.getName(), ROLE_MANAGE_PERM);
+            }
+        }
         overwritePermissions(id, permCodes);
         log.info("配置角色权限 id={} 权限点数={} 操作人={}", id,
                 permCodes == null ? 0 : permCodes.size(), UserContext.currentUserId());
@@ -189,9 +234,15 @@ public class RoleAdminService {
     /** 配置角色数据范围 */
     @Transactional(rollbackFor = Exception.class)
     public RoleVO updateDataScope(Long id, String scopeType, List<Long> deptIds) {
-        requireRole(id);
+        SysRole r = requireRole(id);
         if (!StringUtils.hasText(scopeType)) {
             throw BizException.of("数据范围不能为空");
+        }
+        // 内置角色保护（C6 第二层）：范围=self 时管理员看不到任何他人的单据 ——
+        // 不报错、不拦登录，只是"数据不见了"，是最难自查的一种能力丢失。
+        if (isBuiltin(r) && requireScopeType(scopeType) == DataScopeType.SELF) {
+            throw BizException.of("「%s」是内置角色，数据范围不允许设为「仅本人」（设后管理员看不到任何单据）",
+                    r.getName());
         }
         overwriteDataScope(id, scopeType, deptIds);
         log.info("配置角色数据范围 id={} scope={} 操作人={}", id, scopeType, UserContext.currentUserId());
@@ -280,7 +331,7 @@ public class RoleAdminService {
 
     /** 数据范围是一个角色一条记录，存在即更新，不存在则插入 */
     private void overwriteDataScope(Long roleId, String scopeType, List<Long> deptIds) {
-        DataScopeType type = DataScopeType.of(scopeType);
+        DataScopeType type = requireScopeType(scopeType);
         String deptJson = (type == DataScopeType.CUSTOM_DEPT && deptIds != null && !deptIds.isEmpty())
                 ? JsonUtils.toJson(deptIds.stream().filter(Objects::nonNull).distinct().toList())
                 : null;
@@ -301,6 +352,25 @@ public class RoleAdminService {
                     .set(RoleDataScope::getScopeType, type.getCode())
                     .set(RoleDataScope::getDeptIds, deptJson));
         }
+    }
+
+    /**
+     * 严格解析数据范围枚举。
+     *
+     * <p>{@link DataScopeType#of} 对未知值**静默返回 SELF**（DataScopeType:44），
+     * 于是直连接口传 {@code COMPANY} / {@code all} 会得到"成功响应 + 权限悄悄降级"。
+     * 写路径不接受静默降级：非法值必须显式失败（P5）。
+     */
+    private static DataScopeType requireScopeType(String code) {
+        if (!StringUtils.hasText(code)) {
+            throw BizException.of("数据范围不能为空");
+        }
+        for (DataScopeType t : DataScopeType.values()) {
+            if (t.getCode().equalsIgnoreCase(code.trim())) {
+                return t;
+            }
+        }
+        throw BizException.of("未知的数据范围「%s」，合法值：self / dept / center / custom_dept / company", code);
     }
 
     private RoleVO assemble(SysRole r,

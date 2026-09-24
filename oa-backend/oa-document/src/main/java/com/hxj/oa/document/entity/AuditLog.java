@@ -17,19 +17,28 @@ import java.time.LocalDateTime;
 @TableName("audit_log")
 public class AuditLog implements Serializable {
 
+    /** 主键 */
     @TableId(value = "id", type = IdType.AUTO)
     private Long id;
 
+    /** 公司 ID */
     private Long companyId;
+    /** 操作人 ID */
     private Long userId;
+    /** 操作人姓名 */
     private String userName;
     /** document / flow / permission / seal */
     private String module;
     /** create / submit / approve / reject / config */
     private String action;
+    /** 业务对象 ID（如单据 ID）；部分动作无业务对象时为 null */
     private Long bizId;
+    /** 变更明细 */
     private String detail;
+    /** 客户端 IP */
     private String ip;
+    /** 客户端 User-Agent */
     private String userAgent;
+    /** 操作时间 */
     private LocalDateTime createdAt;
 }

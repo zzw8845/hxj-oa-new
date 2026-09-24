@@ -19,6 +19,7 @@ import java.util.List;
 @Data
 public class BatchApproveReq {
 
+    /** 要审批的任务 ID 列表（来自 GET /api/todos 的 taskId），一次最多 50 条 */
     @NotEmpty(message = "请至少选择一条待办")
     @Size(max = 50, message = "一次最多处理 50 条")
     private List<String> taskIds;

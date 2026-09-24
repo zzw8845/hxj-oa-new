@@ -99,6 +99,19 @@ public class AssigneeResolver {
             selfSkipped = true;
         }
 
+        // 防御纵深：解析出来的人必须**仍然可用**（在岗且未删除）。
+        // 放在出口而不是每条规则里 —— 将来新增一种规则不会因为"忘了校验"而静默漏掉。
+        // 为什么必须做：AssigneeTaskListener 只要 size()==1 就 setAssignee，
+        // 空列表有 auto_skip 兜底，而"非空废人"会被静默永久卡死。
+        if (!ids.isEmpty()) {
+            int before = ids.size();
+            ids.retainAll(userMapper.selectAliveIds(new ArrayList<>(ids)));
+            if (ids.size() < before) {
+                log.warn("节点 {} 解析出的审批人中有 {} 个已停用/已删除，已剔除：剩余 {} 人",
+                        nodeId, before - ids.size(), ids.size());
+            }
+        }
+
         if (ids.isEmpty()) {
             log.warn("节点 {} 未解析出任何审批人 ctx(applicant={}, dept={}, category={})",
                     nodeId, ctx.getApplicantId(), ctx.getApplicantDeptId(), ctx.getBizCategory());
@@ -118,7 +131,12 @@ public class AssigneeResolver {
 
     /** 取发起人部门负责人；部门为空时按 fallbackRoleCode 兜底 */
     private List<Long> byInitiatorLeader(Map<String, Object> param, AssigneeContext ctx) {
-        Long deptId = Objects.requireNonNullElse(JsonColumn.toLong(param, "deptId"), ctx.getApplicantDeptId());
+        // 不能写成 Objects.requireNonNullElse(param, ctx)：两者都为 null 时它**直接抛 NPE**
+        // —— 这是「流程预览 500」的确切根因（规则里没配 deptId，而申请人自己还没有部门）。
+        Long deptId = JsonColumn.toLong(param, "deptId");
+        if (deptId == null) {
+            deptId = ctx.getApplicantDeptId();
+        }
         if (deptId != null) {
             Long leaderId = departmentService.leaderIdOf(deptId);
             if (leaderId != null) {

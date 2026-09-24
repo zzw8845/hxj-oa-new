@@ -288,8 +288,10 @@ print('=' * 72)
 # 只清理**本次创建的那些 id**，并把生效版本切回原来那一版。
 #
 # ⚠ 这里必须按"创建时记下的 id"删，绝不能按模式删（例如 `WHERE id > 原生效id`）——
-# 第一版就是这么写的，把同表里的另外两个业务模板（员工报销单 / 用印申请单）一起删掉了，
-# 只能从 sql/seed_data.sql 恢复。**测试的清理语句只允许碰自己造的数据。**
+# 第一版就是这么写的，把同表里的另外两个业务模板（员工报销单 / 用印申请单）一起删掉了。
+# **测试的清理语句只允许碰自己造的数据。**
+# （旧注释写的是"只能从 seed_data.sql 恢复"—— 那个文件已退役：演示数据现在一律走
+#   `oa-backend/scripts/bootstrap_via_api.py` 调接口重建，不再直写库。）
 if created_ids:
     id_list = ','.join(str(i) for i in set(created_ids))
     sql('DELETE FROM form_field_permission WHERE template_id IN (%s)' % id_list)

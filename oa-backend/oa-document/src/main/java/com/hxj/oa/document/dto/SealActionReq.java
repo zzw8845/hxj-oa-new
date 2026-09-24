@@ -15,6 +15,7 @@ import lombok.Data;
 @Data
 public class SealActionReq {
 
+    /** 单据 ID（界面是在**单据**上点「登记用印」「归还」，不是用印申请行 ID） */
     @NotNull(message = "单据ID不能为空")
     private Long documentId;
 

@@ -12,10 +12,13 @@ import java.io.Serializable;
 @JsonInclude(JsonInclude.Include.ALWAYS)
 public class R<T> implements Serializable {
 
-    /** 0=成功，其他=失败 */
+    /** 0=成功，其他=失败。⚠ 业务失败时 HTTP 状态码仍是 200，**必须判 code，不要判 HTTP 状态** */
     private int code;
+    /** 提示信息，成功时为 success；失败时可直接展示给用户 */
     private String msg;
+    /** 业务数据。无返回值时为 null */
     private T data;
+    /** 服务端毫秒时间戳 */
     private long timestamp = System.currentTimeMillis();
 
     public static <T> R<T> ok() {

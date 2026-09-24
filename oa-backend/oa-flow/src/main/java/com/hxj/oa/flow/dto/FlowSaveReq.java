@@ -21,6 +21,7 @@ import java.util.List;
 @Data
 public class FlowSaveReq {
 
+    /** 流程名称（同一单据类型下按版本管理；已生效流程要改结构必须新建版本） */
     @NotBlank(message = "流程名称不能为空")
     @Size(max = 64, message = "流程名称不能超过 64 字")
     private String name;
@@ -37,14 +38,22 @@ public class FlowSaveReq {
     /** 结构化节点定义，优先级高于 nodes */
     private List<NodeItem> nodeItems;
 
+    /** 一个流程节点的结构化定义（含条件分支时用 branches） */
     @Data
     public static class NodeItem {
+        /** 节点名称，如「直属部门负责人」 */
         private String nodeName;
+        /** 1 审批 2 抄送 3 条件分支 4 办理 5 发起 */
         private Integer nodeType;
+        /** 指派规则（「谁是审批人」的唯一来源）：initiator_leader 发起人部门负责人 / dept_role 某部门某角色 / biztype_role 某业务类型某角色 / role 某角色 / user 指定人 / condition */
         private String ruleType;
+        /** 规则参数（JSON 字符串，含义随 ruleType 变化） */
         private String ruleValue;
+        /** 会签模式：1 或签（一人通过即可）2 会签（需全部通过） */
         private Integer signMode;
+        /** 处理时限（小时），用于风险预警与超时升级；留空 = 无时限 */
         private Double slaHours;
+        /** 该节点是否允许加签 */
         private Boolean allowCountersign;
         /** 该节点办理是否必须上传凭证；留空则按节点类型推默认（办理节点为真） */
         private Boolean requireAttachment;

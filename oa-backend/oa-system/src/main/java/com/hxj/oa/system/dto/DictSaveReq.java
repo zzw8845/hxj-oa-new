@@ -20,15 +20,19 @@ import lombok.Data;
 @Data
 public class DictSaveReq {
 
+    /** 字典类型，如 docCategory、businessCategory */
     @Size(max = 64, message = "字典类型不能超过 64 字")
     private String dictType;
 
+    /** 字典项编码（同类型内唯一） */
     @Size(max = 64, message = "字典项编码不能超过 64 字")
     private String dictCode;
 
+    /** 字典项显示名称 */
     @Size(max = 128, message = "字典项名称不能超过 128 字")
     private String dictLabel;
 
+    /** 排序号，小的在前 */
     private Integer sortNo;
 
     /** 1 启用 0 停用 */

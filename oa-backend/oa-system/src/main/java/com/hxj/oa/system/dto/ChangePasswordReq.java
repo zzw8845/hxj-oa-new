@@ -13,6 +13,7 @@ import lombok.Data;
 @Data
 public class ChangePasswordReq {
 
+    /** 原密码 */
     @NotBlank(message = "原密码不能为空")
     private String oldPassword;
 
