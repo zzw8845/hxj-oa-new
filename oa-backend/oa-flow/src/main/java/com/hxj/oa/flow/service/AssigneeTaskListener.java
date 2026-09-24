@@ -74,6 +74,19 @@ public class AssigneeTaskListener implements TaskListener {
             }
         }
         task.setVariable("__hitRules_" + nodeKey, String.join(",", result.getHitRules()));
+        /* 【自审标记】申请人就是该节点的审批人，已被 AssigneeResolver 剔除。
+           这个标记后面会被 FlowRuntimeService#autoSkipUnassigned 读走，用来把
+           「无匹配审批人」这句笼统留痕换成「申请人即审批人」—— 两者在界面上
+           长得一样（都是 status=4 已跳过），但审计时要能回答"为什么这一环没了"。
+
+           为什么必须显式：剔除申请人是**硬规则**，冷启动期（组织里只有一个人）
+           必然触发。不留痕的话，客户看到的是"单据少了一环审批"，而系统里
+           查不到任何原因 —— 这正是本项目最忌讳的「静默失败」。
+           对照行业：泛微把「自动处理时在签字意见留痕」做成了独立开关，钉钉的
+           去重也要求在流程记录里能看出"是被去重了"。 */
+        if (result.isSelfSkipped()) {
+            task.setVariable("__selfSkip_" + nodeKey, "1");
+        }
 
         // 2) 待办投影：先落一条待处理记录，任务完成时由 FlowRuntimeService 更新
         FlowInstanceNode rec = new FlowInstanceNode();

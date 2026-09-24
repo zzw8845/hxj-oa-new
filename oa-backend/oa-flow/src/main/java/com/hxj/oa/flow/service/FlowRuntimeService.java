@@ -328,15 +328,29 @@ public class FlowRuntimeService {
                 return processEnded(procInstId);
             }
 
+            /* 【留痕要能回答"为什么这一环没了"】
+               自动跳过有两种完全不同的成因，此前共用一句「无匹配审批人，系统自动通过」，
+               于是"申请人就是审批人"（自审，硬规则必然触发）和"规则真没解析出人"
+               在界面与审计里长得一模一样 —— 后者是配置错误要报警，前者是预期行为。
+               AssigneeTaskListener 在分派时已把自审标记写进任务变量，这里读出来换成明确措辞。
+               对照行业：泛微把「自动处理时在签字意见留痕」作为独立开关；钉钉的去重同样
+               要求在流程记录里看得出"这一环是被去重了"。 */
+            String skipKey = pending.getTaskDefinitionKey();
+            boolean selfSkip = "1".equals(String.valueOf(
+                    taskService.getVariable(pending.getId(), "__selfSkip_" + skipKey)));
+            String reason = selfSkip ? "申请人即该节点审批人，系统自动通过（自审）"
+                    : "无匹配审批人，系统自动通过";
+
             FlowInstanceNode rec = currentNodeRecord(pending.getId());
             if (rec != null) {
                 rec.setStatus(4);
-                rec.setAction("auto_skip");
-                rec.setCommentText("无匹配审批人，系统自动通过");
+                rec.setAction(selfSkip ? "self_skip" : "auto_skip");
+                rec.setCommentText(reason);
                 rec.setActionAt(LocalDateTime.now());
                 instanceNodeMapper.updateById(rec);
             }
-            log.warn("节点无处理人，自动跳过 docNo={} nodeKey={}", inst.getBusinessKey(), pending.getTaskDefinitionKey());
+            log.warn("节点无处理人，自动跳过 docNo={} nodeKey={} selfSkip={} reason={}",
+                    inst.getBusinessKey(), skipKey, selfSkip, reason);
             taskService.complete(pending.getId());
 
             // 跳过后要按「接下来所处节点」回写，否则单据当前节点会停在被跳过的那个节点上
@@ -344,7 +358,7 @@ public class FlowRuntimeService {
             instanceMapper.updateById(inst);
             String nextKey = inst.getCurrentNodeKey();
             publish(FlowLifecycleEvent.Stage.AUTO_SKIPPED, inst, nextKey, configNodeName(inst, nextKey), null,
-                    "无匹配审批人，自动通过");
+                    reason);
 
             // 被跳过的正好是最后一个节点时，引擎实例已结束，需要补一次办结事件
             ProcessInstance still = runtimeService.createProcessInstanceQuery()
