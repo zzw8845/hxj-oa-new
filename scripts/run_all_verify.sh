@@ -62,6 +62,7 @@ SUITES=(
   verify_admin_api
   verify_attachment_api
   verify_idor_fix
+  verify_endpoint_gating
   verify_master_data_api
   verify_logout_revoke
   verify_seal_api

@@ -64,43 +64,83 @@ def first_arg(args: str) -> str:
 def extract_path(args: str):
     """从一次 http(...) 调用里抽出路径形状。
 
-    走过的两个假报坑（都记在这里，免得下次又以为是真故障）：
+    走过的三个假报坑（都记在这里，免得下次又以为是真故障）：
       ① 把 '/api/users/' + id 归一成 '/api/users' —— 动态段整段丢了，
          于是报出"前端在调 /api/users 后端没有"这种**假故障**；
       ② 只处理"变量夹在两个引号段中间"（'/a/' + id + '/b'），
          漏了"变量在末尾"（'/api/users/' + id）。
-    现在改成先按顶层逗号切出第一个参数，再按引号切成 字面量/表达式 交替序列：
-    字面量原样拼，每个表达式补一个 {}。不猜结构。
+      ③ **查询串挂在末尾表达式里**时（'/api/x' + (cond ? '?a=' + a : '')），
+         末尾那个表达式属于查询串、不是路径段，不能补成 {}；
+         否则会造出 /api/x/{} 这种不存在的形状 —— 又一条假故障。
+
+    做法：按顶层逗号切出第一个参数，再按引号切成 字面量/表达式 交替序列。
+    字面量原样拼，每个表达式补一个 {}。一旦遇到含 ? 或 & 的片段就**截断**
+    （查询串不是路径的一部分），并丢掉紧邻的那个表达式。
     """
     expr = first_arg(args)
     if '/api' not in expr:
         return None
-    # 按引号切成交替的 字面量 / 表达式：字面量原样拼，表达式补一个 {}
-    path = ''
+    segs = []      # ('lit', text) / ('expr',)
+    cut = False
     for tok in re.findall(r"'[^']*'|\"[^\"]*\"|[^'\"]+", expr):
         if tok[0] in "'\"":
             lit = tok[1:-1]
-            if not path and not lit.startswith('/api'):
-                continue
-            path += lit
-        else:
-            # 表达式里出现 ? 或 & 说明这一段是**查询串**
-            # （真实写法：'/api/documents/export' + (qs.length ? '?' + qs.join('&') : '')）
-            # 该补 {} 还是停？停 —— 查询串不是路径的一部分，
-            # 补成 {} 会造出 '/api/documents/export{}' 这种不存在的形状，又是一次假报。
-            if '?' in tok or '&' in tok:
+            if '?' in lit or '&' in lit:
+                cut = True
                 break
-            if path:
-                path += '{}'
-    return path.split('?')[0] if path else None
+            if not segs and not lit.startswith('/api'):
+                continue
+            segs.append(('lit', lit))
+        else:
+            if '?' in tok or '&' in tok:
+                cut = True
+                break
+            segs.append(('expr',))
+    if cut and segs and segs[-1][0] == 'expr':
+        segs.pop()
+    path = ''
+    for seg in segs:
+        if seg[0] == 'lit':
+            path += seg[1]
+        elif path:
+            path += '{}'
+    return path.split('?')[0] or None
+
+
+def balanced_args(src: str, open_idx: int):
+    """返回 open_idx 处 '(' 所配对 ')' 之内的文本（不含最外层括号）。不配平则 None。
+
+    为什么不能直接用 `http\\((.*?)\\)`：参数里的括号（三元表达式、嵌套调用）会让
+    非贪婪正则**在第一个 ')' 就收口**，把 `{method:'POST'}` 这类选项截在参数之外 ⇒
+    方法被默认成 GET ⇒ 报出"前端在调 GET、后端只有 POST"这种**假故障**。
+    """
+    depth, quote, i = 0, None, open_idx
+    start = open_idx + 1
+    while i < len(src):
+        ch = src[i]
+        if quote:
+            if ch == quote and src[i - 1] != '\\':
+                quote = None
+        elif ch in "'\"":
+            quote = ch
+        elif ch == '(':
+            depth += 1
+        elif ch == ')':
+            depth -= 1
+            if depth == 0:
+                return src[start:i]
+        i += 1
+    return None
 
 
 def frontend_calls():
     """从前端抽出所有 /api 调用（api 对象里的 + 直接 http()/httpBlob() 的）。"""
     src = HTML.read_text(encoding='utf-8')
     out = set()
-    for m in re.finditer(r"http(?:Blob)?\(\s*([^;]{0,500}?)\)", src, re.S):
-        args = m.group(1)
+    for m in re.finditer(r"http(?:Blob)?\(", src):
+        args = balanced_args(src, m.end() - 1)
+        if args is None:
+            continue
         path = extract_path(args)
         if not path:
             continue

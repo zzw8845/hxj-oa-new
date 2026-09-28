@@ -35,8 +35,9 @@ FRONTEND = os.path.join(ROOT, '海峡金OA审批系统-联调版.html')
 ALLOWLIST = {
     # 5 个菜单点：导航本身由前端硬编码，can() 只覆盖了其中 3 项
     'document:menu', 'todo:menu', 'ledger:menu', 'dashboard:menu', 'admin:menu',
-    # 查看粒度点：行级可见性由 DataScopeHelper 决定，未走权限点
-    'document:view:self', 'document:view:dept', 'document:view:company',
+    # ⚠ 3 个「查看粒度点」已于 2026-09-28 补上门控（DocumentController 的 详情/列表/统计，
+    #    OR 语义），故**从本白名单移除**（棘轮只允许收紧）。注意它们仍然**不决定看多宽**
+    #    —— 能看到哪些单据由行级数据范围决定，权限点只回答「是否属于单据体系」。
     # 分角色审批点：审批资格由"节点指派规则"决定（P4：指派规则才是唯一事实）
     'document:approve:leader', 'document:approve:accountant', 'document:approve:cashier',
     # 审批动作点：动作语义已由 /todos/* 与 @Audit 表达

@@ -389,9 +389,23 @@ def parse_controllers(index: dict) -> list[dict]:
                 # javadoc
                 summary, desc, params = doc_parts(javadoc_above(lines, i))
                 # 注解（@RequirePerm / @Audit）
+                # ⚠ 注解**可能跨行**（`@RequirePerm(value = {...},` 换行 `logic = Logic.OR)`）。
+                #   只按"下一行开头是不是 @"贪吃，会在第一行截断 ⇒ 拿到括号不配平的残缺注解 ⇒
+                #   下面那条 `[^)]*` 正则匹配不到 ⇒ 该接口被**静默计入"没挂门控"**。
+                #   所以必须按括号配平继续吃行。这里同时把续行并入同一条注解文本。
                 annos, j = [], i + 1
-                while j < len(lines) and (lines[j].strip().startswith("@") or lines[j].strip() == ""):
-                    annos.append(lines[j].strip())
+                while j < len(lines):
+                    cur = lines[j].strip()
+                    if cur == "":
+                        j += 1
+                        continue
+                    if not cur.startswith("@"):
+                        break
+                    chunk = cur
+                    while chunk.count("(") > chunk.count(")") and j + 1 < len(lines):
+                        j += 1
+                        chunk += " " + lines[j].strip()
+                    annos.append(chunk)
                     j += 1
                 sig, _ = find_method_sig(src, offsets[i] + len(ln))
                 if sig is None:

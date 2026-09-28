@@ -26,7 +26,22 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
-/** 单据：发起、提交、查询、撤回、台账导出 */
+/**
+ * 单据：发起、提交、查询、撤回、台账导出。
+ *
+ * <p><b>门控现状（2026-09-28 补）</b>：<b>只给读路径挂了门控</b> ——
+ * 详情 / 列表 / 统计用 {@code document:view:*}（OR），导出用 {@code document:export}。
+ *
+ * <p>写路径<b>刻意不挂</b>，理由是它们要拦的不是「角色」而是「归属」：
+ * 保存草稿 / 更新 / 提交走 {@code requireOwnEditable}、撤回判定 {@code applicantId}，
+ * 这属于行级归属校验，用权限点表达反而会把它降级成角色判断。
+ *
+ * <p>⚠ <b>建单 {@code POST} 单独说</b>：给它补 {@code document:create} 是<b>真收权</b>
+ * ——现网只有 ADMIN / DEPT_HEAD / EMPLOYEE 持有该点，业务审批角色（GM / 财务总监 / 会计 /
+ * 出纳 / 内控）都没有，补上去出纳当场发不了单。所以它必须与「谁能发起单据」这个
+ * 产品决策一起定，不能顺手补。同理 {@code /types}（单据类型清单）服务于「发起单据」对话框，
+ * 归到同一决策里。
+ */
 @RestController
 @RequestMapping("/api/documents")
 @RequiredArgsConstructor
@@ -76,8 +91,22 @@ public class DocumentController {
         return R.ok(documentService.withdraw(id, UserContext.require()), "已撤回");
     }
 
-    /** 详情（含按当前节点裁剪的表单、流转记录、可执行动作） */
+    /**
+     * 详情（含按当前节点裁剪的表单、流转记录、可执行动作）。
+     *
+     * <p>门控取「单据可见粒度」三点之<b>任一</b>（OR）：{@code document:view:self} /
+     * {@code :dept} / {@code :company}。
+     *
+     * <p>⚠ 这三点<b>不决定「看多宽」</b> —— 能看到哪些单据由行级数据范围决定
+     * （{@code DocumentService#assertVisible}，与列表查询共用同一个 SQL 片段生成器）。
+     * 权限点只回答「这个人是否属于单据体系」。两者必须分开：若把可见性也做成权限点判断，
+     * 就会出现第二份行级权限实现（本项目行级权限只准一份实现）。
+     *
+     * @param id 单据 ID
+     */
     @GetMapping("/{id}")
+    @RequirePerm(value = {"document:view:self", "document:view:dept", "document:view:company"},
+            logic = RequirePerm.Logic.OR)
     public R<DocumentDetailVO> detail(@PathVariable Long id) {
         return R.ok(documentService.detail(id, UserContext.require()));
     }
@@ -87,9 +116,16 @@ public class DocumentController {
      *
      * <p>筛选条件走 query string 平铺（不是 JSON body），字段见 {@code DocumentQuery}。
      *
+     * <p>门控与详情同源：{@code document:view:self} / {@code :dept} / {@code :company} 任一即可（OR）。
+     * 为什么用这三点而不是新造一个 {@code document:view}：现网 9 个角色<b>各自至少持有其中一个</b>
+     * ⇒ 挂门控是<b>零收权</b>（补门控前必须先做这一步核对，否则不是关门而是悄悄收走一批人的权限）；
+     * 新造点则要动种子、8 个角色的绑定与可达性棘轮白名单，属另一件事。
+     *
      * @param query 筛选与分页条件
      */
     @GetMapping
+    @RequirePerm(value = {"document:view:self", "document:view:dept", "document:view:company"},
+            logic = RequirePerm.Logic.OR)
     public R<PageResult<Document>> page(DocumentQuery query) {
         return R.ok(documentService.page(query, UserContext.require()));
     }
@@ -99,8 +135,13 @@ public class DocumentController {
      *
      * <p>路径是字面量 {@code /stats}，Spring 会优先于 {@code /{id}} 匹配，
      * 与已有的 {@code /types} 同理，不会把 stats 当成 id 解析。
+     *
+     * <p>门控与列表同源（{@code document:view:*} 任一）。统计口径必须与列表一致，
+     * 否则「看板数字与台账条数对不上」会变成最难排查的一类问题。
      */
     @GetMapping("/stats")
+    @RequirePerm(value = {"document:view:self", "document:view:dept", "document:view:company"},
+            logic = RequirePerm.Logic.OR)
     public R<DocumentStatsVO> stats() {
         return R.ok(documentService.stats(UserContext.require()));
     }

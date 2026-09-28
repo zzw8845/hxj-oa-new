@@ -48,8 +48,8 @@ summary .cnt{color:var(--muted);font-weight:400;font-size:12px;margin-left:6px}
   <div class="stat"><div class="n">100</div><div class="l">接口（20 个目录）</div></div>
   <div class="stat"><div class="n">100/100</div><div class="l">接口有说明</div></div>
   <div class="stat"><div class="n">578/578</div><div class="l">模型字段有说明</div></div>
-  <div class="stat"><div class="n">44/109</div><div class="l">参数有说明</div></div>
-  <div class="stat"><div class="n">50</div><div class="l">带接口权限门控</div></div>
+  <div class="stat"><div class="n">45/109</div><div class="l">参数有说明</div></div>
+  <div class="stat"><div class="n">53</div><div class="l">带接口权限门控</div></div>
   <div class="stat"><div class="n">51</div><div class="l">带审计留痕</div></div>
 </div>
 
@@ -126,14 +126,13 @@ summary .cnt{color:var(--muted);font-weight:400;font-size:12px;margin-left:6px}
 <li>字段类型无法生成结构（Apifox 只能给 Object/示例）：<code>FormTemplateSaveReq.schema : Map&lt;String,Object&gt;</code></li>
 <li>字段类型无法生成结构（Apifox 只能给 Object/示例）：<code>PreviewRequest.formData : Map&lt;String,Object&gt;</code></li>
 </ul></div></details>
-<details><summary>另有 30 条 P3（路径参数为简单 ID，无说明也不影响对接）</summary><div class="body"><ul>
+<details><summary>另有 29 条 P3（路径参数为简单 ID，无说明也不影响对接）</summary><div class="body"><ul>
 <li><code>GET /api/attachments documentId: Long</code></li>
 <li><code>GET /api/attachments/{id}/download id: Long</code></li>
 <li><code>GET /api/attachments/{id}/preview id: Long</code></li>
 <li><code>PUT /api/documents/{id} id: Long</code></li>
 <li><code>POST /api/documents/{id}/submit id: Long</code></li>
 <li><code>POST /api/documents/{id}/withdraw id: Long</code></li>
-<li><code>GET /api/documents/{id} id: Long</code></li>
 <li><code>GET /api/flows/escalation/by-document/{documentId} documentId: Long</code></li>
 <li><code>GET /api/forms/templates docTypeId: Long</code></li>
 <li><code>POST /api/forms/validate docTypeId: Long</code></li>
@@ -176,10 +175,21 @@ summary .cnt{color:var(--muted);font-weight:400;font-size:12px;margin-left:6px}
 <tr><td><span class="m put">PUT</span></td><td><code>/api/documents/{id}</code></td><td>更新草稿</td><td><code>id</code>、<code>req</code>（无说明）</td><td><span class="tag">写审计</span></td></tr>
 <tr><td><span class="m post">POST</span></td><td><code>/api/documents/{id}/submit</code></td><td>提交审批</td><td><code>id</code></td><td><span class="tag">写审计</span></td></tr>
 <tr><td><span class="m post">POST</span></td><td><code>/api/documents/{id}/withdraw</code></td><td>撤回</td><td><code>id</code></td><td><span class="tag">写审计</span></td></tr>
-<tr><td><span class="m get">GET</span></td><td><code>/api/documents/{id}</code></td><td>详情（含按当前节点裁剪的表单、流转记录、可执行动作）</td><td><code>id</code></td><td>—</td></tr>
-<tr><td><span class="m get">GET</span></td><td><code>/api/documents</code></td><td>列表（受行级数据范围约束）。<div class="desc">筛选条件走 query string 平铺（不是 JSON body），字段见 `DocumentQuery}。</div></td><td><code>query</code></td><td>—</td></tr>
+<tr><td><span class="m get">GET</span></td><td><code>/api/documents/{id}</code></td><td>详情（含按当前节点裁剪的表单、流转记录、可执行动作）。<div class="desc">门控取「单据可见粒度」三点之任一（OR）：`document:view:self} /
+:dept} / `:company}。
+⚠ 这三点不决定「看多宽」 —— 能看到哪些单据由行级数据范围决定
+（`DocumentService#assertVisible}，与列表查询共用同一个 SQL 片段生成器）。
+权限点只回答「这个人是否属于单据体系」。两者必须分开：若把可见性也做成权限点判断，
+就会出现第二份行级权限实现（本项目行级权限只准</div></td><td><code>id</code></td><td><span class="tag">权限 value = {&quot;document:view:self&quot;, &quot;document:view:dept&quot;, &quot;document:view:company&quot;}, logic = RequirePerm.Logic.OR</span></td></tr>
+<tr><td><span class="m get">GET</span></td><td><code>/api/documents</code></td><td>列表（受行级数据范围约束）。<div class="desc">筛选条件走 query string 平铺（不是 JSON body），字段见 `DocumentQuery}。
+门控与详情同源：`document:view:self} / `:dept} / `:company} 任一即可（OR）。
+为什么用这三点而不是新造一个 `document:view}：现网 9 个角色各自至少持有其中一个
+⇒ 挂门控是零收权（补门控前必须先做这一步核对，否则不是关门而是悄悄收走一批人的权限）；
+新造点则要动</div></td><td><code>query</code></td><td><span class="tag">权限 value = {&quot;document:view:self&quot;, &quot;document:view:dept&quot;, &quot;document:view:company&quot;}, logic = RequirePerm.Logic.OR</span></td></tr>
 <tr><td><span class="m get">GET</span></td><td><code>/api/documents/stats</code></td><td>按状态统计（看板/首页用），受行级数据范围约束。<div class="desc">路径是字面量 `/stats}，Spring 会优先于 `/{id}} 匹配，
-与已有的 `/types} 同理，不会把 stats 当成 id 解析。</div></td><td>—</td><td>—</td></tr>
+与已有的 `/types} 同理，不会把 stats 当成 id 解析。
+门控与列表同源（`document:view:*} 任一）。统计口径必须与列表一致，
+否则「看板数字与台账条数对不上」会变成最难排查的一类问题。</div></td><td>—</td><td><span class="tag">权限 value = {&quot;document:view:self&quot;, &quot;document:view:dept&quot;, &quot;document:view:company&quot;}, logic = RequirePerm.Logic.OR</span></td></tr>
 <tr><td><span class="m get">GET</span></td><td><code>/api/documents/export</code></td><td>台账导出（CSV）。<div class="desc">路径同样是字面量，优先于 `/{id}} 匹配。
 挂 `document:export}（ADMIN / GM / 财务总监 / 会计持有）——
 导出是唯一「一次点击把整个台账搬走」的入口，必须比「看台账」更严。

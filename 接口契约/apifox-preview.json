@@ -4,11 +4,11 @@
     "controllers": 20,
     "ops_with_summary": 100,
     "params_total": 109,
-    "params_documented": 44,
+    "params_documented": 45,
     "models": 70,
     "fields_total": 578,
     "fields_documented": 578,
-    "ops_with_perm": 50,
+    "ops_with_perm": 53,
     "ops_with_audit": 51
   },
   "risks": [
@@ -51,11 +51,6 @@
       "level": "P3",
       "kind": "路径/查询参数为简单 ID，无说明（可接受）",
       "detail": "POST /api/documents/{id}/withdraw id: Long"
-    },
-    {
-      "level": "P3",
-      "kind": "路径/查询参数为简单 ID，无说明（可接受）",
-      "detail": "GET /api/documents/{id} id: Long"
     },
     {
       "level": "P1",
@@ -653,7 +648,7 @@
       "audit": "",
       "deprecated": false,
       "file": "oa-backend/oa-document/src/main/java/com/hxj/oa/document/controller/DocumentController.java",
-      "line": 45
+      "line": 60
     },
     {
       "controller": "DocumentController",
@@ -679,7 +674,7 @@
       "audit": "module = \"document\", action = \"createDraft\"",
       "deprecated": false,
       "file": "oa-backend/oa-document/src/main/java/com/hxj/oa/document/controller/DocumentController.java",
-      "line": 52
+      "line": 67
     },
     {
       "controller": "DocumentController",
@@ -712,7 +707,7 @@
       "audit": "module = \"document\", action = \"updateDraft\"",
       "deprecated": false,
       "file": "oa-backend/oa-document/src/main/java/com/hxj/oa/document/controller/DocumentController.java",
-      "line": 59
+      "line": 74
     },
     {
       "controller": "DocumentController",
@@ -738,7 +733,7 @@
       "audit": "module = \"document\", action = \"submit\"",
       "deprecated": false,
       "file": "oa-backend/oa-document/src/main/java/com/hxj/oa/document/controller/DocumentController.java",
-      "line": 66
+      "line": 81
     },
     {
       "controller": "DocumentController",
@@ -764,7 +759,7 @@
       "audit": "module = \"document\", action = \"withdraw\"",
       "deprecated": false,
       "file": "oa-backend/oa-document/src/main/java/com/hxj/oa/document/controller/DocumentController.java",
-      "line": 73
+      "line": 88
     },
     {
       "controller": "DocumentController",
@@ -773,8 +768,8 @@
       "verb": "GET",
       "path": "/api/documents/{id}",
       "path_tmpl": "/api/documents/{id}",
-      "summary": "详情（含按当前节点裁剪的表单、流转记录、可执行动作）",
-      "desc": "",
+      "summary": "详情（含按当前节点裁剪的表单、流转记录、可执行动作）。",
+      "desc": "门控取「单据可见粒度」三点之任一（OR）：`document:view:self} /\n:dept} / `:company}。\n⚠ 这三点不决定「看多宽」 —— 能看到哪些单据由行级数据范围决定\n（`DocumentService#assertVisible}，与列表查询共用同一个 SQL 片段生成器）。\n权限点只回答「这个人是否属于单据体系」。两者必须分开：若把可见性也做成权限点判断，\n就会出现第二份行级权限实现（本项目行级权限只准一份实现）。",
       "params": [
         {
           "name": "id",
@@ -784,13 +779,15 @@
           "raw": "@PathVariable Long id"
         }
       ],
-      "javadoc_params": {},
+      "javadoc_params": {
+        "id": "单据 ID"
+      },
       "return": "R<DocumentDetailVO>",
-      "require_perm": "",
+      "require_perm": "value = {\"document:view:self\", \"document:view:dept\", \"document:view:company\"}, logic = RequirePerm.Logic.OR",
       "audit": "",
       "deprecated": false,
       "file": "oa-backend/oa-document/src/main/java/com/hxj/oa/document/controller/DocumentController.java",
-      "line": 80
+      "line": 107
     },
     {
       "controller": "DocumentController",
@@ -800,7 +797,7 @@
       "path": "/api/documents",
       "path_tmpl": "/api/documents",
       "summary": "列表（受行级数据范围约束）。",
-      "desc": "筛选条件走 query string 平铺（不是 JSON body），字段见 `DocumentQuery}。",
+      "desc": "筛选条件走 query string 平铺（不是 JSON body），字段见 `DocumentQuery}。\n门控与详情同源：`document:view:self} / `:dept} / `:company} 任一即可（OR）。\n为什么用这三点而不是新造一个 `document:view}：现网 9 个角色各自至少持有其中一个\n⇒ 挂门控是零收权（补门控前必须先做这一步核对，否则不是关门而是悄悄收走一批人的权限）；\n新造点则要动种子、8 个角色的绑定与可达性棘轮白名单，属另一件事。",
       "params": [
         {
           "name": "query",
@@ -814,11 +811,11 @@
         "query": "筛选与分页条件"
       },
       "return": "R<PageResult<Document>>",
-      "require_perm": "",
+      "require_perm": "value = {\"document:view:self\", \"document:view:dept\", \"document:view:company\"}, logic = RequirePerm.Logic.OR",
       "audit": "",
       "deprecated": false,
       "file": "oa-backend/oa-document/src/main/java/com/hxj/oa/document/controller/DocumentController.java",
-      "line": 92
+      "line": 126
     },
     {
       "controller": "DocumentController",
@@ -828,15 +825,15 @@
       "path": "/api/documents/stats",
       "path_tmpl": "/api/documents/stats",
       "summary": "按状态统计（看板/首页用），受行级数据范围约束。",
-      "desc": "路径是字面量 `/stats}，Spring 会优先于 `/{id}} 匹配，\n与已有的 `/types} 同理，不会把 stats 当成 id 解析。",
+      "desc": "路径是字面量 `/stats}，Spring 会优先于 `/{id}} 匹配，\n与已有的 `/types} 同理，不会把 stats 当成 id 解析。\n门控与列表同源（`document:view:*} 任一）。统计口径必须与列表一致，\n否则「看板数字与台账条数对不上」会变成最难排查的一类问题。",
       "params": [],
       "javadoc_params": {},
       "return": "R<DocumentStatsVO>",
-      "require_perm": "",
+      "require_perm": "value = {\"document:view:self\", \"document:view:dept\", \"document:view:company\"}, logic = RequirePerm.Logic.OR",
       "audit": "",
       "deprecated": false,
       "file": "oa-backend/oa-document/src/main/java/com/hxj/oa/document/controller/DocumentController.java",
-      "line": 103
+      "line": 142
     },
     {
       "controller": "DocumentController",
@@ -864,7 +861,7 @@
       "audit": "module = \"document\", action = \"exportLedger\"",
       "deprecated": false,
       "file": "oa-backend/oa-document/src/main/java/com/hxj/oa/document/controller/DocumentController.java",
-      "line": 122
+      "line": 163
     },
     {
       "controller": "DocumentTypeAdminController",
