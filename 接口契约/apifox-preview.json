@@ -1,15 +1,15 @@
 {
   "counts": {
-    "operations": 99,
+    "operations": 100,
     "controllers": 20,
-    "ops_with_summary": 99,
-    "params_total": 108,
+    "ops_with_summary": 100,
+    "params_total": 109,
     "params_documented": 44,
-    "models": 69,
-    "fields_total": 575,
-    "fields_documented": 575,
-    "ops_with_perm": 49,
-    "ops_with_audit": 50
+    "models": 70,
+    "fields_total": 578,
+    "fields_documented": 578,
+    "ops_with_perm": 50,
+    "ops_with_audit": 51
   },
   "risks": [
     {
@@ -166,6 +166,11 @@
       "level": "P1",
       "kind": "请求体/查询对象参数无说明（前端看不出这是干嘛的）",
       "detail": "POST /api/todos/countersign 参数 CountersignRequest req"
+    },
+    {
+      "level": "P1",
+      "kind": "请求体/查询对象参数无说明（前端看不出这是干嘛的）",
+      "detail": "POST /api/todos/transfer 参数 TransferRequest req"
     },
     {
       "level": "P1",
@@ -374,8 +379,8 @@
     }
   ],
   "cross_check": {
-    "contract_paths": 75,
-    "emulator_paths": 73,
+    "contract_paths": 76,
+    "emulator_paths": 74,
     "only_in_emulator": [],
     "only_in_contract": [
       "/api/ping"
@@ -1597,7 +1602,7 @@
       "audit": "",
       "deprecated": false,
       "file": "oa-backend/oa-document/src/main/java/com/hxj/oa/document/controller/TodoController.java",
-      "line": 35
+      "line": 38
     },
     {
       "controller": "TodoController",
@@ -1625,7 +1630,7 @@
       "audit": "",
       "deprecated": false,
       "file": "oa-backend/oa-document/src/main/java/com/hxj/oa/document/controller/TodoController.java",
-      "line": 45
+      "line": 48
     },
     {
       "controller": "TodoController",
@@ -1651,7 +1656,7 @@
       "audit": "module = \"flow\", action = \"approve\"",
       "deprecated": false,
       "file": "oa-backend/oa-document/src/main/java/com/hxj/oa/document/controller/TodoController.java",
-      "line": 56
+      "line": 59
     },
     {
       "controller": "TodoController",
@@ -1677,7 +1682,7 @@
       "audit": "module = \"flow\", action = \"batchApprove\"",
       "deprecated": false,
       "file": "oa-backend/oa-document/src/main/java/com/hxj/oa/document/controller/TodoController.java",
-      "line": 75
+      "line": 78
     },
     {
       "controller": "TodoController",
@@ -1703,7 +1708,33 @@
       "audit": "module = \"flow\", action = \"countersign\"",
       "deprecated": false,
       "file": "oa-backend/oa-document/src/main/java/com/hxj/oa/document/controller/TodoController.java",
-      "line": 84
+      "line": 87
+    },
+    {
+      "controller": "TodoController",
+      "group_doc": "",
+      "method": "transfer",
+      "verb": "POST",
+      "path": "/api/todos/transfer",
+      "path_tmpl": "/api/todos/transfer",
+      "summary": "转办：把一条待办改派给其他人员（**不改审批结论，只改由谁来办**）。",
+      "desc": "门控是 `flow:intervene:transfer`，**刻意不是** `document:approve` ——\n「流程干预动作」与「审批决定动作」是两类职责，合成一个权限点会让\"能审批\"\n自动等于\"能改派别人的任务\"（详见《管理员角色与权限设计说明》P3）。\n典型用途：审批人长期请假/调岗，任务压在他名下没人推得动。此时改「节点指派规则」\n是没有用的 —— 规则只在任务创建时解析一次，**已经卡住的那张单不受影响**。\n承办人自己临时不在应走「委托」（`POST /api/delegations`），不是这个接口：\n委托可撤销、可限定有效期与业务类别，比把任务永久换人更合适。",
+      "params": [
+        {
+          "name": "req",
+          "type": "TransferRequest",
+          "kind": "body",
+          "required": null,
+          "raw": "@Valid @RequestBody TransferRequest req"
+        }
+      ],
+      "javadoc_params": {},
+      "return": "R<Void>",
+      "require_perm": "\"flow:intervene:transfer\"",
+      "audit": "module = \"flow\", action = \"transfer\"",
+      "deprecated": false,
+      "file": "oa-backend/oa-document/src/main/java/com/hxj/oa/document/controller/TodoController.java",
+      "line": 108
     },
     {
       "controller": "DelegationController",
@@ -4660,7 +4691,7 @@
         {
           "name": "action",
           "type": "String",
-          "comment": "处理动作 approve / reject / countersign / supplement / cc；未处理为 null"
+          "comment": "处理动作 approve / reject / countersign / supplement / transfer / cc；未处理为 null。\n加签与转办都会在**节点尚未办结时**就写入 action（它们改的是\"谁来办\"，不是办结结果），\n后续真正办结时会被 approve/reject 覆盖 —— 完整过程留在 commentText 与审计日志里。"
         },
         {
           "name": "commentText",
@@ -4787,6 +4818,30 @@
           "name": "userId",
           "type": "Long",
           "comment": "要加签进去的用户 ID"
+        }
+      ],
+      "resolved": true,
+      "super": null
+    },
+    "TransferRequest": {
+      "fqn": "com.hxj.oa.document.controller.TransferRequest",
+      "kind": "class",
+      "javadoc": "转办请求",
+      "fields": [
+        {
+          "name": "taskId",
+          "type": "String",
+          "comment": "当前待办任务 ID（来自 GET /api/todos 的 taskId）"
+        },
+        {
+          "name": "userId",
+          "type": "Long",
+          "comment": "转办目标用户 ID（必须是本公司在职人员）"
+        },
+        {
+          "name": "reason",
+          "type": "String",
+          "comment": "转办理由（必填）。\n它会被写进该节点的审批留痕，并进入审计日志 —— 转办绕过了\"谁是审批人\"的\n节点指派规则（P4：指派规则是唯一事实），所以必须留下\"为什么绕过\"。"
         }
       ],
       "resolved": true,

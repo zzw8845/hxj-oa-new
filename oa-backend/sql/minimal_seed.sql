@@ -52,6 +52,10 @@ INSERT INTO `sys_role` (`id`,`company_id`,`code`,`name`,`post_name`,`is_builtin`
 (1,1,'ADMIN','超级管理员','系统管理员',1,'拥有全部权限');
 
 -- 4. 权限点全量（功能模块级稳定 code；新增功能模块需要在此追加并重新绑定）
+--    flow:intervene:transfer 是「流程干预」类动作：把任务**交还给正确的人**，
+--    本身不产生任何审批结论（P3：审批决定权永不授予管理员）。
+--    它挂在 admin:menu 下而不是 todo:menu 下，是为了让"这是管理动作、不是日常审批动作"
+--    在角色配置界面上直接可见 —— 混在待办组里容易被顺手勾给业务角色。
 INSERT INTO `sys_permission` (`code`,`name`,`perm_type`,`parent_code`,`sort_no`) VALUES
 ('document:menu',           '单据中心',       1, NULL,              10),
 ('todo:menu',               '我的待办',       1, NULL,              20),
@@ -78,7 +82,8 @@ INSERT INTO `sys_permission` (`code`,`name`,`perm_type`,`parent_code`,`sort_no`)
 ('system:dict',             '字典管理',       2, 'admin:menu',      96),
 ('system:audit',            '审计日志',       2, 'admin:menu',      97),
 ('system:docType',          '单据类型管理',   2, 'admin:menu',      98),
-('system:company',          '公司信息管理',   2, 'admin:menu',      99);
+('system:company',          '公司信息管理',   2, 'admin:menu',      99),
+('flow:intervene:transfer', '转办（流程干预）', 2, 'admin:menu',     100);
 
 -- 5. ADMIN 角色绑定全部权限点
 INSERT INTO `role_permission` (`role_id`,`perm_code`)
@@ -93,7 +98,7 @@ INSERT INTO `user_role` (`user_id`,`role_id`) VALUES (1,1);
 
 -- =============================================================================
 -- 灌完后数据库状态（用于核对）
---   company=1  sys_user=1  sys_role=1  sys_permission=26  role_permission=26
+--   company=1  sys_user=1  sys_role=1  sys_permission=27  role_permission=27
 --   role_data_scope=1  user_role=1
 --   department=0  post=0  sys_dict=0  document_type=0  form_template=0
 --   flow_config=0  document=0

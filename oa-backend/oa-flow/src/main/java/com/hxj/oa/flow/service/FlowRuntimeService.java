@@ -14,6 +14,8 @@ import com.hxj.oa.flow.mapper.FlowConfigMapper;
 import com.hxj.oa.flow.mapper.FlowConfigNodeMapper;
 import com.hxj.oa.flow.mapper.FlowInstanceMapper;
 import com.hxj.oa.flow.mapper.FlowInstanceNodeMapper;
+import com.hxj.oa.system.entity.SysUser;
+import com.hxj.oa.system.mapper.SysUserMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.flowable.engine.RuntimeService;
@@ -32,7 +34,11 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 流程运行时：启动、审批、驳回、自动跳过。
+ * 流程运行时：启动、审批、驳回、自动跳过、流程干预（转办）。
+ *
+ * <p>方法分两层，别混：**决定类**（{@link #approve} / {@link #doReject}）产生审批结论，
+ * 只有该节点的承办人能做（{@link #assertAssignee}）；**干预类**（{@link #transfer}）
+ * 不产生任何结论，只把任务交还给正确的人，走独立权限点。
  *
  * 状态机约定（闭合设计，避免原型里「approve 只弹消息不改状态」的问题）：
  * <pre>
@@ -55,6 +61,7 @@ public class FlowRuntimeService {
     private final FlowInstanceNodeMapper instanceNodeMapper;
     private final ApplicationEventPublisher eventPublisher;
     private final DelegationService delegationService;
+    private final SysUserMapper sysUserMapper;
 
     // ============================================================ 启动
 
@@ -294,6 +301,91 @@ public class FlowRuntimeService {
         log.info("加签 taskId={} targetUserId={} by={}", taskId, targetUserId, operator.getRealName());
     }
 
+    /**
+     * 转办：把当前待办任务的承办人**换**成目标用户（不产生任何审批结论）。
+     *
+     * <p>与 {@link #countersign} 的区别是「扩池」还是「换人」：加签把目标用户**加进**候选池，
+     * 原承办人还在；转办把任务**交给**目标用户，原承办人不再具备办理资格。
+     *
+     * <p>这是**流程干预动作，不是承办人的自助能力** —— 接口门控是
+     * {@code flow:intervene:transfer}。承办人自己临时不在，应走「委托」
+     * （{@link DelegationService}）：那是一条可追溯、可撤销、可限定业务类别的授权，
+     * 比把任务永久换人更合适。转办要解决的是另一件事：任务压在一个推不动的人名下
+     * （长期请假、调岗），而**「改指派规则」只影响尚未到达该节点的单据**
+     * （{@code AssigneeTaskListener} 在任务创建时才解析）⇒ 已经卡住的那张单，
+     * 除了改库没有别的出口。
+     *
+     * <p><b>四条硬边界，少一条这个接口就从「干预」变成「越权通道」</b>：
+     * <ol>
+     *   <li><b>不能转给自己</b>：转办的作用是「把任务交还给正确的人」。允许转给自己，
+     *     持有本权限点的人就能把任意任务搬到名下再批准 —— 等于绕开 P3「审批决定权
+     *     永不授予管理员」。{@link #assertAssignee} 专门删掉了 {@code hasRole("ADMIN")}
+     *     旁路，这条路必须一起堵，否则收口等于没做。</li>
+     *   <li><b>不能转给申请人</b>：那等于让申请人审自己的单，绕开
+     *     {@code AssigneeResolver} 的自审剔除（{@code __selfSkip_} 那套）。</li>
+     *   <li><b>目标必须是在职用户</b>：转给已停用/已删除的人，会人工造出
+     *     {@link #autoSkipUnassigned} 唯一兜不住的形态 ——「有承办人但承办人是废人」，
+     *     比不转办更糟（空列表有 auto_skip 兜底，非空废人静默永久卡死）。</li>
+     *   <li><b>目标不能已经是当前承办人</b>：这是空操作，显式报错比静默成功好
+     *     （P5 失败必须显式）—— 静默成功会让干预者以为换人成功了。</li>
+     * </ol>
+     *
+     * <p>候选池里的其他人**保留**：他们本来就是这条流程按规则解析出来的合法候选人，
+     * 转办只改「默认承办人」，不该顺手收走别人的资格。
+     *
+     * @param taskId       当前待办任务 ID（来自 GET /api/todos 的 taskId）
+     * @param targetUserId 转办目标用户 ID
+     * @param reason       转办理由（写进节点留痕；干预动作绕过了节点指派规则，必须留下"为什么"）
+     * @param operator     发起转办的人，用于"不能转给自己"的判定与留痕
+     * @return 被转办的节点记录（调用方用它取 documentId 去发通知）
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public FlowInstanceNode transfer(String taskId, Long targetUserId, String reason, LoginUser operator) {
+        if (targetUserId == null) {
+            throw new BizException("请选择转办的目标人员");
+        }
+        Task task = requireTask(taskId);
+
+        String currentAssignee = task.getAssignee();
+        if (currentAssignee != null && currentAssignee.equals(String.valueOf(targetUserId))) {
+            throw new BizException("该任务当前的承办人就是所选人员，无需转办");
+        }
+        if (operator != null && targetUserId.equals(operator.getUserId())) {
+            throw BizException.forbidden("不能转办给自己：转办是把任务交还给正确的人，"
+                    + "把签字权搬到自己名下会绕过职责分离（审批决定权不授予管理员）");
+        }
+        // selectById 自带 @TableLogic 过滤，已删除的用户查不到
+        SysUser target = sysUserMapper.selectById(targetUserId);
+        if (target == null || target.getStatus() == null || target.getStatus() != 1) {
+            throw new BizException("转办目标不存在或已停用，请选择在职人员");
+        }
+        Long applicantId = asLong(taskService.getVariable(task.getId(), "applicantId"));
+        if (applicantId != null && applicantId.equals(targetUserId)) {
+            throw BizException.forbidden("不能转办给单据申请人：那等于让申请人审批自己的单据");
+        }
+
+        // 1) 引擎侧换人：候选人池保留，只是把"默认承办人"换成指定的人
+        taskService.setAssignee(taskId, String.valueOf(targetUserId));
+
+        // 2) 业务侧待办投影跟着换人 —— 待办列表是按 flow_instance_node.assignee_id 查的
+        //    （FlowInstanceNodeMapper#selectTodoByAssignee），漏了这步新承办人在工作台上看不到。
+        FlowInstanceNode rec = currentNodeRecord(taskId);
+        if (rec != null) {
+            rec.setAssigneeId(targetUserId);
+            rec.setAssigneeName(target.getRealName());
+            rec.setAction("transfer");
+            String prev = rec.getCommentText() == null ? "" : rec.getCommentText() + " | ";
+            rec.setCommentText(prev + "转办给 " + target.getRealName()
+                    + (operator == null ? "" : "（经办：" + operator.getRealName() + "）")
+                    + (reason == null || reason.isBlank() ? "" : "，理由：" + reason));
+            instanceNodeMapper.updateById(rec);
+        }
+        log.info("转办 taskId={} 原承办人={} 新承办人={}（{}）经办={} 理由={}",
+                taskId, currentAssignee, targetUserId, target.getRealName(),
+                operator == null ? null : operator.getRealName(), reason);
+        return rec;
+    }
+
     // ============================================================ 无处理人自动跳过
 
     /**
@@ -521,6 +613,21 @@ public class FlowRuntimeService {
 
     private String safe(String s) {
         return s == null ? "" : s;
+    }
+
+    /** 流程变量取 Long：变量可能是 Long / Integer / String（跨版本历史实例），统一收敛 */
+    private Long asLong(Object o) {
+        if (o == null) {
+            return null;
+        }
+        if (o instanceof Number n) {
+            return n.longValue();
+        }
+        try {
+            return Long.valueOf(String.valueOf(o));
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 
     /** 流程配置节点（供上层展示节点清单） */

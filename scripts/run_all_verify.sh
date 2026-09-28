@@ -75,6 +75,7 @@ SUITES=(
   verify_doc_type_admin
   verify_admin_no_bypass
   verify_self_approval_trace
+  verify_transfer_api
 )
 
 # ------------------------------------------------------------------ 随机顺序

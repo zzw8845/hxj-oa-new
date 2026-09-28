@@ -12,6 +12,9 @@ import com.hxj.oa.flow.dto.ApprovalRequest;
 import com.hxj.oa.flow.dto.TodoVO;
 import com.hxj.oa.flow.entity.FlowInstanceNode;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -89,6 +92,27 @@ public class TodoController {
         return R.ok(null, "已加签");
     }
 
+    /**
+     * 转办：把一条待办改派给其他人员（**不改审批结论，只改由谁来办**）。
+     *
+     * <p>门控是 {@code flow:intervene:transfer}，**刻意不是** {@code document:approve} ——
+     * 「流程干预动作」与「审批决定动作」是两类职责，合成一个权限点会让"能审批"
+     * 自动等于"能改派别人的任务"（详见《管理员角色与权限设计说明》P3）。
+     *
+     * <p>典型用途：审批人长期请假/调岗，任务压在他名下没人推得动。此时改「节点指派规则」
+     * 是没有用的 —— 规则只在任务创建时解析一次，**已经卡住的那张单不受影响**。
+     *
+     * <p>承办人自己临时不在应走「委托」（`POST /api/delegations`），不是这个接口：
+     * 委托可撤销、可限定有效期与业务类别，比把任务永久换人更合适。
+     */
+    @PostMapping("/transfer")
+    @RequirePerm("flow:intervene:transfer")
+    @Audit(module = "flow", action = "transfer")
+    public R<Void> transfer(@Valid @RequestBody TransferRequest req) {
+        todoService.transfer(req.getTaskId(), req.getUserId(), req.getReason(), UserContext.require());
+        return R.ok(null, "已转办");
+    }
+
     /** 加签请求 */
     @Data
     public static class CountersignRequest {
@@ -97,5 +121,27 @@ public class TodoController {
 
         /** 要加签进去的用户 ID */
         private Long userId;
+    }
+
+    /** 转办请求 */
+    @Data
+    public static class TransferRequest {
+        /** 当前待办任务 ID（来自 GET /api/todos 的 taskId） */
+        @NotBlank(message = "任务 ID 不能为空")
+        private String taskId;
+
+        /** 转办目标用户 ID（必须是本公司在职人员） */
+        @NotNull(message = "请选择转办的目标人员")
+        private Long userId;
+
+        /**
+         * 转办理由（必填）。
+         *
+         * <p>它会被写进该节点的审批留痕，并进入审计日志 —— 转办绕过了"谁是审批人"的
+         * 节点指派规则（P4：指派规则是唯一事实），所以必须留下"为什么绕过"。
+         */
+        @NotBlank(message = "请填写转办理由")
+        @Size(max = 200, message = "转办理由不能超过 200 字")
+        private String reason;
     }
 }

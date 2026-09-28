@@ -236,6 +236,43 @@ public class TodoService {
         flowRuntimeService.countersign(taskId, targetUserId, user);
     }
 
+    /**
+     * 转办：把待办改派给目标用户，并**通知新承办人**。
+     *
+     * <p>通知放在这一层而不是流程层，是因为通知表属于单据域（{@code notification}）——
+     * 流程层不该认识它。而且这条通知不是"锦上添花"：转办之后任务归属变了，
+     * 新承办人如果只看到待办列表里凭空多了一条，不知道是谁、为什么转过来的，
+     * 更不知道该找谁问。**改派必须自带一句解释**。
+     *
+     * <p>校验（目标是否在职、能不能转给自己/申请人）全部在
+     * {@link FlowRuntimeService#transfer} 里，与审批同源 —— 这一层不重复判定，
+     * 避免两处规则漂移。
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public void transfer(String taskId, Long targetUserId, String reason, LoginUser operator) {
+        FlowInstanceNode node = flowRuntimeService.transfer(taskId, targetUserId, reason, operator);
+        if (node == null || node.getDocumentId() == null) {
+            return;
+        }
+        Document doc = documentMapper.selectById(node.getDocumentId());
+        if (doc == null) {
+            return;
+        }
+        Notification n = new Notification();
+        n.setCompanyId(doc.getCompanyId());
+        n.setReceiverId(targetUserId);
+        n.setNotifyType("todo");
+        n.setBizType("document");
+        n.setBizId(doc.getId());
+        n.setChannel("inner");
+        n.setIsRead(0);
+        n.setTitle("您有一条转办待办");
+        n.setContent("单据 " + doc.getDocNo() + " 的「" + node.getNodeName() + "」已转办给您"
+                + (operator == null ? "" : "（经办：" + operator.getRealName() + "）")
+                + (StringUtils.hasText(reason) ? "，理由：" + reason : ""));
+        notificationMapper.insert(n);
+    }
+
     private void notifyApplicant(Document doc, FlowInstanceNode node, LoginUser operator) {
         Notification n = new Notification();
         n.setCompanyId(doc.getCompanyId());

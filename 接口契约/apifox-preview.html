@@ -45,12 +45,12 @@ summary .cnt{color:var(--muted);font-weight:400;font-size:12px;margin-left:6px}
 不是手写的，也不是从 Apifox 导出的 —— 用它来检查注释够不够、好不好懂。</p>
 
 <div class="stats">
-  <div class="stat"><div class="n">99</div><div class="l">接口（20 个目录）</div></div>
-  <div class="stat"><div class="n">99/99</div><div class="l">接口有说明</div></div>
-  <div class="stat"><div class="n">575/575</div><div class="l">模型字段有说明</div></div>
-  <div class="stat"><div class="n">44/108</div><div class="l">参数有说明</div></div>
-  <div class="stat"><div class="n">49</div><div class="l">带接口权限门控</div></div>
-  <div class="stat"><div class="n">50</div><div class="l">带审计留痕</div></div>
+  <div class="stat"><div class="n">100</div><div class="l">接口（20 个目录）</div></div>
+  <div class="stat"><div class="n">100/100</div><div class="l">接口有说明</div></div>
+  <div class="stat"><div class="n">578/578</div><div class="l">模型字段有说明</div></div>
+  <div class="stat"><div class="n">44/109</div><div class="l">参数有说明</div></div>
+  <div class="stat"><div class="n">50</div><div class="l">带接口权限门控</div></div>
+  <div class="stat"><div class="n">51</div><div class="l">带审计留痕</div></div>
 </div>
 
 <h2>同步前请先确认（4 件事）</h2>
@@ -93,6 +93,7 @@ summary .cnt{color:var(--muted);font-weight:400;font-size:12px;margin-left:6px}
 <li><span class="pill">请求体/查询对象参数无说明（前端看不出这是干嘛的）</span><code>POST /api/todos/approve 参数 ApprovalRequest req</code></li>
 <li><span class="pill">请求体/查询对象参数无说明（前端看不出这是干嘛的）</span><code>POST /api/todos/batch-approve 参数 BatchApproveReq req</code></li>
 <li><span class="pill">请求体/查询对象参数无说明（前端看不出这是干嘛的）</span><code>POST /api/todos/countersign 参数 CountersignRequest req</code></li>
+<li><span class="pill">请求体/查询对象参数无说明（前端看不出这是干嘛的）</span><code>POST /api/todos/transfer 参数 TransferRequest req</code></li>
 <li><span class="pill">请求体/查询对象参数无说明（前端看不出这是干嘛的）</span><code>POST /api/delegations 参数 DelegationSaveReq req</code></li>
 <li><span class="pill">请求体/查询对象参数无说明（前端看不出这是干嘛的）</span><code>POST /api/flows/configs/{id}/preview 参数 PreviewRequest req</code></li>
 <li><span class="pill">请求体/查询对象参数无说明（前端看不出这是干嘛的）</span><code>POST /api/flows/configs 参数 FlowSaveReq req</code></li>
@@ -228,7 +229,7 @@ summary .cnt{color:var(--muted);font-weight:400;font-size:12px;margin-left:6px}
 <tr><td><span class="m post">POST</span></td><td><code>/api/seals/use</code></td><td>登记用印：待用印 → 已用印</td><td><code>req</code>（无说明）</td><td><span class="tag">权限 &quot;document:approve:seal&quot;</span> <span class="tag">写审计</span></td></tr>
 <tr><td><span class="m post">POST</span></td><td><code>/api/seals/return</code></td><td>归还：已用印 → 已归还</td><td><code>req</code>（无说明）</td><td><span class="tag">权限 &quot;document:approve:seal&quot;</span> <span class="tag">写审计</span></td></tr>
 </tbody></table></div></details>
-<details open><summary>TodoController<span class="cnt">5 个接口</span></summary><div class="body"><table><thead><tr><th style="width:60px">方法</th><th style="width:34%">路径</th><th>接口说明（方法注释首行）</th><th style="width:20%">参数</th><th style="width:14%">门控 / 留痕</th></tr></thead><tbody>
+<details open><summary>TodoController<span class="cnt">6 个接口</span></summary><div class="body"><table><thead><tr><th style="width:60px">方法</th><th style="width:34%">路径</th><th>接口说明（方法注释首行）</th><th style="width:20%">参数</th><th style="width:14%">门控 / 留痕</th></tr></thead><tbody>
 <tr><td><span class="m get">GET</span></td><td><code>/api/todos</code></td><td>我的待办（⚠ 不是分页接口，是「取前 N 条」，返回的是数组不是 PageResult）。</td><td><code>limit</code></td><td>—</td></tr>
 <tr><td><span class="m get">GET</span></td><td><code>/api/todos/done</code></td><td>我已处理（⚠ 同上：不是分页接口，返回数组）。</td><td><code>limit</code></td><td>—</td></tr>
 <tr><td><span class="m post">POST</span></td><td><code>/api/todos/approve</code></td><td>审批：通过 / 驳回 / 要求补料。<div class="desc">三种结局共用 action=approve 这一「类别」，具体是哪种写在审计 detail 的 reqAction 里 ——
@@ -240,6 +241,12 @@ summary .cnt{color:var(--muted);font-weight:400;font-size:12px;margin-left:6px}
 授权没有放宽：每条仍走「你是这个节点的处理人吗」那套判定，
 传别人的 taskId 只会得到该条失败。</div></td><td><code>req</code>（无说明）</td><td><span class="tag">权限 &quot;document:approve&quot;</span> <span class="tag">写审计</span></td></tr>
 <tr><td><span class="m post">POST</span></td><td><code>/api/todos/countersign</code></td><td>加签</td><td><code>req</code>（无说明）</td><td><span class="tag">权限 &quot;document:approve&quot;</span> <span class="tag">写审计</span></td></tr>
+<tr><td><span class="m post">POST</span></td><td><code>/api/todos/transfer</code></td><td>转办：把一条待办改派给其他人员（**不改审批结论，只改由谁来办**）。<div class="desc">门控是 `flow:intervene:transfer`，**刻意不是** `document:approve` ——
+「流程干预动作」与「审批决定动作」是两类职责，合成一个权限点会让&quot;能审批&quot;
+自动等于&quot;能改派别人的任务&quot;（详见《管理员角色与权限设计说明》P3）。
+典型用途：审批人长期请假/调岗，任务压在他名下没人推得动。此时改「节点指派规则」
+是没有用的 —— 规则只在任务创建时解析一次，**已经卡住的那张单不受影响**。
+承办人</div></td><td><code>req</code>（无说明）</td><td><span class="tag">权限 &quot;flow:intervene:transfer&quot;</span> <span class="tag">写审计</span></td></tr>
 </tbody></table></div></details>
 <details open><summary>DelegationController<span class="cnt">4 个接口</span></summary><div class="body"><table><thead><tr><th style="width:60px">方法</th><th style="width:34%">路径</th><th>接口说明（方法注释首行）</th><th style="width:20%">参数</th><th style="width:14%">门控 / 留痕</th></tr></thead><tbody>
 <tr><td><span class="m get">GET</span></td><td><code>/api/delegations/mine</code></td><td>我设置的委托</td><td>—</td><td>—</td></tr>
@@ -407,7 +414,9 @@ DepartmentController#tree()} 上关于跨公司读的说明）。</div></td><td>
 <tr><td><code>candidateIds</code></td><td><span class="tag">String</span></td><td>候选处理人 ID 集合 JSON（会签/或签场景）</td></tr>
 <tr><td><code>taskId</code></td><td><span class="tag">String</span></td><td>Flowable 任务 ID</td></tr>
 <tr><td><code>nodeSource</code></td><td><span class="tag">Integer</span></td><td>1 引擎投影 2 手工补录</td></tr>
-<tr><td><code>action</code></td><td><span class="tag">String</span></td><td>处理动作 approve / reject / countersign / supplement / cc；未处理为 null</td></tr>
+<tr><td><code>action</code></td><td><span class="tag">String</span></td><td>处理动作 approve / reject / countersign / supplement / transfer / cc；未处理为 null。
+加签与转办都会在**节点尚未办结时**就写入 action（它们改的是&quot;谁来办&quot;，不是办结结果），
+后续真正办结时会被 approve/reject 覆盖 —— 完整过程留在 commentText 与审计日志里。</td></tr>
 <tr><td><code>commentText</code></td><td><span class="tag">String</span></td><td>审批意见（列名是 comment_text，因为 comment 是保留字）</td></tr>
 <tr><td><code>rejectLevel</code></td><td><span class="tag">String</span></td><td>驳回目标层级（驳回动作才有值）</td></tr>
 <tr><td><code>materials</code></td><td><span class="tag">String</span></td><td>要求补充的材料说明</td></tr>
@@ -1267,6 +1276,15 @@ schema 用 `Map} 而不是字符串接收：服务端必须**结构化校验**�
 <tr><td><code>ruleType</code></td><td><span class="tag">String</span></td><td>规则类型：initiator_leader / dept_role / biztype_role / role / user / condition</td></tr>
 <tr><td><code>ruleValue</code></td><td><span class="tag">String</span></td><td>规则参数 JSON，如 {&quot;roleCode&quot;:&quot;ACCOUNTANT&quot;}</td></tr>
 <tr><td><code>signMode</code></td><td><span class="tag">Integer</span></td><td>1 或签 2 会签 3 依次审批；多规则时生效</td></tr>
+</tbody></table></div></details>
+<details><summary>TransferRequest<span class="cnt">3 个字段</summary><div class="body">
+<div class="desc">转办请求</div>
+<table><thead><tr><th style="width:22%">字段</th><th style="width:20%">类型</th><th>说明</th></tr></thead><tbody>
+<tr><td><code>taskId</code></td><td><span class="tag">String</span></td><td>当前待办任务 ID（来自 GET /api/todos 的 taskId）</td></tr>
+<tr><td><code>userId</code></td><td><span class="tag">Long</span></td><td>转办目标用户 ID（必须是本公司在职人员）</td></tr>
+<tr><td><code>reason</code></td><td><span class="tag">String</span></td><td>转办理由（必填）。
+它会被写进该节点的审批留痕，并进入审计日志 —— 转办绕过了&quot;谁是审批人&quot;的
+节点指派规则（P4：指派规则是唯一事实），所以必须留下&quot;为什么绕过&quot;。</td></tr>
 </tbody></table></div></details>
 <details><summary>BatchApproveReq<span class="cnt">2 个字段</summary><div class="body">
 <div class="desc">批量审批请求。

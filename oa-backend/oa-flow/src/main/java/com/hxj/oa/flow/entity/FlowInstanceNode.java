@@ -39,7 +39,11 @@ public class FlowInstanceNode extends BaseEntity {
     /** 1 引擎投影 2 手工补录 */
     private Integer nodeSource;
 
-    /** 处理动作 approve / reject / countersign / supplement / cc；未处理为 null */
+    /**
+     * 处理动作 approve / reject / countersign / supplement / transfer / cc；未处理为 null。
+     * 加签与转办都会在**节点尚未办结时**就写入 action（它们改的是"谁来办"，不是办结结果），
+     * 后续真正办结时会被 approve/reject 覆盖 —— 完整过程留在 commentText 与审计日志里。
+     */
     private String action;
     /** 审批意见（列名是 comment_text，因为 comment 是保留字） */
     private String commentText;
