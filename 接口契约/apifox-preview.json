@@ -2905,8 +2905,8 @@
       "verb": "GET",
       "path": "/api/users",
       "path_tmpl": "/api/users",
-      "summary": "当前公司用户列表（含部门名/岗位名/角色，供前端「选择审批人/被代理人」与人员管理页共用）。",
-      "desc": "刻意保留全量：选人下拉要在客户端对全量做模糊搜索，分页反而做不了；\n量级受公司规模天然约束（一家公司几千人是上限），不构成无界增长表。\n为什么这个读接口不挂权限点、而 `/page} 挂了：选审批人、查同事是\n「发起单据」链路的一环，任何能登录的人都得能用；若挂 `system:user}，\n普通员工一发起单据就选不出审批人。代价是暴露面变大，因此这里做了两件事：\n- 剥离个人敏感字段（`phone}/`email}）—— 选人只需要\n      姓名/工号/部门/岗位，手机号邮箱属个人信息，只在挂了权限点的\n/api/users/page} 与 `/api/users/{id}} 里返回\n      （见 `UserAdminService#stripPersonalInfo}）。\n      ⚠ 置 null 后响应里不会有这两个键（全局\nspring.jackson.default-property-inclusion=non_null}），不是\"值为 null\"；\n      前端取 `row.phone} 得到的是 `undefined}。\n- 返回的组织架构信息（部门、岗位、角色）对内部系统而言是协作必需。",
+      "summary": "当前公司用户列表（含部门名、岗位名、角色、联系方式，供「选择审批人 / 被代理人」与人员管理页共用）。",
+      "desc": "刻意保留全量：选人时要边输入边即时过滤候选，分页取不全；\n量级受公司规模天然约束（一家公司几千人是上限），不构成无界增长表。\n为什么这个读接口不挂权限点、而 `/page} 挂了：选审批人、查同事是\n「发起单据」链路的一环，任何能登录的人都得能用；若挂 `system:user}，\n普通员工一发起单据就选不出审批人。\n⚠ 这是权限层面的取舍、不影响字段：本接口返回的 `UserVO} 与\n/api/users/page}、`/api/users/{id}} 完全一致（都含手机号/邮箱）。\n内部 OA 通讯录里同事联系方式本属可见信息，不需要靠\"少返回两个字段\"来做安全；\n若客户将来确有\"普通员工不得查看同事联系方式\"的合规要求，应做成显式、可配置的策略，\n而不是在这里隐式抹字段（那会让同一个 VO 在不同接口出现两副面貌，接手人无法从契约判断）。",
       "params": [
         {
           "name": "companyId",
@@ -2924,7 +2924,7 @@
       "audit": "",
       "deprecated": false,
       "file": "oa-backend/oa-system/src/main/java/com/hxj/oa/system/controller/UserController.java",
-      "line": 65
+      "line": 61
     },
     {
       "controller": "UserController",
@@ -2934,7 +2934,7 @@
       "path": "/api/users/page",
       "path_tmpl": "/api/users/page",
       "summary": "人员管理表格的分页接口（过滤与分页都在 SQL 里完成）。",
-      "desc": "与 `GET /api/users} 刻意保留两份：后者给选人下拉用，**必须**全量\n（客户端要对全量做模糊搜索）；前者给表格用，必须服务端分页。合成一个接口会顾此失彼 ——\n要么下拉搜不全人，要么表格一次把全公司拉下来。",
+      "desc": "与 `GET /api/users} 刻意保留两份：后者供「选人」场景一次取全量\n（该场景要边输入边即时过滤）；前者供表格分页，不随公司人数放大单次响应。\n合成一个接口会顾此失彼 —— 要么选人端拿不全人，要么表格一次把全公司拉下来。",
       "params": [
         {
           "name": "pageNum",
@@ -2976,7 +2976,7 @@
       "audit": "",
       "deprecated": false,
       "file": "oa-backend/oa-system/src/main/java/com/hxj/oa/system/controller/UserController.java",
-      "line": 83
+      "line": 79
     },
     {
       "controller": "UserController",
@@ -2986,7 +2986,7 @@
       "path": "/api/users/{id}",
       "path_tmpl": "/api/users/{id}",
       "summary": "单个员工详情（含手机号 / 邮箱 / 部门 / 岗位 / 角色）。",
-      "desc": "与全开的 `GET /api/users} 分开并挂门控，是因为它带个人联系方式：\n列表已剥离手机号/邮箱所以能全开（选人用），详情会返回完整个资，\n若无权限点则任何登录账号都能遍历全公司联系方式。",
+      "desc": "挂 `system:user} 是因为它属于「人员管理」动作；\n它与全开的 `GET /api/users} 字段一致（门控差异只决定「能不能调」）。",
       "params": [
         {
           "name": "id",
@@ -3004,7 +3004,7 @@
       "audit": "",
       "deprecated": false,
       "file": "oa-backend/oa-system/src/main/java/com/hxj/oa/system/controller/UserController.java",
-      "line": 103
+      "line": 98
     },
     {
       "controller": "UserController",
@@ -3030,7 +3030,7 @@
       "audit": "module = \"permission\", action = \"createUser\"",
       "deprecated": false,
       "file": "oa-backend/oa-system/src/main/java/com/hxj/oa/system/controller/UserController.java",
-      "line": 116
+      "line": 111
     },
     {
       "controller": "UserController",
@@ -3065,7 +3065,7 @@
       "audit": "module = \"permission\", action = \"updateUser\"",
       "deprecated": false,
       "file": "oa-backend/oa-system/src/main/java/com/hxj/oa/system/controller/UserController.java",
-      "line": 133
+      "line": 128
     },
     {
       "controller": "UserController",
@@ -3098,7 +3098,7 @@
       "audit": "module = \"permission\", action = \"assignRoles\"",
       "deprecated": false,
       "file": "oa-backend/oa-system/src/main/java/com/hxj/oa/system/controller/UserController.java",
-      "line": 141
+      "line": 136
     },
     {
       "controller": "UserController",
@@ -3126,7 +3126,7 @@
       "audit": "module = \"permission\", action = \"deleteUser\"",
       "deprecated": false,
       "file": "oa-backend/oa-system/src/main/java/com/hxj/oa/system/controller/UserController.java",
-      "line": 153
+      "line": 148
     }
   ],
   "models": {
@@ -6190,12 +6190,12 @@
         {
           "name": "phone",
           "type": "String",
-          "comment": "手机号：仅 `GET /api/users/page} 与 `GET /api/users/{id}}（均挂 `system:user}）返回；全开的 `GET /api/users} 不返回该字段（全局 Jackson `default-property-inclusion=non_null}，置 null 即不序列化），前端取 `row.phone} 得到 `undefined}"
+          "comment": "手机号"
         },
         {
           "name": "email",
           "type": "String",
-          "comment": "邮箱：同 `#phone} —— 仅门控接口返回，全开的 `GET /api/users} 不返回该字段"
+          "comment": "邮箱"
         },
         {
           "name": "status",

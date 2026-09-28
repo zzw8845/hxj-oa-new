@@ -321,19 +321,18 @@ summary .cnt{color:var(--muted);font-weight:400;font-size:12px;margin-left:6px}
 <tr><td><span class="m del">DELETE</span></td><td><code>/api/roles/{id}</code></td><td>删除角色。<div class="desc">内置角色（isBuiltin=1，如 ADMIN）受保护，不可删除。</div></td><td><code>id</code></td><td><span class="tag">权限 &quot;system:role&quot;</span> <span class="tag">写审计</span></td></tr>
 </tbody></table></div></details>
 <details open><summary>UserController<span class="cnt">7 个接口</span></summary><div class="body"><table><thead><tr><th style="width:60px">方法</th><th style="width:34%">路径</th><th>接口说明（方法注释首行）</th><th style="width:20%">参数</th><th style="width:14%">门控 / 留痕</th></tr></thead><tbody>
-<tr><td><span class="m get">GET</span></td><td><code>/api/users</code></td><td>当前公司用户列表（含部门名/岗位名/角色，供前端「选择审批人/被代理人」与人员管理页共用）。<div class="desc">刻意保留全量：选人下拉要在客户端对全量做模糊搜索，分页反而做不了；
+<tr><td><span class="m get">GET</span></td><td><code>/api/users</code></td><td>当前公司用户列表（含部门名、岗位名、角色、联系方式，供「选择审批人 / 被代理人」与人员管理页共用）。<div class="desc">刻意保留全量：选人时要边输入边即时过滤候选，分页取不全；
 量级受公司规模天然约束（一家公司几千人是上限），不构成无界增长表。
 为什么这个读接口不挂权限点、而 `/page} 挂了：选审批人、查同事是
 「发起单据」链路的一环，任何能登录的人都得能用；若挂 `system:user}，
-普通员工一发起单据就选不出审批人。代价是暴露面变大，因此这里做了两件事：
-- 剥离个人敏感字段（`phone}/`email}）—— 选人只需要
-</div></td><td><code>companyId</code></td><td>—</td></tr>
-<tr><td><span class="m get">GET</span></td><td><code>/api/users/page</code></td><td>人员管理表格的分页接口（过滤与分页都在 SQL 里完成）。<div class="desc">与 `GET /api/users} 刻意保留两份：后者给选人下拉用，**必须**全量
-（客户端要对全量做模糊搜索）；前者给表格用，必须服务端分页。合成一个接口会顾此失彼 ——
-要么下拉搜不全人，要么表格一次把全公司拉下来。</div></td><td><code>pageNum</code>、<code>pageSize</code>、<code>keyword</code>、<code>companyId</code></td><td><span class="tag">权限 &quot;system:user&quot;</span></td></tr>
-<tr><td><span class="m get">GET</span></td><td><code>/api/users/{id}</code></td><td>单个员工详情（含手机号 / 邮箱 / 部门 / 岗位 / 角色）。<div class="desc">与全开的 `GET /api/users} 分开并挂门控，是因为它带个人联系方式：
-列表已剥离手机号/邮箱所以能全开（选人用），详情会返回完整个资，
-若无权限点则任何登录账号都能遍历全公司联系方式。</div></td><td><code>id</code></td><td><span class="tag">权限 &quot;system:user&quot;</span></td></tr>
+普通员工一发起单据就选不出审批人。
+⚠ 这是权限层面的取舍、不影响字段：本接口返回的 `UserVO} 与
+/api/users/page}、`/api/u</div></td><td><code>companyId</code></td><td>—</td></tr>
+<tr><td><span class="m get">GET</span></td><td><code>/api/users/page</code></td><td>人员管理表格的分页接口（过滤与分页都在 SQL 里完成）。<div class="desc">与 `GET /api/users} 刻意保留两份：后者供「选人」场景一次取全量
+（该场景要边输入边即时过滤）；前者供表格分页，不随公司人数放大单次响应。
+合成一个接口会顾此失彼 —— 要么选人端拿不全人，要么表格一次把全公司拉下来。</div></td><td><code>pageNum</code>、<code>pageSize</code>、<code>keyword</code>、<code>companyId</code></td><td><span class="tag">权限 &quot;system:user&quot;</span></td></tr>
+<tr><td><span class="m get">GET</span></td><td><code>/api/users/{id}</code></td><td>单个员工详情（含手机号 / 邮箱 / 部门 / 岗位 / 角色）。<div class="desc">挂 `system:user} 是因为它属于「人员管理」动作；
+它与全开的 `GET /api/users} 字段一致（门控差异只决定「能不能调」）。</div></td><td><code>id</code></td><td><span class="tag">权限 &quot;system:user&quot;</span></td></tr>
 <tr><td><span class="m post">POST</span></td><td><code>/api/users</code></td><td>新建员工。<div class="desc">姓名 / 工号 / 账号 / 密码必填（密码即初始密码，后端会置&quot;待改密&quot;标记，
 登录响应里的 `mustChangePassword} 会告诉前端是否弹强制改密框）。
 部门与岗位支持「传 ID 或传名称」：传了 ID 用 ID，只传名称按「公司 + 名称」反查。</div></td><td><code>req</code>（无说明）</td><td><span class="tag">权限 &quot;system:user&quot;</span> <span class="tag">写审计</span></td></tr>
@@ -591,8 +590,8 @@ uk_escalation_node(node_id, deleted)} 是幂等的**结构性保证**：
 <tr><td><code>deptName</code></td><td><span class="tag">String</span></td><td>部门名称，由 deptId 反查得到</td></tr>
 <tr><td><code>postId</code></td><td><span class="tag">Long</span></td><td>岗位 ID</td></tr>
 <tr><td><code>postName</code></td><td><span class="tag">String</span></td><td>岗位名称，由 postId 反查得到</td></tr>
-<tr><td><code>phone</code></td><td><span class="tag">String</span></td><td>手机号：仅 `GET /api/users/page} 与 `GET /api/users/{id}}（均挂 `system:user}）返回；全开的 `GET /api/users} 不返回该字段（全局 Jackson `default-property-inclusion=non_null}，置 null 即不序列化），前端取 `row.phone} 得到 `undefined}</td></tr>
-<tr><td><code>email</code></td><td><span class="tag">String</span></td><td>邮箱：同 `#phone} —— 仅门控接口返回，全开的 `GET /api/users} 不返回该字段</td></tr>
+<tr><td><code>phone</code></td><td><span class="tag">String</span></td><td>手机号</td></tr>
+<tr><td><code>email</code></td><td><span class="tag">String</span></td><td>邮箱</td></tr>
 <tr><td><code>status</code></td><td><span class="tag">Integer</span></td><td>1 在职 0 离职</td></tr>
 <tr><td><code>lastLoginAt</code></td><td><span class="tag">LocalDateTime</span></td><td>最后一次登录时间</td></tr>
 <tr><td><code>roleCodes</code></td><td><span class="tag">List&lt;String&gt;</span></td><td>已分配角色编码</td></tr>

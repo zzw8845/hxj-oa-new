@@ -82,16 +82,16 @@ public class UserAdminService {
                 .eq(companyId != null, SysUser::getCompanyId, companyId)
                 .orderByAsc(SysUser::getDeptId)
                 .orderByAsc(SysUser::getId));
-        return stripPersonalInfo(assembleAll(users, companyId));
+        return assembleAll(users, companyId);
     }
 
     /**
      * 人员管理表格用的**服务端**分页。
      *
-     * <p>为什么必须有它：`GET /api/users` 是全量返回（选人下拉要在客户端对全量做模糊搜索，
-     * 分页反而做不了，那个接口刻意保留全量）。但人员管理表格若也用全量，随着公司人数增长，
-     * 一次请求会越来越大；更关键的是**搜索**：若把全量拉下来再在前端过滤，
-     * 那只是在"已加载的这批人"里搜 —— 搜不全，而且界面上没有任何提示，用户会以为真的没有这个人。
+     * <p>为什么必须有它：{@code GET /api/users} 按「选人」场景一次性返回全量
+     * （该场景要边输入边即时过滤候选，分页拿不全）；但人员管理表格若也用全量，
+     * 单次响应会随公司人数线性放大，且**搜索会被限制在已加载的那批数据里** ——
+     * 搜不全且界面没有任何提示，用户会以为真的没有这个人。
      * 所以表格走这个接口：过滤与分页都在 SQL 里完成。
      */
     public PageResult<UserVO> pageWithDetail(Long companyId, Integer pageNum, Integer pageSize, String keyword) {
@@ -135,31 +135,10 @@ public class UserAdminService {
     }
 
     /**
-     * 剥掉个人敏感字段（手机号 / 邮箱）。
-     *
-     * <p><b>只给全开的 {@code GET /api/users} 用</b>：那个接口不挂权限点（选审批人必须人人可用），
-     * 顺带把全公司手机号邮箱发出去不合适。挂了 {@code system:user} 的 {@code /api/users/page}
-     * 与 {@code /api/users/{id}} 不剥 —— 都是管理场景，需要看联系方式。
-     *
-     * <p>注意是"置 null"而不是改 {@code assemble}：两个接口共用同一个装配方法，
-     * 在装配里剥会把管理页也剥掉。
-     * ⚠ 置 null 后响应里<b>不会有 {@code phone}/{@code email} 键</b>
-     * （全局 {@code spring.jackson.default-property-inclusion=non_null}），不是"值为 null"。
-     */
-    private List<UserVO> stripPersonalInfo(List<UserVO> list) {
-        list.forEach(v -> {
-            v.setPhone(null);
-            v.setEmail(null);
-        });
-        return list;
-    }
-
-    /**
      * 单个人员详情（含手机号 / 邮箱 / 部门 / 岗位 / 角色）。
      *
      * <p>对外由 {@code GET /api/users/{id}} 暴露，该端点挂 {@code system:user}；
      * 同时被新建 / 修改 / 调整角色三个写操作复用（返回操作后的最新视图）。
-     * 与全开的 {@code GET /api/users} 不同，本方法<b>不剥离</b>手机号 / 邮箱。
      */
     public UserVO detail(Long id) {
         SysUser u = requireUser(id);
