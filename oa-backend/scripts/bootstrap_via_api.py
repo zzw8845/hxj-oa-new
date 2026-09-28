@@ -13,7 +13,8 @@
   · 本脚本跑通的路径 = 客户拿到系统后要走的路径。**它同时就是交付演练脚本。**
 
 【前置】
-  1. 库已灌 init_database.sql（结构）+ minimal_seed.sql（引导集：company / admin / ADMIN / 权限点）
+  1. 库已灌 init_database.sql（结构）+ minimal_seed.sql
+     （引导集：company / admin / 内置角色 ADMIN·AUDIT_ADMIN / 权限点）
   2. 后端在跑（默认 http://127.0.0.1:8080）
   3. admin 的密码是种子里的初始值（默认 123456）
 
