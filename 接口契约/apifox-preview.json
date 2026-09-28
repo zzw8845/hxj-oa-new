@@ -374,11 +374,9 @@
     }
   ],
   "cross_check": {
-    "contract_paths": 76,
+    "contract_paths": 77,
     "emulator_paths": 75,
-    "only_in_emulator": [
-      "/api/roles/{id}/admin-scope"
-    ],
+    "only_in_emulator": [],
     "only_in_contract": [
       "/api/ping"
     ]
