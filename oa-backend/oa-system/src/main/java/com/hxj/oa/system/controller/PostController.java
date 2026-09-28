@@ -40,13 +40,13 @@ public class PostController {
     /**
      * 岗位列表（人员管理页与「选岗位」下拉的数据源）。
      *
-     * @param companyId 公司 ID；不传则取当前登录人的公司
+     * <p>公司一律取登录态，<b>不接受客户端传入</b>（客户端传参不可信，理由见
+     * {@code DepartmentController#tree()} 上关于跨公司读的说明）。
      */
     @GetMapping
-    public R<List<Post>> list(@RequestParam(required = false) Long companyId) {
-        Long cid = companyId == null ? UserContext.require().getCompanyId() : companyId;
+    public R<List<Post>> list() {
         return R.ok(postMapper.selectList(Wrappers.<Post>lambdaQuery()
-                .eq(cid != null, Post::getCompanyId, cid)
+                .eq(Post::getCompanyId, UserContext.require().getCompanyId())
                 .orderByAsc(Post::getSortNo)
                 .orderByAsc(Post::getId)));
     }

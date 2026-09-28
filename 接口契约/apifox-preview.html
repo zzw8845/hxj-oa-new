@@ -48,7 +48,7 @@ summary .cnt{color:var(--muted);font-weight:400;font-size:12px;margin-left:6px}
   <div class="stat"><div class="n">99</div><div class="l">接口（20 个目录）</div></div>
   <div class="stat"><div class="n">99/99</div><div class="l">接口有说明</div></div>
   <div class="stat"><div class="n">575/575</div><div class="l">模型字段有说明</div></div>
-  <div class="stat"><div class="n">50/114</div><div class="l">参数有说明</div></div>
+  <div class="stat"><div class="n">44/108</div><div class="l">参数有说明</div></div>
   <div class="stat"><div class="n">49</div><div class="l">带接口权限门控</div></div>
   <div class="stat"><div class="n">50</div><div class="l">带审计留痕</div></div>
 </div>
@@ -284,8 +284,11 @@ summary .cnt{color:var(--muted);font-weight:400;font-size:12px;margin-left:6px}
 简称留空 = 不使用简称，界面回退显示全称。</div></td><td><code>req</code>（无说明）</td><td><span class="tag">权限 &quot;system:company&quot;</span> <span class="tag">写审计</span></td></tr>
 </tbody></table></div></details>
 <details open><summary>DepartmentController<span class="cnt">5 个接口</span></summary><div class="body"><table><thead><tr><th style="width:60px">方法</th><th style="width:34%">路径</th><th>接口说明（方法注释首行）</th><th style="width:20%">参数</th><th style="width:14%">门控 / 留痕</th></tr></thead><tbody>
-<tr><td><span class="m get">GET</span></td><td><code>/api/depts/tree</code></td><td>部门树（按 parentId 组成 children 层级），组织架构图与「选部门」下拉用。</td><td><code>companyId</code></td><td>—</td></tr>
-<tr><td><span class="m get">GET</span></td><td><code>/api/depts</code></td><td>部门平铺列表（无层级结构，需要树形请用 /tree）。</td><td><code>companyId</code></td><td>—</td></tr>
+<tr><td><span class="m get">GET</span></td><td><code>/api/depts/tree</code></td><td>部门树（按 parentId 组成 children 层级），组织架构图与「选部门」下拉用。<div class="desc">公司一律取登录态，刻意不接受客户端传入：客户端传的参数不可信，
+让它可以决定「查哪家公司」等于开一个横向越权的口子（跨公司读，P2-7）。
+将来真要做跨公司读，应走 `DataScopeHelper} 同层的公司维度过滤 + 归属校验，
+而不是散在各个接口上各判一次。</div></td><td>—</td><td>—</td></tr>
+<tr><td><span class="m get">GET</span></td><td><code>/api/depts</code></td><td>部门平铺列表（无层级结构，需要树形请用 /tree）。公司同样取登录态，理由见 `#tree()}。</td><td>—</td><td>—</td></tr>
 <tr><td><span class="m post">POST</span></td><td><code>/api/depts</code></td><td>新建部门。<div class="desc">parentId 传 null 或 0 表示一级中心；code 留空由后端按 D0xx 规则生成。
 名称、编码在同一公司内不允许重复。</div></td><td><code>req</code>（无说明）</td><td><span class="tag">权限 &quot;system:dept&quot;</span> <span class="tag">写审计</span></td></tr>
 <tr><td><span class="m put">PUT</span></td><td><code>/api/depts/{id}</code></td><td>修改部门（名称 / 编码 / 负责人 / 排序 / 状态）。<div class="desc">⚠ 不支持调整上级部门：传了与原值不同的 parentId 会直接报错（移动部门要重写整棵
@@ -305,13 +308,15 @@ summary .cnt{color:var(--muted);font-weight:400;font-size:12px;margin-left:6px}
 <tr><td><span class="m get">GET</span></td><td><code>/api/permissions</code></td><td>全量权限点，按 sortNo 排序，前端按 permType 分「菜单/按钮/接口」分组渲染</td><td>—</td><td><span class="tag">权限 value = {&quot;system:role&quot;, &quot;system:user&quot;}, logic = RequirePerm.Logic.OR</span></td></tr>
 </tbody></table></div></details>
 <details open><summary>PostController<span class="cnt">4 个接口</span></summary><div class="body"><table><thead><tr><th style="width:60px">方法</th><th style="width:34%">路径</th><th>接口说明（方法注释首行）</th><th style="width:20%">参数</th><th style="width:14%">门控 / 留痕</th></tr></thead><tbody>
-<tr><td><span class="m get">GET</span></td><td><code>/api/posts</code></td><td>岗位列表（人员管理页与「选岗位」下拉的数据源）。</td><td><code>companyId</code></td><td>—</td></tr>
+<tr><td><span class="m get">GET</span></td><td><code>/api/posts</code></td><td>岗位列表（人员管理页与「选岗位」下拉的数据源）。<div class="desc">公司一律取登录态，不接受客户端传入（客户端传参不可信，理由见
+DepartmentController#tree()} 上关于跨公司读的说明）。</div></td><td>—</td><td>—</td></tr>
 <tr><td><span class="m post">POST</span></td><td><code>/api/posts</code></td><td>新建岗位。编码在同一公司内不允许重复。</td><td><code>req</code>（无说明）</td><td><span class="tag">权限 &quot;system:dept&quot;</span> <span class="tag">写审计</span></td></tr>
 <tr><td><span class="m put">PUT</span></td><td><code>/api/posts/{id}</code></td><td>修改岗位。</td><td><code>id</code>、<code>req</code>（无说明）</td><td><span class="tag">权限 &quot;system:dept&quot;</span> <span class="tag">写审计</span></td></tr>
 <tr><td><span class="m del">DELETE</span></td><td><code>/api/posts/{id}</code></td><td>删除岗位（逻辑删除）。<div class="desc">仍有员工在任、或仍挂在兼岗记录上时拒绝，并在 msg 里给出人数。</div></td><td><code>id</code></td><td><span class="tag">权限 &quot;system:dept&quot;</span> <span class="tag">写审计</span></td></tr>
 </tbody></table></div></details>
 <details open><summary>RoleController<span class="cnt">7 个接口</span></summary><div class="body"><table><thead><tr><th style="width:60px">方法</th><th style="width:34%">路径</th><th>接口说明（方法注释首行）</th><th style="width:20%">参数</th><th style="width:14%">门控 / 留痕</th></tr></thead><tbody>
-<tr><td><span class="m get">GET</span></td><td><code>/api/roles</code></td><td>角色列表（含已配权限点与数据范围、成员）。</td><td><code>companyId</code></td><td>—</td></tr>
+<tr><td><span class="m get">GET</span></td><td><code>/api/roles</code></td><td>角色列表（含已配权限点与数据范围、成员）。<div class="desc">公司一律取登录态，不接受客户端传入（客户端传参不可信，理由见
+DepartmentController#tree()} 上关于跨公司读的说明）。</div></td><td>—</td><td>—</td></tr>
 <tr><td><span class="m get">GET</span></td><td><code>/api/roles/{id}</code></td><td>单个角色详情（含已配权限点与数据范围、成员）。<div class="desc">挂 `system:role} 而列表不挂：列表用于「把 roleCode 翻成中文名」这类协作场景，
 详情是「角色管理」动作的入口。
 ⚠ 与列表返回的字段完全一致，门控差异只决定「能不能调」。</div></td><td><code>id</code></td><td><span class="tag">权限 &quot;system:role&quot;</span></td></tr>
@@ -328,10 +333,11 @@ summary .cnt{color:var(--muted);font-weight:400;font-size:12px;margin-left:6px}
 「发起单据」链路的一环，任何能登录的人都得能用；若挂 `system:user}，
 普通员工一发起单据就选不出审批人。
 ⚠ 这是权限层面的取舍、不影响字段：本接口返回的 `UserVO} 与
-/api/users/page}、`/api/u</div></td><td><code>companyId</code></td><td>—</td></tr>
+/api/users/page}、`/api/u</div></td><td>—</td><td>—</td></tr>
 <tr><td><span class="m get">GET</span></td><td><code>/api/users/page</code></td><td>人员管理表格的分页接口（过滤与分页都在 SQL 里完成）。<div class="desc">与 `GET /api/users} 刻意保留两份：后者供「选人」场景一次取全量
 （该场景要边输入边即时过滤）；前者供表格分页，不随公司人数放大单次响应。
-合成一个接口会顾此失彼 —— 要么选人端拿不全人，要么表格一次把全公司拉下来。</div></td><td><code>pageNum</code>、<code>pageSize</code>、<code>keyword</code>、<code>companyId</code></td><td><span class="tag">权限 &quot;system:user&quot;</span></td></tr>
+合成一个接口会顾此失彼 —— 要么选人端拿不全人，要么表格一次把全公司拉下来。
+公司一律取登录态，不接受客户端传入（同上）。</div></td><td><code>pageNum</code>、<code>pageSize</code>、<code>keyword</code></td><td><span class="tag">权限 &quot;system:user&quot;</span></td></tr>
 <tr><td><span class="m get">GET</span></td><td><code>/api/users/{id}</code></td><td>单个员工详情（含手机号 / 邮箱 / 部门 / 岗位 / 角色）。<div class="desc">挂 `system:user} 是因为它属于「人员管理」动作；
 它与全开的 `GET /api/users} 字段一致（门控差异只决定「能不能调」）。</div></td><td><code>id</code></td><td><span class="tag">权限 &quot;system:user&quot;</span></td></tr>
 <tr><td><span class="m post">POST</span></td><td><code>/api/users</code></td><td>新建员工。<div class="desc">姓名 / 工号 / 账号 / 密码必填（密码即初始密码，后端会置&quot;待改密&quot;标记，

@@ -3,8 +3,8 @@
     "operations": 99,
     "controllers": 20,
     "ops_with_summary": 99,
-    "params_total": 114,
-    "params_documented": 50,
+    "params_total": 108,
+    "params_documented": 44,
     "models": 69,
     "fields_total": 575,
     "fields_documented": 575,
@@ -2280,25 +2280,15 @@
       "path": "/api/depts/tree",
       "path_tmpl": "/api/depts/tree",
       "summary": "部门树（按 parentId 组成 children 层级），组织架构图与「选部门」下拉用。",
-      "desc": "",
-      "params": [
-        {
-          "name": "companyId",
-          "type": "Long",
-          "kind": "query",
-          "required": false,
-          "raw": "@RequestParam(required = false) Long companyId"
-        }
-      ],
-      "javadoc_params": {
-        "companyId": "公司 ID；不传则取当前登录人的公司"
-      },
+      "desc": "公司一律取登录态，刻意不接受客户端传入：客户端传的参数不可信，\n让它可以决定「查哪家公司」等于开一个横向越权的口子（跨公司读，P2-7）。\n将来真要做跨公司读，应走 `DataScopeHelper} 同层的公司维度过滤 + 归属校验，\n而不是散在各个接口上各判一次。",
+      "params": [],
+      "javadoc_params": {},
       "return": "R<List<DeptTreeVO>>",
       "require_perm": "",
       "audit": "",
       "deprecated": false,
       "file": "oa-backend/oa-system/src/main/java/com/hxj/oa/system/controller/DepartmentController.java",
-      "line": 49
+      "line": 52
     },
     {
       "controller": "DepartmentController",
@@ -2307,26 +2297,16 @@
       "verb": "GET",
       "path": "/api/depts",
       "path_tmpl": "/api/depts",
-      "summary": "部门平铺列表（无层级结构，需要树形请用 /tree）。",
+      "summary": "部门平铺列表（无层级结构，需要树形请用 /tree）。公司同样取登录态，理由见 `#tree()}。",
       "desc": "",
-      "params": [
-        {
-          "name": "companyId",
-          "type": "Long",
-          "kind": "query",
-          "required": false,
-          "raw": "@RequestParam(required = false) Long companyId"
-        }
-      ],
-      "javadoc_params": {
-        "companyId": "公司 ID；不传则取当前登录人的公司"
-      },
+      "params": [],
+      "javadoc_params": {},
       "return": "R<List<Department>>",
       "require_perm": "",
       "audit": "",
       "deprecated": false,
       "file": "oa-backend/oa-system/src/main/java/com/hxj/oa/system/controller/DepartmentController.java",
-      "line": 60
+      "line": 58
     },
     {
       "controller": "DepartmentController",
@@ -2352,7 +2332,7 @@
       "audit": "module = \"system\", action = \"createDept\"",
       "deprecated": false,
       "file": "oa-backend/oa-system/src/main/java/com/hxj/oa/system/controller/DepartmentController.java",
-      "line": 72
+      "line": 69
     },
     {
       "controller": "DepartmentController",
@@ -2387,7 +2367,7 @@
       "audit": "module = \"system\", action = \"updateDept\"",
       "deprecated": false,
       "file": "oa-backend/oa-system/src/main/java/com/hxj/oa/system/controller/DepartmentController.java",
-      "line": 89
+      "line": 86
     },
     {
       "controller": "DepartmentController",
@@ -2415,7 +2395,7 @@
       "audit": "module = \"system\", action = \"deleteDept\"",
       "deprecated": false,
       "file": "oa-backend/oa-system/src/main/java/com/hxj/oa/system/controller/DepartmentController.java",
-      "line": 104
+      "line": 101
     },
     {
       "controller": "DictController",
@@ -2578,25 +2558,15 @@
       "path": "/api/posts",
       "path_tmpl": "/api/posts",
       "summary": "岗位列表（人员管理页与「选岗位」下拉的数据源）。",
-      "desc": "",
-      "params": [
-        {
-          "name": "companyId",
-          "type": "Long",
-          "kind": "query",
-          "required": false,
-          "raw": "@RequestParam(required = false) Long companyId"
-        }
-      ],
-      "javadoc_params": {
-        "companyId": "公司 ID；不传则取当前登录人的公司"
-      },
+      "desc": "公司一律取登录态，不接受客户端传入（客户端传参不可信，理由见\nDepartmentController#tree()} 上关于跨公司读的说明）。",
+      "params": [],
+      "javadoc_params": {},
       "return": "R<List<Post>>",
       "require_perm": "",
       "audit": "",
       "deprecated": false,
       "file": "oa-backend/oa-system/src/main/java/com/hxj/oa/system/controller/PostController.java",
-      "line": 45
+      "line": 46
     },
     {
       "controller": "PostController",
@@ -2695,25 +2665,15 @@
       "path": "/api/roles",
       "path_tmpl": "/api/roles",
       "summary": "角色列表（含已配权限点与数据范围、成员）。",
-      "desc": "",
-      "params": [
-        {
-          "name": "companyId",
-          "type": "Long",
-          "kind": "query",
-          "required": false,
-          "raw": "@RequestParam(required = false) Long companyId"
-        }
-      ],
-      "javadoc_params": {
-        "companyId": "公司 ID；不传则取当前登录人的公司"
-      },
+      "desc": "公司一律取登录态，不接受客户端传入（客户端传参不可信，理由见\nDepartmentController#tree()} 上关于跨公司读的说明）。",
+      "params": [],
+      "javadoc_params": {},
       "return": "R<List<RoleVO>>",
       "require_perm": "",
       "audit": "",
       "deprecated": false,
       "file": "oa-backend/oa-system/src/main/java/com/hxj/oa/system/controller/RoleController.java",
-      "line": 47
+      "line": 48
     },
     {
       "controller": "RoleController",
@@ -2906,19 +2866,9 @@
       "path": "/api/users",
       "path_tmpl": "/api/users",
       "summary": "当前公司用户列表（含部门名、岗位名、角色、联系方式，供「选择审批人 / 被代理人」与人员管理页共用）。",
-      "desc": "刻意保留全量：选人时要边输入边即时过滤候选，分页取不全；\n量级受公司规模天然约束（一家公司几千人是上限），不构成无界增长表。\n为什么这个读接口不挂权限点、而 `/page} 挂了：选审批人、查同事是\n「发起单据」链路的一环，任何能登录的人都得能用；若挂 `system:user}，\n普通员工一发起单据就选不出审批人。\n⚠ 这是权限层面的取舍、不影响字段：本接口返回的 `UserVO} 与\n/api/users/page}、`/api/users/{id}} 完全一致（都含手机号/邮箱）。\n内部 OA 通讯录里同事联系方式本属可见信息，不需要靠\"少返回两个字段\"来做安全；\n若客户将来确有\"普通员工不得查看同事联系方式\"的合规要求，应做成显式、可配置的策略，\n而不是在这里隐式抹字段（那会让同一个 VO 在不同接口出现两副面貌，接手人无法从契约判断）。",
-      "params": [
-        {
-          "name": "companyId",
-          "type": "Long",
-          "kind": "query",
-          "required": false,
-          "raw": "@RequestParam(required = false) Long companyId"
-        }
-      ],
-      "javadoc_params": {
-        "companyId": "公司 ID；不传则取当前登录人的公司"
-      },
+      "desc": "刻意保留全量：选人时要边输入边即时过滤候选，分页取不全；\n量级受公司规模天然约束（一家公司几千人是上限），不构成无界增长表。\n为什么这个读接口不挂权限点、而 `/page} 挂了：选审批人、查同事是\n「发起单据」链路的一环，任何能登录的人都得能用；若挂 `system:user}，\n普通员工一发起单据就选不出审批人。\n⚠ 这是权限层面的取舍、不影响字段：本接口返回的 `UserVO} 与\n/api/users/page}、`/api/users/{id}} 完全一致（都含手机号/邮箱）。\n内部 OA 通讯录里同事联系方式本属可见信息，不需要靠\"少返回两个字段\"来做安全；\n若客户将来确有\"普通员工不得查看同事联系方式\"的合规要求，应做成显式、可配置的策略，\n而不是在这里隐式抹字段（那会让同一个 VO 在不同接口出现两副面貌，接手人无法从契约判断）。\n公司一律取登录态，不接受客户端传入（客户端传参不可信，理由见\nDepartmentController#tree()} 上关于跨公司读的说明）。",
+      "params": [],
+      "javadoc_params": {},
       "return": "R<List<UserVO>>",
       "require_perm": "",
       "audit": "",
@@ -2934,7 +2884,7 @@
       "path": "/api/users/page",
       "path_tmpl": "/api/users/page",
       "summary": "人员管理表格的分页接口（过滤与分页都在 SQL 里完成）。",
-      "desc": "与 `GET /api/users} 刻意保留两份：后者供「选人」场景一次取全量\n（该场景要边输入边即时过滤）；前者供表格分页，不随公司人数放大单次响应。\n合成一个接口会顾此失彼 —— 要么选人端拿不全人，要么表格一次把全公司拉下来。",
+      "desc": "与 `GET /api/users} 刻意保留两份：后者供「选人」场景一次取全量\n（该场景要边输入边即时过滤）；前者供表格分页，不随公司人数放大单次响应。\n合成一个接口会顾此失彼 —— 要么选人端拿不全人，要么表格一次把全公司拉下来。\n公司一律取登录态，不接受客户端传入（同上）。",
       "params": [
         {
           "name": "pageNum",
@@ -2956,20 +2906,12 @@
           "kind": "query",
           "required": false,
           "raw": "@RequestParam(required = false) String keyword"
-        },
-        {
-          "name": "companyId",
-          "type": "Long",
-          "kind": "query",
-          "required": false,
-          "raw": "@RequestParam(required = false) Long companyId"
         }
       ],
       "javadoc_params": {
         "pageNum": "页码，从 1 开始",
         "pageSize": "每页条数",
-        "keyword": "按姓名 / 账号 / 工号模糊搜索",
-        "companyId": "公司 ID；不传则取当前登录人的公司"
+        "keyword": "按姓名 / 账号 / 工号模糊搜索"
       },
       "return": "R<PageResult<UserVO>>",
       "require_perm": "\"system:user\"",
@@ -3004,7 +2946,7 @@
       "audit": "",
       "deprecated": false,
       "file": "oa-backend/oa-system/src/main/java/com/hxj/oa/system/controller/UserController.java",
-      "line": 98
+      "line": 96
     },
     {
       "controller": "UserController",
@@ -3030,7 +2972,7 @@
       "audit": "module = \"permission\", action = \"createUser\"",
       "deprecated": false,
       "file": "oa-backend/oa-system/src/main/java/com/hxj/oa/system/controller/UserController.java",
-      "line": 111
+      "line": 109
     },
     {
       "controller": "UserController",
@@ -3065,7 +3007,7 @@
       "audit": "module = \"permission\", action = \"updateUser\"",
       "deprecated": false,
       "file": "oa-backend/oa-system/src/main/java/com/hxj/oa/system/controller/UserController.java",
-      "line": 128
+      "line": 126
     },
     {
       "controller": "UserController",
@@ -3098,7 +3040,7 @@
       "audit": "module = \"permission\", action = \"assignRoles\"",
       "deprecated": false,
       "file": "oa-backend/oa-system/src/main/java/com/hxj/oa/system/controller/UserController.java",
-      "line": 136
+      "line": 134
     },
     {
       "controller": "UserController",
@@ -3126,7 +3068,7 @@
       "audit": "module = \"permission\", action = \"deleteUser\"",
       "deprecated": false,
       "file": "oa-backend/oa-system/src/main/java/com/hxj/oa/system/controller/UserController.java",
-      "line": 148
+      "line": 146
     }
   ],
   "models": {

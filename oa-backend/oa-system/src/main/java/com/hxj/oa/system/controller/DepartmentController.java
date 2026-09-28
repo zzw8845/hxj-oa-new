@@ -44,23 +44,20 @@ public class DepartmentController {
     /**
      * 部门树（按 parentId 组成 children 层级），组织架构图与「选部门」下拉用。
      *
-     * @param companyId 公司 ID；不传则取当前登录人的公司
+     * <p>公司一律取登录态，<b>刻意不接受客户端传入</b>：客户端传的参数不可信，
+     * 让它可以决定「查哪家公司」等于开一个横向越权的口子（跨公司读，P2-7）。
+     * 将来真要做跨公司读，应走 {@code DataScopeHelper} 同层的公司维度过滤 + 归属校验，
+     * 而不是散在各个接口上各判一次。
      */
     @GetMapping("/tree")
-    public R<List<DeptTreeVO>> tree(@RequestParam(required = false) Long companyId) {
-        Long cid = companyId == null ? UserContext.require().getCompanyId() : companyId;
-        return R.ok(departmentService.tree(cid));
+    public R<List<DeptTreeVO>> tree() {
+        return R.ok(departmentService.tree(UserContext.require().getCompanyId()));
     }
 
-    /**
-     * 部门平铺列表（无层级结构，需要树形请用 /tree）。
-     *
-     * @param companyId 公司 ID；不传则取当前登录人的公司
-     */
+    /** 部门平铺列表（无层级结构，需要树形请用 /tree）。公司同样取登录态，理由见 {@link #tree()}。 */
     @GetMapping
-    public R<List<Department>> list(@RequestParam(required = false) Long companyId) {
-        Long cid = companyId == null ? UserContext.require().getCompanyId() : companyId;
-        return R.ok(departmentService.listByCompany(cid));
+    public R<List<Department>> list() {
+        return R.ok(departmentService.listByCompany(UserContext.require().getCompanyId()));
     }
 
     /**

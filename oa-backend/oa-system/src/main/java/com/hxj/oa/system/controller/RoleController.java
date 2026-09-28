@@ -42,12 +42,12 @@ public class RoleController {
     /**
      * 角色列表（含已配权限点与数据范围、成员）。
      *
-     * @param companyId 公司 ID；不传则取当前登录人的公司
+     * <p>公司一律取登录态，<b>不接受客户端传入</b>（客户端传参不可信，理由见
+     * {@code DepartmentController#tree()} 上关于跨公司读的说明）。
      */
     @GetMapping
-    public R<List<RoleVO>> list(@RequestParam(required = false) Long companyId) {
-        Long cid = companyId == null ? UserContext.require().getCompanyId() : companyId;
-        return R.ok(roleAdminService.listWithDetail(cid));
+    public R<List<RoleVO>> list() {
+        return R.ok(roleAdminService.listWithDetail(UserContext.require().getCompanyId()));
     }
 
     /**

@@ -3,7 +3,6 @@ package com.hxj.oa.system.controller;
 import com.hxj.oa.common.annotation.Audit;
 import com.hxj.oa.common.api.PageResult;
 import com.hxj.oa.common.api.R;
-import com.hxj.oa.common.security.LoginUser;
 import com.hxj.oa.common.security.RequirePerm;
 import com.hxj.oa.common.security.UserContext;
 import com.hxj.oa.system.dto.UserSaveReq;
@@ -56,12 +55,12 @@ public class UserController {
      * 若客户将来确有"普通员工不得查看同事联系方式"的合规要求，应做成<b>显式、可配置</b>的策略，
      * 而不是在这里隐式抹字段（那会让同一个 VO 在不同接口出现两副面貌，接手人无法从契约判断）。
      *
-     * @param companyId 公司 ID；不传则取当前登录人的公司
+     * <p>公司一律取登录态，<b>不接受客户端传入</b>（客户端传参不可信，理由见
+     * {@code DepartmentController#tree()} 上关于跨公司读的说明）。
      */
     @GetMapping
-    public R<List<UserVO>> list(@RequestParam(required = false) Long companyId) {
-        LoginUser me = UserContext.require();
-        return R.ok(userAdminService.listWithDetail(companyId == null ? me.getCompanyId() : companyId));
+    public R<List<UserVO>> list() {
+        return R.ok(userAdminService.listWithDetail(UserContext.require().getCompanyId()));
     }
 
     /**
@@ -71,20 +70,19 @@ public class UserController {
      * （该场景要边输入边即时过滤）；前者供表格分页，不随公司人数放大单次响应。
      * 合成一个接口会顾此失彼 —— 要么选人端拿不全人，要么表格一次把全公司拉下来。
      *
-     * @param pageNum   页码，从 1 开始
-     * @param pageSize  每页条数
-     * @param keyword   按姓名 / 账号 / 工号模糊搜索
-     * @param companyId 公司 ID；不传则取当前登录人的公司
+     * <p>公司一律取登录态，不接受客户端传入（同上）。
+     *
+     * @param pageNum  页码，从 1 开始
+     * @param pageSize 每页条数
+     * @param keyword  按姓名 / 账号 / 工号模糊搜索
      */
     @GetMapping("/page")
     @RequirePerm("system:user")
     public R<PageResult<UserVO>> page(@RequestParam(required = false) Integer pageNum,
                                       @RequestParam(required = false) Integer pageSize,
-                                      @RequestParam(required = false) String keyword,
-                                      @RequestParam(required = false) Long companyId) {
-        LoginUser me = UserContext.require();
-        Long cid = companyId == null ? me.getCompanyId() : companyId;
-        return R.ok(userAdminService.pageWithDetail(cid, pageNum, pageSize, keyword));
+                                      @RequestParam(required = false) String keyword) {
+        return R.ok(userAdminService.pageWithDetail(UserContext.require().getCompanyId(),
+                pageNum, pageSize, keyword));
     }
 
     /**
