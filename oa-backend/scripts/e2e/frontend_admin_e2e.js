@@ -30,7 +30,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
    为什么要把这个数写死在代码里：本项目出过一次「假绿灯」—— 上游某条断言依赖的接口被回退后
    抛错中断，导致其后 16 条断言（含整条审计留痕链路）**从未执行**，而末行照样打印
    "85/85 通过"。有了这个数，任何"少跑了"都会立刻变成红灯，而不是无声无息。 */
-const EXPECTED_TOTAL = 90;
+const EXPECTED_TOTAL = 97;
 
 const results = [];
 function check(name, ok, extra) {
@@ -345,6 +345,17 @@ async function closeDialogs(page) {
     (roleNodes.find(t => t.includes('对应成员：')) || '(无)').slice(0, 110));
   check('角色节点显示权限点中文名', roleNodes.some(t => /查看|审批|管理|发起|提交|上传/.test(t)),
     (roleNodes[0] || '').slice(0, 110));
+  /* 「管理范围」是 C3 引入的**第二个正交维度**（能管哪些人的账号），与数据范围（能看多少单据）
+     不是一回事，后端也刻意做成两个独立子资源。这里断言它真的渲染出来了 ——
+     只做后端不做界面的话，客户在界面上根本看不到、配不了，等于没交付。
+     ⚠ 断言打在 role-tree 的节点上：角色面板在运行时被注入成 role-tree-card，
+     模板里的 .role-grid 卡片是死代码（改了不会生效）。 */
+  const withAdminScope = roleNodes.filter(t => /管理范围：/.test(t));
+  check('角色节点显示「管理范围」（与数据范围并列的第二维度）', withAdminScope.length >= 8,
+    '含该字段=' + withAdminScope.length + '/' + roleNodes.length);
+  check('管理范围显示的是后端中文标签（不是 none/all 这类编码）',
+    withAdminScope.some(t => /管理范围：(不管人|本部门及下级|全公司)/.test(t)),
+    (withAdminScope.find(t => /管理范围：(不管人|本部门及下级|全公司)/.test(t)) || '(无)').slice(0, 120));
   await page.screenshot({ path: SHOTS + '/admin-role.png' });
 
   // 新增角色弹窗：权限勾选项必须来自后端权限点目录（GET /api/permissions）
@@ -366,7 +377,65 @@ async function closeDialogs(page) {
     roleDlg.checks.some(c => c.includes('用户管理')) && roleDlg.checks.some(c => c.includes('角色管理')),
     '共 ' + roleDlg.checks.length + ' 个，例：' + roleDlg.checks.slice(0, 4).join('/'));
   check('角色弹窗含「数据范围」', roleDlg.labels.some(l => l.includes('数据范围')), roleDlg.labels.join(' | '));
+  /* 新建态**故意**不给「管理范围」：它的缺省语义是"不管人"（最窄），不像数据范围那样
+     缺省会静默降级成"仅本人"（对管理员是危险的收权）、必须一起给。
+     少一个能在新建时被顺手勾上的授权项，比"两个字段看着整齐"更重要 —— 这条断言就是把这个
+     决定固化下来，谁把控件挪进新建弹窗就会红。 */
+  check('新建态不出现「管理范围」（后端设计：新建不给授权项）',
+    !roleDlg.labels.some(l => l.includes('管理范围')), roleDlg.labels.join(' | '));
   await closeDialogs(page);
+
+  // 编辑态才有「管理范围」。这里**只读**：打开角色的「配置权限」核对回显值，
+  // 不做任何写入 —— 写路径的完整闭环（改→保存→落库→改回）由
+  // scripts/verify_admin_scope.py 在接口层覆盖，UI 层只保证"入口在、值对、说明在"。
+  //
+  // ⚠ 必须**点名**打开哪个角色，不能"取第一个带按钮的节点"：
+  // 第一个节点是超级管理员，它的说明文案是"不允许收窄"那一句，
+  // 用 /账号/ 之类的宽松正则去匹配会把这条断言变成永远为真的假绿
+  // （本项目栽过同类问题：断言比它声称的要宽，等于没断言）。
+  const openRoleConfigAndReadScope = async function (roleName) {
+    await page.evaluate((name) => {
+      const nodes = [...document.querySelectorAll('.role-tree-node.role')];
+      const node = nodes.find(n => n.textContent.includes(name))
+                || nodes.find(n => [...n.querySelectorAll('.el-button')].some(b => b.textContent.includes('配置权限')));
+      if (!node) return;
+      const b = [...node.querySelectorAll('.el-button')].find(x => x.textContent.includes('配置权限'));
+      if (b) b.click();
+    }, roleName);
+    await sleep(1200);
+    const r = await page.evaluate(() => {
+      const dlgs = [...document.querySelectorAll('.el-dialog')].filter(d => d.offsetParent !== null);
+      const dlg = dlgs.find(d => d.textContent.includes('角色名称'));
+      if (!dlg) return { item: false, value: '', hint: '', disabled: false };
+      const it = [...dlg.querySelectorAll('.el-form-item')].find(i => {
+        const l = i.querySelector('.el-form-item__label');
+        return l && l.textContent.trim().replace(/[:：]/g, '').startsWith('管理范围');
+      });
+      if (!it) return { item: false, value: '', hint: '', disabled: false };
+      const w = it.querySelector('.el-select__wrapper');
+      return { item: true, value: w ? w.textContent.trim() : '',
+               disabled: !!(w && w.classList.contains('is-disabled')),
+               hint: (it.querySelector('small') || {}).textContent || '' };
+    });
+    await closeDialogs(page);
+    return r;
+  };
+
+  const auditScope = await openRoleConfigAndReadScope('审计管理员');
+  check('编辑角色弹窗含「管理范围」且回显后端值',
+    !!auditScope.item && /不管人|本部门及下级|全公司/.test(auditScope.value || ''),
+    JSON.stringify(auditScope).slice(0, 150));
+  // 两个维度最容易混，普通说明里必须点出"和上面的数据范围不是一回事"，
+  // 否则管理员会以为改了数据范围就等于改了管理范围。
+  check('普通角色的说明写明了与「数据范围」的区别（非技术人员能看懂）',
+    /数据范围/.test(auditScope.hint || ''), (auditScope.hint || '(无)').slice(0, 130));
+
+  const adminScope = await openRoleConfigAndReadScope('超级管理员');
+  check('内置 ADMIN 回显「全公司」', adminScope.value === '全公司', '界面="' + adminScope.value + '"');
+  // 「点了没反应」是最差的一种交互：这里必须既禁用、又写清为什么。
+  check('内置 ADMIN 的管理范围被禁用，且写明原因',
+    adminScope.disabled === true && /收窄/.test(adminScope.hint || ''),
+    'disabled=' + adminScope.disabled + '，说明=' + (adminScope.hint || '(无)').slice(0, 110));
 
   console.log('\n=== 5. 流程管理 ===');
   await closeDialogs(page);

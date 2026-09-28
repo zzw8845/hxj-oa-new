@@ -57,7 +57,7 @@ mkdir -p /tmp/proto/shots2
 
 # 套件:预期断言数 —— 改动套件时这里必须同步改，否则下面的核对会失败（故意的）
 SUITES="
-frontend_admin_e2e:90
+frontend_admin_e2e:97
 frontend_attachment_e2e:56
 frontend_dashboard_e2e:46
 frontend_final_gaps_e2e:65
