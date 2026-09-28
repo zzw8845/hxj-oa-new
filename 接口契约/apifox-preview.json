@@ -2694,7 +2694,7 @@
       "verb": "GET",
       "path": "/api/roles",
       "path_tmpl": "/api/roles",
-      "summary": "角色列表（含已配权限点与数据范围，供「配置权限」弹窗回填）。",
+      "summary": "角色列表（含已配权限点与数据范围、成员）。",
       "desc": "",
       "params": [
         {
@@ -2713,7 +2713,7 @@
       "audit": "",
       "deprecated": false,
       "file": "oa-backend/oa-system/src/main/java/com/hxj/oa/system/controller/RoleController.java",
-      "line": 44
+      "line": 47
     },
     {
       "controller": "RoleController",
@@ -2722,8 +2722,8 @@
       "verb": "GET",
       "path": "/api/roles/{id}",
       "path_tmpl": "/api/roles/{id}",
-      "summary": "单个角色详情（含已配权限点与数据范围）。",
-      "desc": "挂 `system:role} 而列表不挂：列表的用途是「把 roleCode 翻成中文名」，\n详情暴露的是权限点与数据范围配置，属管理信息。",
+      "summary": "单个角色详情（含已配权限点与数据范围、成员）。",
+      "desc": "挂 `system:role} 而列表不挂：列表用于「把 roleCode 翻成中文名」这类协作场景，\n详情是「角色管理」动作的入口。\n⚠ 与列表返回的字段完全一致，门控差异只决定「能不能调」。",
       "params": [
         {
           "name": "id",
@@ -2741,7 +2741,7 @@
       "audit": "",
       "deprecated": false,
       "file": "oa-backend/oa-system/src/main/java/com/hxj/oa/system/controller/RoleController.java",
-      "line": 58
+      "line": 62
     },
     {
       "controller": "RoleController",
@@ -2767,7 +2767,7 @@
       "audit": "module = \"permission\", action = \"createRole\"",
       "deprecated": false,
       "file": "oa-backend/oa-system/src/main/java/com/hxj/oa/system/controller/RoleController.java",
-      "line": 67
+      "line": 71
     },
     {
       "controller": "RoleController",
@@ -2802,7 +2802,7 @@
       "audit": "module = \"permission\", action = \"updateRole\"",
       "deprecated": false,
       "file": "oa-backend/oa-system/src/main/java/com/hxj/oa/system/controller/RoleController.java",
-      "line": 81
+      "line": 85
     },
     {
       "controller": "RoleController",
@@ -2835,7 +2835,7 @@
       "audit": "module = \"permission\", action = \"grantPerm\"",
       "deprecated": false,
       "file": "oa-backend/oa-system/src/main/java/com/hxj/oa/system/controller/RoleController.java",
-      "line": 89
+      "line": 93
     },
     {
       "controller": "RoleController",
@@ -2868,7 +2868,7 @@
       "audit": "module = \"permission\", action = \"dataScope\"",
       "deprecated": false,
       "file": "oa-backend/oa-system/src/main/java/com/hxj/oa/system/controller/RoleController.java",
-      "line": 97
+      "line": 101
     },
     {
       "controller": "RoleController",
@@ -2896,7 +2896,7 @@
       "audit": "module = \"permission\", action = \"deleteRole\"",
       "deprecated": false,
       "file": "oa-backend/oa-system/src/main/java/com/hxj/oa/system/controller/RoleController.java",
-      "line": 112
+      "line": 116
     },
     {
       "controller": "UserController",
@@ -5964,7 +5964,7 @@
     "RoleVO": {
       "fqn": "com.hxj.oa.system.dto.RoleVO",
       "kind": "class",
-      "javadoc": "角色视图对象。\n相比 `SysRole} 补了三样前端配置页必须要的东西：\n权限点明细、数据范围、成员列表——否则「配置权限」弹窗只能显示占位文案。",
+      "javadoc": "角色视图对象。\n相比 `SysRole} 补了三样：权限点明细、数据范围、成员列表。\n这三样共同构成「这个角色是什么」的完整答案（能干什么、管多大范围、谁在用它），\n缺任何一样都只是角色的一个片段 —— 它们散在关联表里，裸实体给不出。",
       "fields": [
         {
           "name": "id",
@@ -6140,7 +6140,7 @@
     "UserVO": {
       "fqn": "com.hxj.oa.system.dto.UserVO",
       "kind": "class",
-      "javadoc": "人员视图对象。\n字段名刻意与 `SysUser} 保持一致（realName / jobNo / account / deptId / postId …），\n因为前端既有代码直接按这些名字取值；这里只是把「部门名、岗位名、角色」一并补上，\n免得前端为了显示一列\"部门\"再单独请求一次。",
+      "javadoc": "人员视图对象。\n字段名与 `SysUser} 保持一致（realName / jobNo / account / deptId / postId …），\n装配时可由实体直接拷贝，少一层字段映射。\n另外补上「部门名、岗位名、角色」等反查字段：它们本身不是 `SysUser} 的列，\n但人员视图的完整语义就包含「在哪个部门、什么岗位、担什么角色」，\n由服务端一次组装好，比让调用方拿着 id 逐个回查更省请求、也更不容易漏。",
       "fields": [
         {
           "name": "id",

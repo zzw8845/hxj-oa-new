@@ -17,17 +17,20 @@ import java.util.List;
 /**
  * 角色管理。
  *
- * <p>列表返回 {@link RoleVO} 而非裸实体：前端「配置权限」弹窗需要回填权限点与数据范围，
- * 原先这些字段不在响应里，界面只能显示占位文案。
+ * <p>列表/详情返回 {@link RoleVO} 而非裸实体 {@code SysRole}：
+ * 角色这个资源的完整定义包含<b>权限点、数据范围、成员</b>三样（散在关联表里），
+ * 裸实体只能给出一张"角色名"。
  *
- * <p>写接口挂 {@code system:role}。权限点与数据范围拆成独立子资源，
- * 因为它们在界面上是两个动作，语义上也是两件事。
+ * <p>写接口挂 {@code system:role}；权限点与数据范围做成独立子资源
+ * （{@code PUT /{id}/permissions}、{@code PUT /{id}/data-scope}），
+ * 因为「改角色属性」「改能干什么」「改管多大范围」是三种不同的写动作，语义上各自独立。
  *
- * <p><b>读接口为何一开一收（依据是「数据敏感度」，不是「谁在用」）</b>：
- * 列表（{@code GET /api/roles}）<b>不挂权限点</b> —— 角色名是单据详情/人员列表里的展示字段
+ * <p><b>读接口为何一开一收（门控差异只决定「能不能调」，不改变字段）</b>：
+ * 列表（{@code GET /api/roles}）<b>不挂权限点</b> —— 角色名是单据/人员列表里的展示字段
  * （把 roleCode 翻成中文），普通员工看自己的单据也要用，挂了会白打 403；
- * 详情（{@code GET /api/roles/{id}}）<b>挂 {@code system:role}</b> —— 它暴露权限点与数据范围
- * 配置，属管理信息，不该对普通员工开放。
+ * 详情（{@code GET /api/roles/{id}}）<b>挂 {@code system:role}</b> —— 它是「角色管理」动作的入口。
+ * ⚠ 两者的 {@code RoleVO} <b>字段完全一致</b>（当前 service 里 detail 就是从列表结果中取的），
+ * 门控只管"能不能调"，不体现为"字段多少"。
  */
 @RestController
 @RequestMapping("/api/roles")
@@ -37,7 +40,7 @@ public class RoleController {
     private final RoleAdminService roleAdminService;
 
     /**
-     * 角色列表（含已配权限点与数据范围，供「配置权限」弹窗回填）。
+     * 角色列表（含已配权限点与数据范围、成员）。
      *
      * @param companyId 公司 ID；不传则取当前登录人的公司
      */
@@ -48,10 +51,11 @@ public class RoleController {
     }
 
     /**
-     * 单个角色详情（含已配权限点与数据范围）。
+     * 单个角色详情（含已配权限点与数据范围、成员）。
      *
-     * <p>挂 {@code system:role} 而列表不挂：列表的用途是「把 roleCode 翻成中文名」，
-     * 详情暴露的是权限点与数据范围配置，属管理信息。
+     * <p>挂 {@code system:role} 而列表不挂：列表用于「把 roleCode 翻成中文名」这类协作场景，
+     * 详情是「角色管理」动作的入口。
+     * ⚠ 与列表返回的字段<b>完全一致</b>，门控差异只决定「能不能调」。
      *
      * @param id 角色 ID
      */

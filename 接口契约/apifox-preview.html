@@ -311,9 +311,10 @@ summary .cnt{color:var(--muted);font-weight:400;font-size:12px;margin-left:6px}
 <tr><td><span class="m del">DELETE</span></td><td><code>/api/posts/{id}</code></td><td>删除岗位（逻辑删除）。<div class="desc">仍有员工在任、或仍挂在兼岗记录上时拒绝，并在 msg 里给出人数。</div></td><td><code>id</code></td><td><span class="tag">权限 &quot;system:dept&quot;</span> <span class="tag">写审计</span></td></tr>
 </tbody></table></div></details>
 <details open><summary>RoleController<span class="cnt">7 个接口</span></summary><div class="body"><table><thead><tr><th style="width:60px">方法</th><th style="width:34%">路径</th><th>接口说明（方法注释首行）</th><th style="width:20%">参数</th><th style="width:14%">门控 / 留痕</th></tr></thead><tbody>
-<tr><td><span class="m get">GET</span></td><td><code>/api/roles</code></td><td>角色列表（含已配权限点与数据范围，供「配置权限」弹窗回填）。</td><td><code>companyId</code></td><td>—</td></tr>
-<tr><td><span class="m get">GET</span></td><td><code>/api/roles/{id}</code></td><td>单个角色详情（含已配权限点与数据范围）。<div class="desc">挂 `system:role} 而列表不挂：列表的用途是「把 roleCode 翻成中文名」，
-详情暴露的是权限点与数据范围配置，属管理信息。</div></td><td><code>id</code></td><td><span class="tag">权限 &quot;system:role&quot;</span></td></tr>
+<tr><td><span class="m get">GET</span></td><td><code>/api/roles</code></td><td>角色列表（含已配权限点与数据范围、成员）。</td><td><code>companyId</code></td><td>—</td></tr>
+<tr><td><span class="m get">GET</span></td><td><code>/api/roles/{id}</code></td><td>单个角色详情（含已配权限点与数据范围、成员）。<div class="desc">挂 `system:role} 而列表不挂：列表用于「把 roleCode 翻成中文名」这类协作场景，
+详情是「角色管理」动作的入口。
+⚠ 与列表返回的字段完全一致，门控差异只决定「能不能调」。</div></td><td><code>id</code></td><td><span class="tag">权限 &quot;system:role&quot;</span></td></tr>
 <tr><td><span class="m post">POST</span></td><td><code>/api/roles</code></td><td>新建角色。角色编码在同一公司内不允许重复。</td><td><code>req</code>（无说明）</td><td><span class="tag">权限 &quot;system:role&quot;</span> <span class="tag">写审计</span></td></tr>
 <tr><td><span class="m put">PUT</span></td><td><code>/api/roles/{id}</code></td><td>修改角色。<div class="desc">⚠ 内置角色（如 ADMIN）同样可以被修改 —— 后端目前不拦，改之前请确认影响面。</div></td><td><code>id</code>、<code>req</code>（无说明）</td><td><span class="tag">权限 &quot;system:role&quot;</span> <span class="tag">写审计</span></td></tr>
 <tr><td><span class="m put">PUT</span></td><td><code>/api/roles/{id}/permissions</code></td><td>全量覆盖角色权限点（没传的会被移除，不是增量追加）</td><td><code>id</code>、<code>req</code>（无说明）</td><td><span class="tag">权限 &quot;system:role&quot;</span> <span class="tag">写审计</span></td></tr>
@@ -533,8 +534,9 @@ uk_escalation_node(node_id, deleted)} 是幂等的**结构性保证**：
 </tbody></table></div></details>
 <details><summary>RoleVO<span class="cnt">16 个字段</summary><div class="body">
 <div class="desc">角色视图对象。
-相比 `SysRole} 补了三样前端配置页必须要的东西：
-权限点明细、数据范围、成员列表——否则「配置权限」弹窗只能显示占位文案。</div>
+相比 `SysRole} 补了三样：权限点明细、数据范围、成员列表。
+这三样共同构成「这个角色是什么」的完整答案（能干什么、管多大范围、谁在用它），
+缺任何一样都只是角色的一个片段 —— 它们散在关联表里，裸实体给不出。</div>
 <table><thead><tr><th style="width:22%">字段</th><th style="width:20%">类型</th><th>说明</th></tr></thead><tbody>
 <tr><td><code>id</code></td><td><span class="tag">Long</span></td><td>角色 ID</td></tr>
 <tr><td><code>companyId</code></td><td><span class="tag">Long</span></td><td>公司 ID</td></tr>
@@ -577,9 +579,11 @@ uk_escalation_node(node_id, deleted)} 是幂等的**结构性保证**：
 </tbody></table></div></details>
 <details><summary>UserVO<span class="cnt">15 个字段</summary><div class="body">
 <div class="desc">人员视图对象。
-字段名刻意与 `SysUser} 保持一致（realName / jobNo / account / deptId / postId …），
-因为前端既有代码直接按这些名字取值；这里只是把「部门名、岗位名、角色」一并补上，
-免得前端为了显示一列&quot;部门&quot;再单独请求一次。</div>
+字段名与 `SysUser} 保持一致（realName / jobNo / account / deptId / postId …），
+装配时可由实体直接拷贝，少一层字段映射。
+另外补上「部门名、岗位名、角色」等反查字段：它们本身不是 `SysUser} 的列，
+但人员视图的完整语义就包含「在哪个部门、什么岗位、担什么角色」，
+由服务端一次组装好，比让调用方拿着 id 逐个回查更省请求、也更不容易漏。</div>
 <table><thead><tr><th style="width:22%">字段</th><th style="width:20%">类型</th><th>说明</th></tr></thead><tbody>
 <tr><td><code>id</code></td><td><span class="tag">Long</span></td><td>用户 ID</td></tr>
 <tr><td><code>companyId</code></td><td><span class="tag">Long</span></td><td>公司 ID</td></tr>

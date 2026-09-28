@@ -8,9 +8,12 @@ import java.util.List;
 /**
  * 人员视图对象。
  *
- * <p>字段名刻意与 {@code SysUser} 保持一致（realName / jobNo / account / deptId / postId …），
- * 因为前端既有代码直接按这些名字取值；这里只是把「部门名、岗位名、角色」一并补上，
- * 免得前端为了显示一列"部门"再单独请求一次。
+ * <p>字段名与 {@code SysUser} 保持一致（realName / jobNo / account / deptId / postId …），
+ * 装配时可由实体直接拷贝，少一层字段映射。
+ *
+ * <p>另外补上「部门名、岗位名、角色」等<b>反查字段</b>：它们本身不是 {@code SysUser} 的列，
+ * 但人员视图的完整语义就包含「在哪个部门、什么岗位、担什么角色」，
+ * 由服务端一次组装好，比让调用方拿着 id 逐个回查更省请求、也更不容易漏。
  */
 @Data
 public class UserVO {
