@@ -21,9 +21,14 @@ import java.util.List;
  * 角色这个资源的完整定义包含<b>权限点、数据范围、成员</b>三样（散在关联表里），
  * 裸实体只能给出一张"角色名"。
  *
- * <p>写接口挂 {@code system:role}；权限点与数据范围做成独立子资源
- * （{@code PUT /{id}/permissions}、{@code PUT /{id}/data-scope}），
- * 因为「改角色属性」「改能干什么」「改管多大范围」是三种不同的写动作，语义上各自独立。
+ * <p>写接口挂 {@code system:role}；权限点、数据范围、管理范围做成三个独立子资源
+ * （{@code PUT /{id}/permissions}、{@code PUT /{id}/data-scope}、{@code PUT /{id}/admin-scope}），
+ * 因为「改角色属性」「改能干什么」「改能看多少数据」「改能管哪些人」是四种不同的写动作，
+ * 语义上各自独立。
+ *
+ * <p>⚠ <b>数据范围与管理范围是两个正交维度，不要在前端合成一个控件</b>：
+ * {@code data-scope} 答"能看多少单据 / 台账"，{@code admin-scope} 答"能管哪些人的账号"。
+ * 它们可以任意组合（例如「看全公司、只管本部门」）。
  *
  * <p><b>读接口为何一开一收（门控差异只决定「能不能调」，不改变字段）</b>：
  * 列表（{@code GET /api/roles}）<b>不挂权限点</b> —— 角色名是单据/人员列表里的展示字段
@@ -97,13 +102,36 @@ public class RoleController {
         return R.ok(roleAdminService.updatePermissions(id, req.getPermCodes()), "权限已保存");
     }
 
-    /** 配置数据范围（行级权限） */
+    /**
+     * 配置数据范围（行级权限 · 能【看】多少单据 / 台账）。
+     *
+     * @param id 角色 ID
+     */
     @PutMapping("/{id}/data-scope")
     @RequirePerm("system:role")
     @Audit(module = "permission", action = "dataScope")
     public R<RoleVO> updateDataScope(@PathVariable Long id, @RequestBody DataScopeReq req) {
         return R.ok(roleAdminService.updateDataScope(id, req.getScopeType(), req.getScopeDeptIds()),
                 "数据范围已保存");
+    }
+
+    /**
+     * 配置管理范围（能【管】哪些部门的人的账号）。
+     *
+     * <p>⚠ 与 {@code /data-scope} <b>不是同一个东西</b>：那个管"能看多少单据"，
+     * 这个管"能管哪些人的账号"。改一个不会动另一个。
+     *
+     * <p>不配 = {@code none}，即该角色的成员在人员管理里看不到、也改不了任何人
+     * （这是最安全的缺省，所以新建角色时不必强制给值）。
+     * 内置角色 ADMIN 的 {@code all} 不允许被收窄。
+     *
+     * @param id 角色 ID
+     */
+    @PutMapping("/{id}/admin-scope")
+    @RequirePerm("system:role")
+    @Audit(module = "permission", action = "adminScope")
+    public R<RoleVO> updateAdminScope(@PathVariable Long id, @RequestBody AdminScopeReq req) {
+        return R.ok(roleAdminService.updateAdminScope(id, req.getScopeType()), "管理范围已保存");
     }
 
     /**
@@ -136,5 +164,12 @@ public class RoleController {
 
         /** scopeType=CUSTOM_DEPT 时的部门 ID 列表，其余类型忽略 */
         private List<Long> scopeDeptIds;
+    }
+
+    /** 管理范围配置请求 */
+    @Data
+    public static class AdminScopeReq {
+        /** none（不管人）/ dept_subtree（本部门及下级）/ all（全公司）。⚠ 传非法值会**显式报错**，不静默降级 */
+        private String scopeType;
     }
 }

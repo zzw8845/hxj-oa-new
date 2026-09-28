@@ -41,10 +41,18 @@ public class LoginUser implements Serializable {
     private Set<String> roleCodes;
     /** 权限点编码集合 */
     private Set<String> permCodes;
-    /** 生效的数据范围（多角色取最宽） */
+    /** 生效的数据范围（多角色取最宽）：能【看】多少单据 / 台账 */
     private DataScopeType dataScope;
     /** 自定义部门范围（custom_dept 时使用） */
     private Set<Long> scopeDeptIds;
+    /**
+     * 生效的管理范围（多角色取最宽）：能【管】哪些部门的人的账号。
+     *
+     * <p>与 {@link #dataScope} <b>正交</b>，见 {@link AdminScopeType}。
+     * null（例如改造前签发的旧 token 反序列化）一律按 {@link AdminScopeType#NONE} 处理 ——
+     * 收紧，不放宽；重新登录即恢复。取用请走 {@code AdminScopeHelper}，不要在业务里自己 switch。
+     */
+    private AdminScopeType adminScope;
 
     public Set<String> getRoleCodes() {
         return roleCodes == null ? Collections.emptySet() : roleCodes;
@@ -70,9 +78,10 @@ public class LoginUser implements Serializable {
      * （deploy.sh / 启动联调版.command / init_and_run.sh / README），
      * 写在测试或 ArchUnit 里的规则等于没有。
      *
-     * 需要"管理员能做某事"时，正确的落点是下面二者之一，都不依赖角色字符串：
+     * 需要"管理员能做某事"时，正确的落点是下面三者之一，都不依赖角色字符串：
      *   · 读（看得见哪些数据）→ role_data_scope 行级范围，见 DataScopeHelper
      *   · 写（能不能做某动作）→ 权限点 @RequirePerm + PermInterceptor
+     *   · 管（能管哪些人的账号）→ role_admin_scope 管理范围，见 AdminScopeHelper
      * 而"谁是审批人"的唯一事实是流程节点的指派规则（FlowNodeAssignee）。
      * ------------------------------------------------------------------ */
 

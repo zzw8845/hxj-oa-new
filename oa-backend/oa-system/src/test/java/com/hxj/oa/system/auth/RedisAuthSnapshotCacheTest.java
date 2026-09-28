@@ -1,6 +1,7 @@
 package com.hxj.oa.system.auth;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.hxj.oa.common.security.AdminScopeType;
 import com.hxj.oa.common.security.DataScopeType;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -36,13 +37,17 @@ import static org.mockito.Mockito.when;
 class RedisAuthSnapshotCacheTest {
 
     private static final String GEN_KEY = "oa:auth:gen";
-    private static final String SNAP_KEY = "oa:auth:snap:v1:0:7";
+    // 键名里的 v2 与 RedisAuthSnapshotCache.SNAPSHOT_KEY_PREFIX 必须一致：
+    // 改了 AuthSnapshot 的字段就要升版（见该类的"版本沿革"注释），
+    // 这条断言是防止"升了 record 忘了升键名"——那会让蓝绿期新旧容器互读对方的 JSON。
+    private static final String SNAP_KEY = "oa:auth:snap:v2:0:7";
 
     private final ObjectMapper json = new ObjectMapper();
 
     private static AuthSnapshotCache.AuthSnapshot sample() {
         return new AuthSnapshotCache.AuthSnapshot(
-                Set.of("EMPLOYEE"), Set.of("todo:menu"), DataScopeType.SELF, Set.of());
+                Set.of("EMPLOYEE"), Set.of("todo:menu"), DataScopeType.SELF, Set.of(),
+                AdminScopeType.ALL);
     }
 
     /** Redis 模板 + 其 value 操作的组合，方便逐个用例定制行为 */

@@ -1,15 +1,15 @@
 {
   "counts": {
-    "operations": 100,
+    "operations": 101,
     "controllers": 20,
-    "ops_with_summary": 100,
-    "params_total": 109,
-    "params_documented": 45,
-    "models": 70,
-    "fields_total": 578,
-    "fields_documented": 578,
-    "ops_with_perm": 53,
-    "ops_with_audit": 51
+    "ops_with_summary": 101,
+    "params_total": 111,
+    "params_documented": 47,
+    "models": 72,
+    "fields_total": 584,
+    "fields_documented": 584,
+    "ops_with_perm": 54,
+    "ops_with_audit": 52
   },
   "risks": [
     {
@@ -303,14 +303,14 @@
       "detail": "PUT /api/roles/{id}/permissions 参数 PermAssignReq req"
     },
     {
-      "level": "P3",
-      "kind": "路径/查询参数为简单 ID，无说明（可接受）",
-      "detail": "PUT /api/roles/{id}/data-scope id: Long"
+      "level": "P1",
+      "kind": "请求体/查询对象参数无说明（前端看不出这是干嘛的）",
+      "detail": "PUT /api/roles/{id}/data-scope 参数 DataScopeReq req"
     },
     {
       "level": "P1",
       "kind": "请求体/查询对象参数无说明（前端看不出这是干嘛的）",
-      "detail": "PUT /api/roles/{id}/data-scope 参数 DataScopeReq req"
+      "detail": "PUT /api/roles/{id}/admin-scope 参数 AdminScopeReq req"
     },
     {
       "level": "P1",
@@ -375,8 +375,10 @@
   ],
   "cross_check": {
     "contract_paths": 76,
-    "emulator_paths": 74,
-    "only_in_emulator": [],
+    "emulator_paths": 75,
+    "only_in_emulator": [
+      "/api/roles/{id}/admin-scope"
+    ],
     "only_in_contract": [
       "/api/ping"
     ]
@@ -2701,7 +2703,7 @@
       "audit": "",
       "deprecated": false,
       "file": "oa-backend/oa-system/src/main/java/com/hxj/oa/system/controller/RoleController.java",
-      "line": 48
+      "line": 53
     },
     {
       "controller": "RoleController",
@@ -2729,7 +2731,7 @@
       "audit": "",
       "deprecated": false,
       "file": "oa-backend/oa-system/src/main/java/com/hxj/oa/system/controller/RoleController.java",
-      "line": 62
+      "line": 67
     },
     {
       "controller": "RoleController",
@@ -2755,7 +2757,7 @@
       "audit": "module = \"permission\", action = \"createRole\"",
       "deprecated": false,
       "file": "oa-backend/oa-system/src/main/java/com/hxj/oa/system/controller/RoleController.java",
-      "line": 71
+      "line": 76
     },
     {
       "controller": "RoleController",
@@ -2790,7 +2792,7 @@
       "audit": "module = \"permission\", action = \"updateRole\"",
       "deprecated": false,
       "file": "oa-backend/oa-system/src/main/java/com/hxj/oa/system/controller/RoleController.java",
-      "line": 85
+      "line": 90
     },
     {
       "controller": "RoleController",
@@ -2823,7 +2825,7 @@
       "audit": "module = \"permission\", action = \"grantPerm\"",
       "deprecated": false,
       "file": "oa-backend/oa-system/src/main/java/com/hxj/oa/system/controller/RoleController.java",
-      "line": 93
+      "line": 98
     },
     {
       "controller": "RoleController",
@@ -2832,7 +2834,7 @@
       "verb": "PUT",
       "path": "/api/roles/{id}/data-scope",
       "path_tmpl": "/api/roles/{id}/data-scope",
-      "summary": "配置数据范围（行级权限）",
+      "summary": "配置数据范围（行级权限 · 能【看】多少单据 / 台账）。",
       "desc": "",
       "params": [
         {
@@ -2850,13 +2852,50 @@
           "raw": "@RequestBody DataScopeReq req"
         }
       ],
-      "javadoc_params": {},
+      "javadoc_params": {
+        "id": "角色 ID"
+      },
       "return": "R<RoleVO>",
       "require_perm": "\"system:role\"",
       "audit": "module = \"permission\", action = \"dataScope\"",
       "deprecated": false,
       "file": "oa-backend/oa-system/src/main/java/com/hxj/oa/system/controller/RoleController.java",
-      "line": 101
+      "line": 110
+    },
+    {
+      "controller": "RoleController",
+      "group_doc": "",
+      "method": "updateAdminScope",
+      "verb": "PUT",
+      "path": "/api/roles/{id}/admin-scope",
+      "path_tmpl": "/api/roles/{id}/admin-scope",
+      "summary": "配置管理范围（能【管】哪些部门的人的账号）。",
+      "desc": "⚠ 与 `/data-scope} 不是同一个东西：那个管\"能看多少单据\"，\n这个管\"能管哪些人的账号\"。改一个不会动另一个。\n不配 = `none}，即该角色的成员在人员管理里看不到、也改不了任何人\n（这是最安全的缺省，所以新建角色时不必强制给值）。\n内置角色 ADMIN 的 `all} 不允许被收窄。",
+      "params": [
+        {
+          "name": "id",
+          "type": "Long",
+          "kind": "path",
+          "required": null,
+          "raw": "@PathVariable Long id"
+        },
+        {
+          "name": "req",
+          "type": "AdminScopeReq",
+          "kind": "body",
+          "required": null,
+          "raw": "@RequestBody AdminScopeReq req"
+        }
+      ],
+      "javadoc_params": {
+        "id": "角色 ID"
+      },
+      "return": "R<RoleVO>",
+      "require_perm": "\"system:role\"",
+      "audit": "module = \"permission\", action = \"adminScope\"",
+      "deprecated": false,
+      "file": "oa-backend/oa-system/src/main/java/com/hxj/oa/system/controller/RoleController.java",
+      "line": 130
     },
     {
       "controller": "RoleController",
@@ -2884,7 +2923,7 @@
       "audit": "module = \"permission\", action = \"deleteRole\"",
       "deprecated": false,
       "file": "oa-backend/oa-system/src/main/java/com/hxj/oa/system/controller/RoleController.java",
-      "line": 116
+      "line": 144
     },
     {
       "controller": "UserController",
@@ -5421,12 +5460,17 @@
         {
           "name": "dataScope",
           "type": "DataScopeType",
-          "comment": "生效的数据范围（多角色取最宽）"
+          "comment": "生效的数据范围（多角色取最宽）：能【看】多少单据 / 台账"
         },
         {
           "name": "scopeDeptIds",
           "type": "Set<Long>",
           "comment": "自定义部门范围（custom_dept 时使用）"
+        },
+        {
+          "name": "adminScope",
+          "type": "AdminScopeType",
+          "comment": "生效的管理范围（多角色取最宽）：能【管】哪些部门的人的账号。\n与 `#dataScope} 正交，见 `AdminScopeType}。\nnull（例如改造前签发的旧 token 反序列化）一律按 `AdminScopeType#NONE} 处理 ——\n收紧，不放宽；重新登录即恢复。取用请走 `AdminScopeHelper}，不要在业务里自己 switch。"
         }
       ],
       "resolved": true,
@@ -5958,7 +6002,7 @@
     "RoleVO": {
       "fqn": "com.hxj.oa.system.dto.RoleVO",
       "kind": "class",
-      "javadoc": "角色视图对象。\n相比 `SysRole} 补了三样：权限点明细、数据范围、成员列表。\n这三样共同构成「这个角色是什么」的完整答案（能干什么、管多大范围、谁在用它），\n缺任何一样都只是角色的一个片段 —— 它们散在关联表里，裸实体给不出。",
+      "javadoc": "角色视图对象。\n相比 `SysRole} 补了四样：权限点明细、数据范围、管理范围、成员列表。\n它们共同构成「这个角色是什么」的完整答案\n（能干什么、能看多少数据、能管哪些人、谁在用它），\n缺任何一样都只是角色的一个片段 —— 它们散在关联表里，裸实体给不出。\n⚠ 数据范围与管理范围是两个正交维度，字段也刻意分开：\nscopeType} 答\"能看多少单据 / 台账\"，`adminScope} 答\"能管哪些人的账号\"。\n前端不要把两者合成一个下拉框 —— 它们可以任意组合\n（例如「看全公司、只管本部门」或「只看自己、管全公司」）。",
       "fields": [
         {
           "name": "id",
@@ -6009,6 +6053,16 @@
           "name": "scopeDeptIds",
           "type": "List<Long>",
           "comment": "custom_dept 时生效的部门集合"
+        },
+        {
+          "name": "adminScope",
+          "type": "String",
+          "comment": "管理范围编码：none（不管人）/ dept_subtree（本部门及下级）/ all（全公司）。决定能管理哪些部门的人的账号"
+        },
+        {
+          "name": "adminScopeLabel",
+          "type": "String",
+          "comment": "管理范围中文名，前端直接展示，不必自己维护映射"
         },
         {
           "name": "permCodes",
@@ -6126,6 +6180,20 @@
           "name": "scopeDeptIds",
           "type": "List<Long>",
           "comment": "scopeType=CUSTOM_DEPT 时的部门 ID 列表，其余类型忽略"
+        }
+      ],
+      "resolved": true,
+      "super": null
+    },
+    "AdminScopeReq": {
+      "fqn": "com.hxj.oa.system.controller.AdminScopeReq",
+      "kind": "class",
+      "javadoc": "管理范围配置请求",
+      "fields": [
+        {
+          "name": "scopeType",
+          "type": "String",
+          "comment": "none（不管人）/ dept_subtree（本部门及下级）/ all（全公司）。⚠ 传非法值会**显式报错**，不静默降级"
         }
       ],
       "resolved": true,
@@ -6707,6 +6775,25 @@
       "fqn": "com.hxj.oa.common.security.DataScopeType",
       "kind": "enum",
       "javadoc": "数据范围类型（行级权限）。层级由窄到宽，多角色时取最宽者生效。",
+      "fields": [
+        {
+          "name": "level",
+          "type": "int",
+          "comment": "宽度等级，数字越大范围越宽；多角色时取最宽者生效"
+        },
+        {
+          "name": "code",
+          "type": "String",
+          "comment": "接口里传的字符串编码（小写）"
+        }
+      ],
+      "resolved": true,
+      "super": null
+    },
+    "AdminScopeType": {
+      "fqn": "com.hxj.oa.common.security.AdminScopeType",
+      "kind": "enum",
+      "javadoc": "管理范围类型（能【管】哪些部门的人的账号）。层级由窄到宽，多角色时取最宽者生效。\n与 `DataScopeType} 是两个正交维度，不要合并：\n\n\n- `DataScopeType} 答「能【看】多少数据」—— 单据 / 台账的行级过滤，\n      消费方 `DataScopeHelper}，载体 `role_data_scope}；\n\n- `AdminScopeType} 答「能【管】哪些人」—— 用户管理接口的读与写，\n      消费方 `AdminScopeHelper}，载体 `role_admin_scope}。\n\n同一个人完全可以「看全公司单据、但只能管本部门的人」，也可以反过来。\n把两者合成一个字段或一张表的直接后果是：调其中一维会静默改掉另一维。\n只有三档，且三档都有消费点（硬约束：声明的控制必须有引用点，\n「存在」≠「生效」，空转的控制比没有更危险）。刻意不含「指定部门集合」——\n将来确有需要时再加列，不预留\"有列无消费点\"的配置项。",
       "fields": [
         {
           "name": "level",

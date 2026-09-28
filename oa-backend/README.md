@@ -35,8 +35,8 @@
 mysql -uroot -e "DROP DATABASE IF EXISTS haixiajin_oa; \
   CREATE DATABASE haixiajin_oa DEFAULT CHARSET utf8mb4 COLLATE utf8mb4_0900_ai_ci;"
 
-# ---- 2. 业务表（29 张）+ 引导集（7 张表）----
-# ⚠ 只灌引导集（company / admin / 内置角色 ADMIN·AUDIT_ADMIN / 权限点 / 角色绑定 / 数据范围）——
+# ---- 2. 业务表（30 张）+ 引导集（8 张表）----
+# ⚠ 只灌引导集（company / admin / 内置角色 ADMIN·AUDIT_ADMIN / 权限点 / 角色绑定 / 数据范围 / 管理范围）——
 #   这与交付给客户的起点完全一致：department=0 的空组织。
 #   部门/岗位/业务角色/用户/单据类型/表单模板/流程一律走接口造（见第 6 步之后）。
 #   不要再直写库造业务数据：那会绕过应用的全部校验，让「交付路径」永远不被跑。
@@ -171,9 +171,9 @@ oa-backend/
 ├── oa-document/    单据域：动态表单、单据发起与查询、审批动作、待办、用印
 ├── oa-boot/        启动层：装配、认证拦截器、全局异常、CORS、配置
 ├── sql/            建表与种子脚本
-│   ├── schema.sql                    业务表 29 张（含 Flowable 绑定列）
-│   ├── minimal_seed.sql              引导集 7 张表（**交付起点**：公司/admin/内置角色 ADMIN·AUDIT_ADMIN/权限点/绑定/数据范围）
-│   ├── init_database.sql             建库产物（29 业务表 + 41 引擎表），由 gen_init_database.sh 生成，勿手改
+│   ├── schema.sql                    业务表 30 张（含 Flowable 绑定列）
+│   ├── minimal_seed.sql              引导集 8 张表（**交付起点**：公司/admin/内置角色 ADMIN·AUDIT_ADMIN/权限点/绑定/数据范围/管理范围）
+│   ├── init_database.sql             建库产物（30 业务表 + 41 引擎表），由 gen_init_database.sh 生成，勿手改
 │   ├── flowable_schema_mysql.sql     Flowable 引擎表 41 张（自动生成，勿手改）
 │   ├── migration_20260918_flowable.sql  存量库幂等迁移
 │   ├── schema_partition.sql          audit_log 按月分区
@@ -243,6 +243,7 @@ BPMN 的每个 `userTask` 只挂一个监听器：
 |---|---|
 | 功能权限 | `sys_permission.code`（英文编码）+ `role_permission`，中文仅做展示 |
 | 数据权限（行级） | `DataScopeHelper` 生成 SQL 片段 + `role_data_scope`；**MySQL 无 RLS，拦截器是唯一防线** |
+| 管理范围（管哪些人） | `AdminScopeHelper` + `role_admin_scope`（`none`/`dept_subtree`/`all`）；**与数据权限正交**，只作用于用户管理的读 + 写，不影响发起与审批 |
 | 字段权限（列级） | `form_field_permission`，按「模板 + 节点 + 字段」裁剪 Schema |
 | 节点权限 | `flow_node_assignee` 运行时动态指派 |
 

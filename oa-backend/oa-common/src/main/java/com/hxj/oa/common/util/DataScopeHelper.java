@@ -25,6 +25,11 @@ import java.util.regex.Pattern;
  *
  * 安全：所有拼接值来自服务端（用户 ID / 部门 ID / 已校验的物化路径），
  *      物化路径额外做字符白名单校验，杜绝 SQL 注入。
+ *
+ * 【本类只答「能看多少数据」】「能管哪些人的账号」是<b>另一个正交维度</b>，
+ * 在 {@code AdminScopeHelper}（载体 role_admin_scope / 字段 LoginUser.adminScope）。
+ * 两者共用本类的 {@link #deptSubtreeSubQuery}，但<b>不要</b>把维度合并成一个字段：
+ * 那会让"调某一维"静默改掉另一维。
  */
 public final class DataScopeHelper {
 
@@ -61,12 +66,12 @@ public final class DataScopeHelper {
             case COMPANY -> {
                 // 不加额外限制
             }
-            case CENTER, DEPT -> parts.add(a + "dept_id IN (" + deptSubQuery(user) + ")");
+            case CENTER, DEPT -> parts.add(a + "dept_id IN (" + deptSubtreeSubQuery(user) + ")");
             case CUSTOM_DEPT -> {
                 if (scopeDeptIds != null && !scopeDeptIds.isEmpty()) {
                     parts.add(a + "dept_id IN (" + joinIds(scopeDeptIds) + ")");
                 } else {
-                    parts.add(a + "dept_id IN (" + deptSubQuery(user) + ")");
+                    parts.add(a + "dept_id IN (" + deptSubtreeSubQuery(user) + ")");
                 }
             }
             case SELF -> parts.add(a + "applicant_id = " + user.getUserId());
@@ -80,9 +85,17 @@ public final class DataScopeHelper {
     }
 
     /**
-     * 本部门及下级的子查询（用物化路径一次定位子树，避免递归 CTE 的深度限制）。
+     * 「本部门及下级」的子查询（用物化路径一次定位子树，避免递归 CTE 的深度限制）。
+     *
+     * <p><b>公开出来是为了让「部门子树」只有一份实现</b>：{@code AdminScopeHelper}
+     * 的 {@code dept_subtree} 档也要定位同一棵树，各写一份迟早会在某次修改中分叉
+     * （PATH_SAFE 白名单校验、company 过滤、path 为空时的降级，谁都可能漏一处）。
+     * 这份实现只依赖 {@link LoginUser} 的 deptId / deptPath，与"用它来过滤哪张表"无关。
+     *
+     * <p>用法：拼进 {@code <列> IN ( ... )}。返回值<b>是不带外层括号的子查询</b>，
+     * 调用方负责补括号。
      */
-    private static String deptSubQuery(LoginUser user) {
+    public static String deptSubtreeSubQuery(LoginUser user) {
         StringBuilder sb = new StringBuilder();
         sb.append("SELECT id FROM department WHERE deleted = 0");
         if (user.getCompanyId() != null) {

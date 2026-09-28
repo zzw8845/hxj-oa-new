@@ -1,5 +1,6 @@
 package com.hxj.oa.system.auth;
 
+import com.hxj.oa.common.security.AdminScopeType;
 import com.hxj.oa.common.security.DataScopeType;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -22,7 +23,8 @@ class InMemoryAuthSnapshotCacheTest {
 
     private static AuthSnapshotCache.AuthSnapshot sample(String role) {
         return new AuthSnapshotCache.AuthSnapshot(
-                Set.of(role), Set.of(role + ":menu"), DataScopeType.DEPT, Set.of(7L, 8L));
+                Set.of(role), Set.of(role + ":menu"), DataScopeType.DEPT, Set.of(7L, 8L),
+                AdminScopeType.DEPT_SUBTREE);
     }
 
     @Test
@@ -34,6 +36,9 @@ class InMemoryAuthSnapshotCacheTest {
         assertEquals(Set.of("EMPLOYEE"), got.roleCodes());
         assertEquals(DataScopeType.DEPT, got.dataScope());
         assertEquals(Set.of(7L, 8L), got.scopeDeptIds());
+        // 管理范围必须原样穿过缓存：它决定"能管哪些人的账号"，
+        // 若缓存把它丢掉，管理员重新登录后会静默变成"谁都管不了"
+        assertEquals(AdminScopeType.DEPT_SUBTREE, got.adminScope());
     }
 
     @Test

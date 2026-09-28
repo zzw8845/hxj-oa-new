@@ -2,6 +2,7 @@ package com.hxj.oa.system.service;
 
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.hxj.oa.common.exception.BizException;
+import com.hxj.oa.common.security.AdminScopeType;
 import com.hxj.oa.common.security.DataScopeType;
 import com.hxj.oa.common.security.LoginUser;
 import com.hxj.oa.common.util.JsonColumn;
@@ -33,7 +34,7 @@ import java.util.Set;
  * <p>两处外部依赖都做了「可替换实现」，而不是直接把 Redis 写死在业务里：
  * <ul>
  *   <li>{@link LoginThrottle} —— 蓝绿双实例下必须是 Redis 计数，否则轮流打两个实例就能绕过限速；</li>
- *   <li>{@link AuthSnapshotCache} —— 缓存登录时要跑的 4 次权限查询，
+ *   <li>{@link AuthSnapshotCache} —— 缓存登录时要跑的 5 次权限查询，
  *       失效信号同样必须跨实例，理由与上面相同。</li>
  * </ul>
  * 两者在 {@code oa.redis.enabled=false} 时自动回落为进程内实现，本地联调零外部依赖。
@@ -47,6 +48,7 @@ public class AuthService {
     private final UserRoleMapper userRoleMapper;
     private final RolePermissionMapper rolePermissionMapper;
     private final RoleDataScopeMapper roleDataScopeMapper;
+    private final RoleAdminScopeMapper roleAdminScopeMapper;
     private final DepartmentMapper departmentMapper;
     private final SysPermissionMapper permissionMapper;
     private final PasswordEncoder passwordEncoder;
@@ -88,8 +90,9 @@ public class AuthService {
         // 前端据此弹不可跳过的改密框。服务端只负责如实告知，不在这里拦 ——
         // 拦截会破坏「带 token 的 API 调用」这一层（脚本/自动化也要能登录）。
         resp.setMustChangePassword(user.getPwdResetFlag() != null && user.getPwdResetFlag() == 1);
-        log.info("用户登录成功 userId={} account={} roles={} scope={}",
-                user.getId(), user.getAccount(), loginUser.getRoleCodes(), loginUser.getDataScope());
+        log.info("用户登录成功 userId={} account={} roles={} scope={} adminScope={}",
+                user.getId(), user.getAccount(), loginUser.getRoleCodes(),
+                loginUser.getDataScope(), loginUser.getAdminScope());
         return resp;
     }
 
@@ -154,6 +157,7 @@ public class AuthService {
                 .permCodes(snapshot.permCodes())
                 .dataScope(snapshot.dataScope())
                 .scopeDeptIds(snapshot.scopeDeptIds())
+                .adminScope(snapshot.adminScope())
                 .build();
     }
 
@@ -170,7 +174,7 @@ public class AuthService {
         return fresh;
     }
 
-    /** 四次查询：角色编码 / 权限点 / 数据范围类型 / 指定的部门集合 */
+    /** 五次查询：角色编码 / 权限点 / 数据范围类型 / 指定的部门集合 / 管理范围 */
     private AuthSnapshotCache.AuthSnapshot querySnapshot(Long userId) {
         Set<String> roleCodes = new HashSet<>(userRoleMapper.selectRoleCodesByUserId(userId));
         Set<String> permCodes = new HashSet<>(rolePermissionMapper.selectPermCodesByUserId(userId));
@@ -191,6 +195,19 @@ public class AuthService {
             scopeDeptIds.addAll(JsonColumn.jsonArrayToLongList(json));
         }
 
+        // 管理范围：多角色取最宽（与数据范围同一套规则）
+        AdminScopeType adminScope = null;
+        for (String s : roleAdminScopeMapper.selectScopeTypesByUserId(userId)) {
+            AdminScopeType t = AdminScopeType.of(s);
+            adminScope = (adminScope == null) ? t : adminScope.wider(t);
+        }
+        if (adminScope == null) {
+            // 没有任何角色配过管理范围 ⇒ 收紧到「不能管任何人」。
+            // 注意这与「数据范围为 null 收紧到 SELF」是**两个独立的兜底**，不能互相顶替：
+            // 新建的自定义角色两样都没有 ⇒ 既只看得到自己的单据、也管不到任何人。
+            adminScope = AdminScopeType.NONE;
+        }
+
         // 用 unmodifiableSet 而不是 Set.copyOf：copyOf 遇到 null 元素直接 NPE，
         // 而 scopeDeptIds 来自 JSON 解析，脏数据里带个 null 是完全可能的 ——
         // 那会让"登录"整体 500，代价远大于收益。这里只需要"不可被下游改写"这一条保证。
@@ -198,7 +215,8 @@ public class AuthService {
                 Collections.unmodifiableSet(roleCodes),
                 Collections.unmodifiableSet(permCodes),
                 scope,
-                Collections.unmodifiableSet(scopeDeptIds));
+                Collections.unmodifiableSet(scopeDeptIds),
+                adminScope);
     }
 
     public List<LoginResp.MenuItem> loadMenus(Long userId) {

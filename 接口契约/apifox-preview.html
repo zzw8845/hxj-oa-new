@@ -45,12 +45,12 @@ summary .cnt{color:var(--muted);font-weight:400;font-size:12px;margin-left:6px}
 不是手写的，也不是从 Apifox 导出的 —— 用它来检查注释够不够、好不好懂。</p>
 
 <div class="stats">
-  <div class="stat"><div class="n">100</div><div class="l">接口（20 个目录）</div></div>
-  <div class="stat"><div class="n">100/100</div><div class="l">接口有说明</div></div>
-  <div class="stat"><div class="n">578/578</div><div class="l">模型字段有说明</div></div>
-  <div class="stat"><div class="n">45/109</div><div class="l">参数有说明</div></div>
-  <div class="stat"><div class="n">53</div><div class="l">带接口权限门控</div></div>
-  <div class="stat"><div class="n">51</div><div class="l">带审计留痕</div></div>
+  <div class="stat"><div class="n">101</div><div class="l">接口（20 个目录）</div></div>
+  <div class="stat"><div class="n">101/101</div><div class="l">接口有说明</div></div>
+  <div class="stat"><div class="n">584/584</div><div class="l">模型字段有说明</div></div>
+  <div class="stat"><div class="n">47/111</div><div class="l">参数有说明</div></div>
+  <div class="stat"><div class="n">54</div><div class="l">带接口权限门控</div></div>
+  <div class="stat"><div class="n">52</div><div class="l">带审计留痕</div></div>
 </div>
 
 <h2>同步前请先确认（4 件事）</h2>
@@ -112,6 +112,7 @@ summary .cnt{color:var(--muted);font-weight:400;font-size:12px;margin-left:6px}
 <li><span class="pill">请求体/查询对象参数无说明（前端看不出这是干嘛的）</span><code>PUT /api/roles/{id} 参数 RoleSaveReq req</code></li>
 <li><span class="pill">请求体/查询对象参数无说明（前端看不出这是干嘛的）</span><code>PUT /api/roles/{id}/permissions 参数 PermAssignReq req</code></li>
 <li><span class="pill">请求体/查询对象参数无说明（前端看不出这是干嘛的）</span><code>PUT /api/roles/{id}/data-scope 参数 DataScopeReq req</code></li>
+<li><span class="pill">请求体/查询对象参数无说明（前端看不出这是干嘛的）</span><code>PUT /api/roles/{id}/admin-scope 参数 AdminScopeReq req</code></li>
 <li><span class="pill">请求体/查询对象参数无说明（前端看不出这是干嘛的）</span><code>POST /api/users 参数 UserSaveReq req</code></li>
 <li><span class="pill">请求体/查询对象参数无说明（前端看不出这是干嘛的）</span><code>PUT /api/users/{id} 参数 UserSaveReq req</code></li>
 <li><span class="pill">请求体/查询对象参数无说明（前端看不出这是干嘛的）</span><code>PUT /api/users/{id}/roles 参数 RoleAssignReq req</code></li>
@@ -126,7 +127,7 @@ summary .cnt{color:var(--muted);font-weight:400;font-size:12px;margin-left:6px}
 <li>字段类型无法生成结构（Apifox 只能给 Object/示例）：<code>FormTemplateSaveReq.schema : Map&lt;String,Object&gt;</code></li>
 <li>字段类型无法生成结构（Apifox 只能给 Object/示例）：<code>PreviewRequest.formData : Map&lt;String,Object&gt;</code></li>
 </ul></div></details>
-<details><summary>另有 29 条 P3（路径参数为简单 ID，无说明也不影响对接）</summary><div class="body"><ul>
+<details><summary>另有 28 条 P3（路径参数为简单 ID，无说明也不影响对接）</summary><div class="body"><ul>
 <li><code>GET /api/attachments documentId: Long</code></li>
 <li><code>GET /api/attachments/{id}/download id: Long</code></li>
 <li><code>GET /api/attachments/{id}/preview id: Long</code></li>
@@ -154,7 +155,6 @@ summary .cnt{color:var(--muted);font-weight:400;font-size:12px;margin-left:6px}
 <li><code>POST /api/flows/configs/{id}/deploy id: Long</code></li>
 <li><code>DELETE /api/flows/configs/{id} id: Long</code></li>
 <li><code>PUT /api/roles/{id}/permissions id: Long</code></li>
-<li><code>PUT /api/roles/{id}/data-scope id: Long</code></li>
 <li><code>PUT /api/users/{id}/roles id: Long</code></li>
 </ul></div></details>
 <h2>接口（按目录分组）</h2>
@@ -331,7 +331,7 @@ DepartmentController#tree()} 上关于跨公司读的说明）。</div></td><td>
 <tr><td><span class="m put">PUT</span></td><td><code>/api/posts/{id}</code></td><td>修改岗位。</td><td><code>id</code>、<code>req</code>（无说明）</td><td><span class="tag">权限 &quot;system:dept&quot;</span> <span class="tag">写审计</span></td></tr>
 <tr><td><span class="m del">DELETE</span></td><td><code>/api/posts/{id}</code></td><td>删除岗位（逻辑删除）。<div class="desc">仍有员工在任、或仍挂在兼岗记录上时拒绝，并在 msg 里给出人数。</div></td><td><code>id</code></td><td><span class="tag">权限 &quot;system:dept&quot;</span> <span class="tag">写审计</span></td></tr>
 </tbody></table></div></details>
-<details open><summary>RoleController<span class="cnt">7 个接口</span></summary><div class="body"><table><thead><tr><th style="width:60px">方法</th><th style="width:34%">路径</th><th>接口说明（方法注释首行）</th><th style="width:20%">参数</th><th style="width:14%">门控 / 留痕</th></tr></thead><tbody>
+<details open><summary>RoleController<span class="cnt">8 个接口</span></summary><div class="body"><table><thead><tr><th style="width:60px">方法</th><th style="width:34%">路径</th><th>接口说明（方法注释首行）</th><th style="width:20%">参数</th><th style="width:14%">门控 / 留痕</th></tr></thead><tbody>
 <tr><td><span class="m get">GET</span></td><td><code>/api/roles</code></td><td>角色列表（含已配权限点与数据范围、成员）。<div class="desc">公司一律取登录态，不接受客户端传入（客户端传参不可信，理由见
 DepartmentController#tree()} 上关于跨公司读的说明）。</div></td><td>—</td><td>—</td></tr>
 <tr><td><span class="m get">GET</span></td><td><code>/api/roles/{id}</code></td><td>单个角色详情（含已配权限点与数据范围、成员）。<div class="desc">挂 `system:role} 而列表不挂：列表用于「把 roleCode 翻成中文名」这类协作场景，
@@ -340,7 +340,12 @@ DepartmentController#tree()} 上关于跨公司读的说明）。</div></td><td>
 <tr><td><span class="m post">POST</span></td><td><code>/api/roles</code></td><td>新建角色。角色编码在同一公司内不允许重复。</td><td><code>req</code>（无说明）</td><td><span class="tag">权限 &quot;system:role&quot;</span> <span class="tag">写审计</span></td></tr>
 <tr><td><span class="m put">PUT</span></td><td><code>/api/roles/{id}</code></td><td>修改角色。<div class="desc">⚠ 内置角色（如 ADMIN）同样可以被修改 —— 后端目前不拦，改之前请确认影响面。</div></td><td><code>id</code>、<code>req</code>（无说明）</td><td><span class="tag">权限 &quot;system:role&quot;</span> <span class="tag">写审计</span></td></tr>
 <tr><td><span class="m put">PUT</span></td><td><code>/api/roles/{id}/permissions</code></td><td>全量覆盖角色权限点（没传的会被移除，不是增量追加）</td><td><code>id</code>、<code>req</code>（无说明）</td><td><span class="tag">权限 &quot;system:role&quot;</span> <span class="tag">写审计</span></td></tr>
-<tr><td><span class="m put">PUT</span></td><td><code>/api/roles/{id}/data-scope</code></td><td>配置数据范围（行级权限）</td><td><code>id</code>、<code>req</code>（无说明）</td><td><span class="tag">权限 &quot;system:role&quot;</span> <span class="tag">写审计</span></td></tr>
+<tr><td><span class="m put">PUT</span></td><td><code>/api/roles/{id}/data-scope</code></td><td>配置数据范围（行级权限 · 能【看】多少单据 / 台账）。</td><td><code>id</code>、<code>req</code>（无说明）</td><td><span class="tag">权限 &quot;system:role&quot;</span> <span class="tag">写审计</span></td></tr>
+<tr><td><span class="m put">PUT</span></td><td><code>/api/roles/{id}/admin-scope</code></td><td>配置管理范围（能【管】哪些部门的人的账号）。<div class="desc">⚠ 与 `/data-scope} 不是同一个东西：那个管&quot;能看多少单据&quot;，
+这个管&quot;能管哪些人的账号&quot;。改一个不会动另一个。
+不配 = `none}，即该角色的成员在人员管理里看不到、也改不了任何人
+（这是最安全的缺省，所以新建角色时不必强制给值）。
+内置角色 ADMIN 的 `all} 不允许被收窄。</div></td><td><code>id</code>、<code>req</code>（无说明）</td><td><span class="tag">权限 &quot;system:role&quot;</span> <span class="tag">写审计</span></td></tr>
 <tr><td><span class="m del">DELETE</span></td><td><code>/api/roles/{id}</code></td><td>删除角色。<div class="desc">内置角色（isBuiltin=1，如 ADMIN）受保护，不可删除。</div></td><td><code>id</code></td><td><span class="tag">权限 &quot;system:role&quot;</span> <span class="tag">写审计</span></td></tr>
 </tbody></table></div></details>
 <details open><summary>UserController<span class="cnt">7 个接口</span></summary><div class="body"><table><thead><tr><th style="width:60px">方法</th><th style="width:34%">路径</th><th>接口说明（方法注释首行）</th><th style="width:20%">参数</th><th style="width:14%">门控 / 留痕</th></tr></thead><tbody>
@@ -490,6 +495,36 @@ flow_config_node + flow_node_assignee 是配置源，bpmn_xml 是生成的引擎
 <tr><td><code>createdBy</code></td><td><span class="tag">Long</span></td><td>创建人 ID</td></tr>
 <tr><td><code>updatedBy</code></td><td><span class="tag">Long</span></td><td>最后更新人 ID</td></tr>
 </tbody></table></div></details>
+<details><summary>RoleVO<span class="cnt">18 个字段</summary><div class="body">
+<div class="desc">角色视图对象。
+相比 `SysRole} 补了四样：权限点明细、数据范围、管理范围、成员列表。
+它们共同构成「这个角色是什么」的完整答案
+（能干什么、能看多少数据、能管哪些人、谁在用它），
+缺任何一样都只是角色的一个片段 —— 它们散在关联表里，裸实体给不出。
+⚠ 数据范围与管理范围是两个正交维度，字段也刻意分开：
+scopeType} 答&quot;能看多少单据 / 台账&quot;，`adminScope} 答&quot;能管哪些人的账号&quot;。
+前端不要把两者合成一个下拉框 —— 它们可以任意组合
+（例如「看全公司、只管本部门」或「只看自己、管全公司」）。</div>
+<table><thead><tr><th style="width:22%">字段</th><th style="width:20%">类型</th><th>说明</th></tr></thead><tbody>
+<tr><td><code>id</code></td><td><span class="tag">Long</span></td><td>角色 ID</td></tr>
+<tr><td><code>companyId</code></td><td><span class="tag">Long</span></td><td>公司 ID</td></tr>
+<tr><td><code>code</code></td><td><span class="tag">String</span></td><td>角色编码，如 ADMIN、CUSTOM_01（后端按编码判权，改名不影响）</td></tr>
+<tr><td><code>name</code></td><td><span class="tag">String</span></td><td>角色名称</td></tr>
+<tr><td><code>deptId</code></td><td><span class="tag">Long</span></td><td>归属部门 ID（可空）</td></tr>
+<tr><td><code>deptName</code></td><td><span class="tag">String</span></td><td>归属部门名称</td></tr>
+<tr><td><code>postName</code></td><td><span class="tag">String</span></td><td>对应岗位名称（展示用）</td></tr>
+<tr><td><code>scopeType</code></td><td><span class="tag">String</span></td><td>数据范围编码：self / dept / center / custom_dept / company</td></tr>
+<tr><td><code>scopeLabel</code></td><td><span class="tag">String</span></td><td>数据范围中文名，前端直接展示，不必自己维护映射</td></tr>
+<tr><td><code>scopeDeptIds</code></td><td><span class="tag">List&lt;Long&gt;</span></td><td>custom_dept 时生效的部门集合</td></tr>
+<tr><td><code>adminScope</code></td><td><span class="tag">String</span></td><td>管理范围编码：none（不管人）/ dept_subtree（本部门及下级）/ all（全公司）。决定能管理哪些部门的人的账号</td></tr>
+<tr><td><code>adminScopeLabel</code></td><td><span class="tag">String</span></td><td>管理范围中文名，前端直接展示，不必自己维护映射</td></tr>
+<tr><td><code>permCodes</code></td><td><span class="tag">List&lt;String&gt;</span></td><td>已授予的权限点编码</td></tr>
+<tr><td><code>permNames</code></td><td><span class="tag">List&lt;String&gt;</span></td><td>已授予的权限点中文名，用于卡片上的标签展示</td></tr>
+<tr><td><code>members</code></td><td><span class="tag">List&lt;String&gt;</span></td><td>拥有该角色的成员姓名</td></tr>
+<tr><td><code>isBuiltin</code></td><td><span class="tag">Integer</span></td><td>1 内置角色（不可删除）</td></tr>
+<tr><td><code>status</code></td><td><span class="tag">Integer</span></td><td>1 启用 0 停用</td></tr>
+<tr><td><code>remark</code></td><td><span class="tag">String</span></td><td>备注</td></tr>
+</tbody></table></div></details>
 <details><summary>FlowEscalation<span class="cnt">17 个字段 · 继承自 BaseEntity</summary><div class="body">
 <div class="desc">超时升级台账。
 uk_escalation_node(node_id, deleted)} 是幂等的**结构性保证**：
@@ -556,29 +591,6 @@ uk_escalation_node(node_id, deleted)} 是幂等的**结构性保证**：
 <tr><td><code>sortNo</code></td><td><span class="tag">Integer</span></td><td>排序号，同级内升序</td></tr>
 <tr><td><code>createdBy</code></td><td><span class="tag">Long</span></td><td>创建人 ID</td></tr>
 <tr><td><code>updatedBy</code></td><td><span class="tag">Long</span></td><td>最后更新人 ID</td></tr>
-</tbody></table></div></details>
-<details><summary>RoleVO<span class="cnt">16 个字段</summary><div class="body">
-<div class="desc">角色视图对象。
-相比 `SysRole} 补了三样：权限点明细、数据范围、成员列表。
-这三样共同构成「这个角色是什么」的完整答案（能干什么、管多大范围、谁在用它），
-缺任何一样都只是角色的一个片段 —— 它们散在关联表里，裸实体给不出。</div>
-<table><thead><tr><th style="width:22%">字段</th><th style="width:20%">类型</th><th>说明</th></tr></thead><tbody>
-<tr><td><code>id</code></td><td><span class="tag">Long</span></td><td>角色 ID</td></tr>
-<tr><td><code>companyId</code></td><td><span class="tag">Long</span></td><td>公司 ID</td></tr>
-<tr><td><code>code</code></td><td><span class="tag">String</span></td><td>角色编码，如 ADMIN、CUSTOM_01（后端按编码判权，改名不影响）</td></tr>
-<tr><td><code>name</code></td><td><span class="tag">String</span></td><td>角色名称</td></tr>
-<tr><td><code>deptId</code></td><td><span class="tag">Long</span></td><td>归属部门 ID（可空）</td></tr>
-<tr><td><code>deptName</code></td><td><span class="tag">String</span></td><td>归属部门名称</td></tr>
-<tr><td><code>postName</code></td><td><span class="tag">String</span></td><td>对应岗位名称（展示用）</td></tr>
-<tr><td><code>scopeType</code></td><td><span class="tag">String</span></td><td>数据范围编码：self / dept / center / custom_dept / company</td></tr>
-<tr><td><code>scopeLabel</code></td><td><span class="tag">String</span></td><td>数据范围中文名，前端直接展示，不必自己维护映射</td></tr>
-<tr><td><code>scopeDeptIds</code></td><td><span class="tag">List&lt;Long&gt;</span></td><td>custom_dept 时生效的部门集合</td></tr>
-<tr><td><code>permCodes</code></td><td><span class="tag">List&lt;String&gt;</span></td><td>已授予的权限点编码</td></tr>
-<tr><td><code>permNames</code></td><td><span class="tag">List&lt;String&gt;</span></td><td>已授予的权限点中文名，用于卡片上的标签展示</td></tr>
-<tr><td><code>members</code></td><td><span class="tag">List&lt;String&gt;</span></td><td>拥有该角色的成员姓名</td></tr>
-<tr><td><code>isBuiltin</code></td><td><span class="tag">Integer</span></td><td>1 内置角色（不可删除）</td></tr>
-<tr><td><code>status</code></td><td><span class="tag">Integer</span></td><td>1 启用 0 停用</td></tr>
-<tr><td><code>remark</code></td><td><span class="tag">String</span></td><td>备注</td></tr>
 </tbody></table></div></details>
 <details><summary>DocumentQuery<span class="cnt">15 个字段</summary><div class="body">
 <div class="desc">单据列表查询条件</div>
@@ -735,6 +747,29 @@ uk_escalation_node(node_id, deleted)} 是幂等的**结构性保证**：
 <tr><td><code>attachments</code></td><td><span class="tag">List&lt;AttachmentVO&gt;</span></td><td>附件列表</td></tr>
 <tr><td><code>links</code></td><td><span class="tag">List&lt;DocumentLinkVO&gt;</span></td><td>关联的前置单据/合同（已补齐编号与标题，前端可直接展示）</td></tr>
 </tbody></table></div></details>
+<details><summary>LoginUser<span class="cnt">12 个字段</summary><div class="body">
+<div class="desc">登录用户上下文（由 JWT 解析得到）。GET /api/auth/me 返回的就是它。
+⚠ 这里是「登录那一刻」的快照：token 里装的就是下面这些字段，
+后端不查库。所以管理员改了某人的角色 / 部门 / 权限之后，
+该用户必须重新登录才会生效（没有 refresh 接口）。
+前端不要把 permCodes / roleCodes 当作&quot;实时权限&quot;去做安全判断 —— 它只够用来控制菜单显隐。</div>
+<table><thead><tr><th style="width:22%">字段</th><th style="width:20%">类型</th><th>说明</th></tr></thead><tbody>
+<tr><td><code>userId</code></td><td><span class="tag">Long</span></td><td>用户 ID</td></tr>
+<tr><td><code>account</code></td><td><span class="tag">String</span></td><td>登录账号（唯一）</td></tr>
+<tr><td><code>realName</code></td><td><span class="tag">String</span></td><td>姓名</td></tr>
+<tr><td><code>companyId</code></td><td><span class="tag">Long</span></td><td>所属公司 ID</td></tr>
+<tr><td><code>deptId</code></td><td><span class="tag">Long</span></td><td>所属部门 ID；管理员账号可能为 null（未挂部门）</td></tr>
+<tr><td><code>deptName</code></td><td><span class="tag">String</span></td><td>所属部门名称；与 deptId 同为登录时快照</td></tr>
+<tr><td><code>deptPath</code></td><td><span class="tag">String</span></td><td>部门物化路径，如 /8/，用于「本部门及下级」数据范围判定</td></tr>
+<tr><td><code>roleCodes</code></td><td><span class="tag">Set&lt;String&gt;</span></td><td>角色编码集合</td></tr>
+<tr><td><code>permCodes</code></td><td><span class="tag">Set&lt;String&gt;</span></td><td>权限点编码集合</td></tr>
+<tr><td><code>dataScope</code></td><td><span class="tag">DataScopeType</span></td><td>生效的数据范围（多角色取最宽）：能【看】多少单据 / 台账</td></tr>
+<tr><td><code>scopeDeptIds</code></td><td><span class="tag">Set&lt;Long&gt;</span></td><td>自定义部门范围（custom_dept 时使用）</td></tr>
+<tr><td><code>adminScope</code></td><td><span class="tag">AdminScopeType</span></td><td>生效的管理范围（多角色取最宽）：能【管】哪些部门的人的账号。
+与 `#dataScope} 正交，见 `AdminScopeType}。
+null（例如改造前签发的旧 token 反序列化）一律按 `AdminScopeType#NONE} 处理 ——
+收紧，不放宽；重新登录即恢复。取用请走 `AdminScopeHelper}，不要在业务里自己 switch。</td></tr>
+</tbody></table></div></details>
 <details><summary>SealRecord<span class="cnt">12 个字段 · 继承自 BaseEntity</summary><div class="body">
 <div class="desc">用印台账（每次用印 / 归还动作）</div>
 <table><thead><tr><th style="width:22%">字段</th><th style="width:20%">类型</th><th>说明</th></tr></thead><tbody>
@@ -783,25 +818,6 @@ uk_escalation_node(node_id, deleted)} 是幂等的**结构性保证**：
 <tr><td><code>requireAttachment</code></td><td><span class="tag">Boolean</span></td><td>是否必须上传办理凭证：办理类节点（出纳付款回单、用印盖章件）默认为真</td></tr>
 <tr><td><code>branches</code></td><td><span class="tag">List&lt;Branch&gt;</span></td><td>条件分支节点已解析好的分支（target 已是最终 nodeKey）。
 仅 `nodeType=3} 的节点会有值，其余节点为 null。</td></tr>
-</tbody></table></div></details>
-<details><summary>LoginUser<span class="cnt">11 个字段</summary><div class="body">
-<div class="desc">登录用户上下文（由 JWT 解析得到）。GET /api/auth/me 返回的就是它。
-⚠ 这里是「登录那一刻」的快照：token 里装的就是下面这些字段，
-后端不查库。所以管理员改了某人的角色 / 部门 / 权限之后，
-该用户必须重新登录才会生效（没有 refresh 接口）。
-前端不要把 permCodes / roleCodes 当作&quot;实时权限&quot;去做安全判断 —— 它只够用来控制菜单显隐。</div>
-<table><thead><tr><th style="width:22%">字段</th><th style="width:20%">类型</th><th>说明</th></tr></thead><tbody>
-<tr><td><code>userId</code></td><td><span class="tag">Long</span></td><td>用户 ID</td></tr>
-<tr><td><code>account</code></td><td><span class="tag">String</span></td><td>登录账号（唯一）</td></tr>
-<tr><td><code>realName</code></td><td><span class="tag">String</span></td><td>姓名</td></tr>
-<tr><td><code>companyId</code></td><td><span class="tag">Long</span></td><td>所属公司 ID</td></tr>
-<tr><td><code>deptId</code></td><td><span class="tag">Long</span></td><td>所属部门 ID；管理员账号可能为 null（未挂部门）</td></tr>
-<tr><td><code>deptName</code></td><td><span class="tag">String</span></td><td>所属部门名称；与 deptId 同为登录时快照</td></tr>
-<tr><td><code>deptPath</code></td><td><span class="tag">String</span></td><td>部门物化路径，如 /8/，用于「本部门及下级」数据范围判定</td></tr>
-<tr><td><code>roleCodes</code></td><td><span class="tag">Set&lt;String&gt;</span></td><td>角色编码集合</td></tr>
-<tr><td><code>permCodes</code></td><td><span class="tag">Set&lt;String&gt;</span></td><td>权限点编码集合</td></tr>
-<tr><td><code>dataScope</code></td><td><span class="tag">DataScopeType</span></td><td>生效的数据范围（多角色取最宽）</td></tr>
-<tr><td><code>scopeDeptIds</code></td><td><span class="tag">Set&lt;Long&gt;</span></td><td>自定义部门范围（custom_dept 时使用）</td></tr>
 </tbody></table></div></details>
 <details><summary>NodePreview<span class="cnt">11 个字段</summary><div class="body">
 <div class="desc">节点预览</div>
@@ -1296,6 +1312,26 @@ schema 用 `Map} 而不是字符串接收：服务端必须**结构化校验**�
 它会被写进该节点的审批留痕，并进入审计日志 —— 转办绕过了&quot;谁是审批人&quot;的
 节点指派规则（P4：指派规则是唯一事实），所以必须留下&quot;为什么绕过&quot;。</td></tr>
 </tbody></table></div></details>
+<details><summary>AdminScopeType<span class="cnt">2 个字段</summary><div class="body">
+<div class="desc">管理范围类型（能【管】哪些部门的人的账号）。层级由窄到宽，多角色时取最宽者生效。
+与 `DataScopeType} 是两个正交维度，不要合并：
+
+
+- `DataScopeType} 答「能【看】多少数据」—— 单据 / 台账的行级过滤，
+      消费方 `DataScopeHelper}，载体 `role_data_scope}；
+
+- `AdminScopeType} 答「能【管】哪些人」—— 用户管理接口的读与写，
+      消费方 `AdminScopeHelper}，载体 `role_admin_scope}。
+
+同一个人完全可以「看全公司单据、但只能管本部门的人」，也可以反过来。
+把两者合成一个字段或一张表的直接后果是：调其中一维会静默改掉另一维。
+只有三档，且三档都有消费点（硬约束：声明的控制必须有引用点，
+「存在」≠「生效」，空转的控制比没有更危险）。刻意不含「指定部门集合」——
+将来确有需要时再加列，不预留&quot;有列无消费点&quot;的配置项。</div>
+<table><thead><tr><th style="width:22%">字段</th><th style="width:20%">类型</th><th>说明</th></tr></thead><tbody>
+<tr><td><code>level</code></td><td><span class="tag">int</span></td><td>宽度等级，数字越大范围越宽；多角色时取最宽者生效</td></tr>
+<tr><td><code>code</code></td><td><span class="tag">String</span></td><td>接口里传的字符串编码（小写）</td></tr>
+</tbody></table></div></details>
 <details><summary>BatchApproveReq<span class="cnt">2 个字段</summary><div class="body">
 <div class="desc">批量审批请求。
 刻意只支持「通过」，不提供批量驳回：驳回需要单独的理由与退回目标
@@ -1358,6 +1394,11 @@ SealService#act}）。这样前端不需要先查一次&quot;这张单有没有�
 <tr><td><code>newPassword</code></td><td><span class="tag">String</span></td><td>8~64 位。下限 8 是底线（此前演示环境 6 位弱口令挂公网的教训）；
 不做「必须含大小写数字符号」之类的复杂度规则 —— 实测那只会逼出
 「Abc@1234」这种模式化口令，不如把长度和「不得与原密码相同」守住。</td></tr>
+</tbody></table></div></details>
+<details><summary>AdminScopeReq<span class="cnt">1 个字段</summary><div class="body">
+<div class="desc">管理范围配置请求</div>
+<table><thead><tr><th style="width:22%">字段</th><th style="width:20%">类型</th><th>说明</th></tr></thead><tbody>
+<tr><td><code>scopeType</code></td><td><span class="tag">String</span></td><td>none（不管人）/ dept_subtree（本部门及下级）/ all（全公司）。⚠ 传非法值会**显式报错**，不静默降级</td></tr>
 </tbody></table></div></details>
 <details><summary>PermAssignReq<span class="cnt">1 个字段</summary><div class="body">
 <div class="desc">权限点分配请求</div>

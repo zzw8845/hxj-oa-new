@@ -16,16 +16,21 @@ import java.time.Duration;
  * <p>键设计：
  * <pre>
  *   版本号（全局）  &lt;prefix&gt;auth:gen
- *   快照（按用户）  &lt;prefix&gt;auth:snap:v1:&lt;gen&gt;:&lt;userId&gt;
+ *   快照（按用户）  &lt;prefix&gt;auth:snap:v2:&lt;gen&gt;:&lt;userId&gt;
  * </pre>
  * 把版本号编进键名，而不是逐个删除旧键：{@code invalidateAll} 只需一次 {@code INCR}，
  * 旧键靠 TTL 自然消失。既是 O(1) 的失效，也彻底不用 {@code KEYS}/{@code SCAN} ——
  * 那两条命令在大 key 空间上会阻塞整个 Redis 实例，而这台 Redis 是与其他项目共用的，
  * 我们不能因为清自己的缓存把别人的服务卡住。
  *
- * <p><b>键名里的 {@code v1} 不是装饰</b>：蓝绿切换期间新旧两个容器会同时运行，
- * 若新版本改了 {@link AuthSnapshot} 的字段，旧容器写下的 JSON 会被新容器读到。
- * 带上版本号，两个版本各读各的键、互不干扰，升级期间不会出现反序列化失败。
+ * <p><b>键名里的版本号不是装饰，每次改 {@link AuthSnapshot} 的字段都要 +1</b>：
+ * 蓝绿切换期间新旧两个容器会同时运行，若新版本改了 {@link AuthSnapshot} 的字段，
+ * 旧容器写下的 JSON 会被新容器读到。带上版本号，两个版本各读各的键、互不干扰，
+ * 升级期间不会出现反序列化失败。旧键靠 TTL 自然消失，不需要清理动作。
+ *
+ * <p>版本沿革：<b>v1</b>（初版，4 字段）→ <b>v2</b>（2026-09-28 分级管理员 C3，
+ * 增加 {@code adminScope}）。下一次增删字段请升到 v3，并同步改
+ * {@link AuthSnapshotCache.AuthSnapshot} 上的说明。
  *
  * <p><b>每条写入都必须带 TTL</b>：这台 Redis 的 {@code maxmemory=0} 且
  * {@code maxmemory-policy=noeviction} —— 内存写满时它<b>不会淘汰任何键，而是直接对写入报错</b>。
@@ -38,7 +43,7 @@ import java.time.Duration;
 public class RedisAuthSnapshotCache implements AuthSnapshotCache {
 
     private static final String GENERATION_KEY = "auth:gen";
-    private static final String SNAPSHOT_KEY_PREFIX = "auth:snap:v1:";
+    private static final String SNAPSHOT_KEY_PREFIX = "auth:snap:v2:";
 
     /** TTL 只用于限制内存占用；一致性靠版本号，不依赖它 */
     private static final Duration TTL = Duration.ofMinutes(30);
@@ -75,7 +80,7 @@ public class RedisAuthSnapshotCache implements AuthSnapshotCache {
         } catch (JsonProcessingException e) {
             // 反序列化失败 = 缓存内容不可用，绝不能让登录因此 500。
             // 当作未命中，回库里重建即可；Redis 本身是健康的，所以不算降级、不打 warn。
-            // （正常路径下这个分支不该被走到，因为键名里带了 v1。）
+            // （正常路径下这个分支不该被走到，因为键名里带了版本号 v2。）
             log.debug("认证快照反序列化失败，按未命中处理：userId={} 原因={}", userId, e.getMessage());
             return null;
         } catch (RuntimeException e) {

@@ -5,10 +5,11 @@
 --         **没有任何业务数据** —— 部门 / 岗位 / 字典 / 单据类型 / 表单模板 / 流程 /
 --         业务角色（部门负责人·会计·出纳…）全部由 admin 在界面上新建。
 --
---   前置：先灌 init_database.sql（仅表结构，70 张表）
+--   前置：先灌 init_database.sql（仅表结构，71 张表）
 --   用法：mysql -uroot <库名> < minimal_seed.sql
 --
---   内容：公司 ×1 + admin ×1 + 内置角色 ×2（ADMIN / AUDIT_ADMIN）+ 权限点全量 + 角色绑定 + 数据范围
+--   内容：公司 ×1 + admin ×1 + 内置角色 ×2（ADMIN / AUDIT_ADMIN）
+--         + 权限点全量 + 角色绑定 + 数据范围 + 管理范围
 --
 --   【为什么权限点必须一起灌】
 --     admin 的超管权限不是硬编码的：PermInterceptor 只校验 JWT 里的 permCodes，
@@ -40,6 +41,7 @@ SET FOREIGN_KEY_CHECKS = 0;
 TRUNCATE TABLE `user_role`;
 TRUNCATE TABLE `role_permission`;
 TRUNCATE TABLE `role_data_scope`;
+TRUNCATE TABLE `role_admin_scope`;
 TRUNCATE TABLE `sys_permission`;
 TRUNCATE TABLE `sys_user`;
 TRUNCATE TABLE `sys_role`;
@@ -122,13 +124,26 @@ INSERT INTO `role_data_scope` (`role_id`,`scope_type`,`company_ids`,`dept_ids`) 
 (1,'company',NULL,NULL),
 (2,'company',NULL,NULL);
 
+-- 6b. 管理范围（能【管】哪些部门的人）—— 与上面第 6 段是**两个正交维度**，别混：
+--       role_data_scope  = 能【看】多少单据 / 台账   → DataScopeHelper（行级过滤）
+--       role_admin_scope = 能【管】哪些人的账号     → AdminScopeHelper（用户管理的读+写）
+--     ADMIN       = all          —— 与改造前行为等价（超管本来就能管所有人），零收权
+--     AUDIT_ADMIN = dept_subtree —— 审计员当前**不持 system:user**，这一行不改变现状；
+--       显式给值的意义是声明"若将来把人员管理授予审计员，只能在本人部门子树内管人"，
+--       不留「是忘了配还是真不给」的歧义（同第 6 段给 AUDIT_ADMIN 显式 company 的理由）。
+--     ⚠ 其余业务角色**刻意不配**：它们都不持 system:user，配了是死配置；
+--       而缺省语义 = none（最窄）⇒ 新建的自定义角色默认管不到任何人，想要就得显式配。
+INSERT INTO `role_admin_scope` (`role_id`,`scope_type`) VALUES
+(1,'all'),
+(2,'dept_subtree');
+
 -- 7. admin 挂 ADMIN 角色
 INSERT INTO `user_role` (`user_id`,`role_id`) VALUES (1,1);
 
 -- =============================================================================
 -- 灌完后数据库状态（用于核对）
 --   company=1  sys_user=1  sys_role=2  sys_permission=27  role_permission=29
---   role_data_scope=2  user_role=1
+--   role_data_scope=2  role_admin_scope=2  user_role=1
 --   （role_permission = 27 全量给 ADMIN + 2 给 AUDIT_ADMIN）
 --   department=0  post=0  sys_dict=0  document_type=0  form_template=0
 --   flow_config=0  document=0

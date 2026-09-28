@@ -2,14 +2,17 @@ package com.hxj.oa.system.service;
 
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.hxj.oa.common.exception.BizException;
+import com.hxj.oa.common.security.AdminScopeType;
 import com.hxj.oa.common.security.DataScopeType;
 import com.hxj.oa.common.security.UserContext;
+import com.hxj.oa.common.util.AdminScopeHelper;
 import com.hxj.oa.common.util.JsonColumn;
 import com.hxj.oa.common.util.JsonUtils;
 import com.hxj.oa.system.dto.RoleSaveReq;
 import com.hxj.oa.system.dto.RoleVO;
 import com.hxj.oa.system.auth.AuthSnapshotCache;
 import com.hxj.oa.system.entity.Department;
+import com.hxj.oa.system.entity.RoleAdminScope;
 import com.hxj.oa.system.entity.RoleDataScope;
 import com.hxj.oa.system.entity.RolePermission;
 import com.hxj.oa.system.entity.SysPermission;
@@ -17,6 +20,7 @@ import com.hxj.oa.system.entity.SysRole;
 import com.hxj.oa.system.entity.SysUser;
 import com.hxj.oa.system.entity.UserRole;
 import com.hxj.oa.system.mapper.DepartmentMapper;
+import com.hxj.oa.system.mapper.RoleAdminScopeMapper;
 import com.hxj.oa.system.mapper.RoleDataScopeMapper;
 import com.hxj.oa.system.mapper.RolePermissionMapper;
 import com.hxj.oa.system.mapper.SysPermissionMapper;
@@ -61,6 +65,7 @@ public class RoleAdminService {
     private final SysPermissionMapper permissionMapper;
     private final RolePermissionMapper rolePermissionMapper;
     private final RoleDataScopeMapper roleDataScopeMapper;
+    private final RoleAdminScopeMapper roleAdminScopeMapper;
     private final UserRoleMapper userRoleMapper;
     private final SysUserMapper userMapper;
     private final DepartmentMapper deptMapper;
@@ -112,6 +117,14 @@ public class RoleAdminService {
             scopeByRole.putIfAbsent(ds.getRoleId(), ds);
         }
 
+        // 管理范围：一个角色一条。**缺行是正常状态**（= 不管人），不是数据缺失 ——
+        // 只有显式配过的角色才有行，见 assemble 里的兜底。
+        Map<Long, RoleAdminScope> adminScopeByRole = new LinkedHashMap<>();
+        for (RoleAdminScope as : roleAdminScopeMapper.selectList(
+                Wrappers.<RoleAdminScope>lambdaQuery().in(RoleAdminScope::getRoleId, roleIds))) {
+            adminScopeByRole.putIfAbsent(as.getRoleId(), as);
+        }
+
         // 成员：user_role → sys_user.real_name
         Map<Long, List<String>> membersByRole = membersOf(roleIds);
 
@@ -119,7 +132,7 @@ public class RoleAdminService {
                 .filter(Objects::nonNull).collect(Collectors.toSet()));
 
         return roles.stream().map(r -> assemble(r, permCodesByRole, permNameByCode,
-                scopeByRole, membersByRole, deptNames)).toList();
+                scopeByRole, adminScopeByRole, membersByRole, deptNames)).toList();
     }
 
     public RoleVO detail(Long id) {
@@ -250,6 +263,36 @@ public class RoleAdminService {
         return detail(id);
     }
 
+    /**
+     * 配置角色管理范围（能【管】哪些部门的人的账号）。
+     *
+     * <p><b>为什么它不像数据范围那样在新建时就一起给值</b>：两者的缺省语义方向相反。
+     * 数据范围缺省会<b>降级</b>成「仅本人」——对管理员是危险的静默收权，所以新建时必须一起给；
+     * 管理范围缺省是「不管人」——本来就最窄，没有必须先给的理由。
+     * 让新建弹窗少一个能被顺手勾上的授权项，比"两个字段看起来整齐"更重要。
+     *
+     * <p>⚠ <b>它与数据范围是两个正交维度</b>：改这里不会动 {@code scopeType}，反之亦然。
+     *
+     * @param scopeType none / dept_subtree / all；传其它值<b>显式失败</b>，不静默降级
+     * @param id        角色 ID
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public RoleVO updateAdminScope(Long id, String scopeType) {
+        SysRole r = requireRole(id);
+        AdminScopeType type = requireAdminScopeType(scopeType);
+        // 内置角色保护（C6 第三层，与上面"不允许清空内置角色权限点"同类）：
+        // 把 ADMIN 的管理范围从「全公司」收窄，系统里再没有人能管理用户账号，
+        // 只能改库恢复 —— 这是又一条全局自锁。
+        if (isBuiltin(r) && currentAdminScope(id) == AdminScopeType.ALL && type != AdminScopeType.ALL) {
+            throw BizException.of("「%s」是内置角色，管理范围不允许从「全公司」收窄（收窄后系统内无人能再管理用户）",
+                    r.getName());
+        }
+        overwriteAdminScope(id, type);
+        log.info("配置角色管理范围 id={} adminScope={} 操作人={}", id, scopeType, UserContext.currentUserId());
+        snapshotCache.invalidateAfterCommit();
+        return detail(id);
+    }
+
     @Transactional(rollbackFor = Exception.class)
     public void delete(Long id) {
         SysRole r = requireRole(id);
@@ -268,6 +311,11 @@ public class RoleAdminService {
                 .eq(RoleDataScope::getRoleId, id).last("LIMIT 1"));
         if (ds != null) {
             roleDataScopeMapper.deleteById(ds.getId());
+        }
+        RoleAdminScope as = roleAdminScopeMapper.selectOne(Wrappers.<RoleAdminScope>lambdaQuery()
+                .eq(RoleAdminScope::getRoleId, id).last("LIMIT 1"));
+        if (as != null) {
+            roleAdminScopeMapper.deleteById(as.getId());
         }
         // 释放 code 让位给将来同编码的角色（原因见 UniqueKeys#release：
         // uk_role_company_code 把 deleted 纳入了唯一键，逻辑删除的记录只能有一条）
@@ -354,6 +402,48 @@ public class RoleAdminService {
         }
     }
 
+    /** 角色当前生效的管理范围（缺行 = none，与 assemble 的兜底同一口径） */
+    private AdminScopeType currentAdminScope(Long roleId) {
+        RoleAdminScope as = roleAdminScopeMapper.selectOne(Wrappers.<RoleAdminScope>lambdaQuery()
+                .eq(RoleAdminScope::getRoleId, roleId).last("LIMIT 1"));
+        return as == null ? AdminScopeType.NONE : AdminScopeType.of(as.getScopeType());
+    }
+
+    /** 管理范围是一个角色一条记录，存在即更新，不存在则插入（与 overwriteDataScope 同形） */
+    private void overwriteAdminScope(Long roleId, AdminScopeType type) {
+        RoleAdminScope exist = roleAdminScopeMapper.selectOne(Wrappers.<RoleAdminScope>lambdaQuery()
+                .eq(RoleAdminScope::getRoleId, roleId).last("LIMIT 1"));
+        if (exist == null) {
+            RoleAdminScope as = new RoleAdminScope();
+            as.setRoleId(roleId);
+            as.setScopeType(type.getCode());
+            roleAdminScopeMapper.insert(as);
+        } else {
+            roleAdminScopeMapper.update(null, Wrappers.<RoleAdminScope>lambdaUpdate()
+                    .eq(RoleAdminScope::getId, exist.getId())
+                    .set(RoleAdminScope::getScopeType, type.getCode()));
+        }
+    }
+
+    /**
+     * 严格解析管理范围枚举。
+     *
+     * <p>与下面的 {@link #requireScopeType} 同理：{@link AdminScopeType#of} 对未知值
+     * <b>静默返回 NONE</b>，于是直连接口传个拼错的 {@code dept_subtreeX} 会得到
+     * "成功响应 + 管理范围悄悄变成不管人"。写路径不接受静默降级（P5）。
+     */
+    private static AdminScopeType requireAdminScopeType(String code) {
+        if (!StringUtils.hasText(code)) {
+            throw BizException.of("管理范围不能为空");
+        }
+        for (AdminScopeType t : AdminScopeType.values()) {
+            if (t.getCode().equalsIgnoreCase(code.trim())) {
+                return t;
+            }
+        }
+        throw BizException.of("未知的管理范围「%s」，合法值：none / dept_subtree / all", code);
+    }
+
     /**
      * 严格解析数据范围枚举。
      *
@@ -377,6 +467,7 @@ public class RoleAdminService {
                             Map<Long, List<String>> permCodesByRole,
                             Map<String, String> permNameByCode,
                             Map<Long, RoleDataScope> scopeByRole,
+                            Map<Long, RoleAdminScope> adminScopeByRole,
                             Map<Long, List<String>> membersByRole,
                             Map<Long, String> deptNames) {
         RoleVO vo = new RoleVO();
@@ -406,6 +497,13 @@ public class RoleAdminService {
         } else {
             vo.setScopeDeptIds(List.of());
         }
+
+        // 管理范围：缺行 = none（最窄），不是"未配置待补"——
+        // 所以这里一定要给字符串值而不是留 null，前端才能稳定显示"不管人"。
+        RoleAdminScope as = adminScopeByRole.get(r.getId());
+        String adminScope = as == null ? AdminScopeType.NONE.getCode() : as.getScopeType();
+        vo.setAdminScope(adminScope);
+        vo.setAdminScopeLabel(AdminScopeHelper.label(adminScope));
 
         vo.setMembers(membersByRole.getOrDefault(r.getId(), List.of()));
         return vo;

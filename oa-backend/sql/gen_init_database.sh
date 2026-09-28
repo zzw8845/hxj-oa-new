@@ -36,7 +36,7 @@ trap 'rm -f "$TMP"' EXIT
 --     mysql -h <host> -P <port> -u<user> -p --default-character-set=utf8mb4 < init_database.sql
 --     （本机：mysql -uroot < init_database.sql）
 --
---   内容：① 建库  ② 29 张业务表  ③ 41 张 Flowable 引擎表（ACT_* / FLW_*）
+--   内容：① 建库  ② 30 张业务表  ③ 41 张 Flowable 引擎表（ACT_* / FLW_*）
 --
 --   【幂等】全部为 CREATE DATABASE/TABLE IF NOT EXISTS，重复执行不会报错，也不会动已有数据。
 --           但注意：它**不会**升级已存在的表结构。改了 schema 后要更新线上库，
@@ -70,7 +70,7 @@ HEADER
 
   cat <<'BIZ_HEADER'
 -- =============================================================================
--- 第 1 部分：业务表（29 张）
+-- 第 1 部分：业务表（30 张）
 --   来源：sql/schema.sql
 -- =============================================================================
 
@@ -123,7 +123,7 @@ table_count=$(grep -ciE '^create table' "$TMP" || true)
 check "CREATE DATABASE 语句数" "1" "$db_count"
 check "遗留的旧库名 haixiajin_oa" "0" "$legacy_count"
 check "DEFAULT CHARACTER SET 行数（只应有本脚本自己的一行）" "1" "$charset_count"
-check "CREATE TABLE 总数（应为 29 业务 + 41 引擎 = 70）" "70" "$table_count"
+check "CREATE TABLE 总数（应为 30 业务 + 41 引擎 = 71）" "71" "$table_count"
 
 # ---- 通用守卫：schema.sql 里的每一张表都必须出现在产出中 --------------------
 # 这条是为一次真实事故加的：flow_delegation / flow_escalation 当初是**手工补进

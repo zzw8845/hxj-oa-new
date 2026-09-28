@@ -5,18 +5,22 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.hxj.oa.common.exception.BizException;
 import com.hxj.oa.common.api.PageResult;
+import com.hxj.oa.common.security.LoginUser;
 import com.hxj.oa.common.security.UserContext;
+import com.hxj.oa.common.util.AdminScopeHelper;
 import com.hxj.oa.system.dto.UserSaveReq;
 import com.hxj.oa.system.dto.UserVO;
 import com.hxj.oa.system.auth.AuthSnapshotCache;
 import com.hxj.oa.system.entity.Department;
 import com.hxj.oa.system.entity.Post;
+import com.hxj.oa.system.entity.RolePermission;
 import com.hxj.oa.system.entity.SysRole;
 import com.hxj.oa.system.entity.SysUser;
 import com.hxj.oa.system.entity.UserPost;
 import com.hxj.oa.system.entity.UserRole;
 import com.hxj.oa.system.mapper.DepartmentMapper;
 import com.hxj.oa.system.mapper.PostMapper;
+import com.hxj.oa.system.mapper.RolePermissionMapper;
 import com.hxj.oa.system.mapper.SysRoleMapper;
 import com.hxj.oa.system.mapper.SysUserMapper;
 import com.hxj.oa.system.mapper.UserPostMapper;
@@ -47,7 +51,20 @@ import java.util.stream.Collectors;
  *   <li><b>密码只进不出</b>：一律 BCrypt 哈希后落库，接口永不回显。</li>
  *   <li><b>角色绑定是「全量覆盖」语义</b>：提交什么就是什么，未提交的绑定会被清掉，
  *       避免「界面上取消了角色、库里的关联还在」这种最容易被忽略的越权残留。</li>
+ *   <li><b>一切写操作都必须落在登录人的管理范围内</b>（C3）：范围由
+ *       {@code role_admin_scope} 决定，判据只有一份实现（{@code AdminScopeHelper}）。
+ *       <b>列表读也是</b> —— 看得到却点不动、或搜不到却直接调接口能改，都是同一类缺陷。</li>
  * </ol>
+ *
+ * <p><b>管理范围作用于哪些方法，不作用于哪些，是刻意的</b>：
+ * <ul>
+ *   <li>生效：{@link #pageWithDetail}（人员管理表格）与全部写路径，以及
+ *       {@link #detail(Long)}（{@code GET /api/users/{id}}，属管理动作）；</li>
+ *   <li><b>不生效：{@link #listWithDetail}</b>（{@code GET /api/users} 全量）。
+ *       那个接口是「选审批人 / 查同事」的协作查询、刻意无门控、人人可用，
+ *       按管理范围收窄它会<b>静默打断发起单据链路</b>（选不出本部门以外的人，且界面不报错）。
+ *       ⇒ 两个接口口径不同是<b>设计</b>，不是遗漏。</li>
+ * </ul>
  */
 @Slf4j
 @Service
@@ -67,6 +84,11 @@ public class UserAdminService {
     private final PasswordEncoder passwordEncoder;
 
     /**
+     * 供「特权提升」护栏查目标角色的权限点。见 {@link #assertNoPrivilegeEscalation}。
+     */
+    private final RolePermissionMapper rolePermissionMapper;
+
+    /**
      * 权限快照缓存。只有<b>角色绑定发生变化</b>时才需要失效：
      * 改姓名/手机号/部门都不影响快照内容 —— 快照只装角色、权限点、数据范围、指定部门，
      * 部门名与部门路径每次登录都重新查库，所以"部门改名"不需要动它。
@@ -76,7 +98,13 @@ public class UserAdminService {
 
     /* ------------------------------------------------------------------ 查询 */
 
-    /** 人员列表：一次性把部门名、岗位名、角色拼齐，避免 N+1 也避免前端逐行再查 */
+    /**
+     * 人员列表：一次性把部门名、岗位名、角色拼齐，避免 N+1 也避免前端逐行再查。
+     *
+     * <p>⚠ <b>刻意不按管理范围过滤</b> —— 它服务于 {@code GET /api/users}（无门控的
+     * 「选审批人 / 查同事」协作查询）。在这里加范围过滤会静默打断发起单据链路。
+     * 理由与边界见类注释。
+     */
     public List<UserVO> listWithDetail(Long companyId) {
         List<SysUser> users = userMapper.selectList(Wrappers.<SysUser>lambdaQuery()
                 .eq(companyId != null, SysUser::getCompanyId, companyId)
@@ -93,6 +121,11 @@ public class UserAdminService {
      * 单次响应会随公司人数线性放大，且**搜索会被限制在已加载的那批数据里** ——
      * 搜不全且界面没有任何提示，用户会以为真的没有这个人。
      * 所以表格走这个接口：过滤与分页都在 SQL 里完成。
+     *
+     * <p><b>分页与「能管哪些人」必须是同一个 SQL</b>：范围只收在内存里（先查出来再过滤）
+     * 会让 {@code total} 与实际可见条数对不上，界面上表现为"翻到第 2 页是空的、
+     * 但页码显示还有 5 页"；而且搜索会越过范围命中不该看到的人。
+     * 所以范围条件直接进 wrapper，与 keyword、分页共处一条 WHERE。
      */
     public PageResult<UserVO> pageWithDetail(Long companyId, Integer pageNum, Integer pageSize, String keyword) {
         int pn = (pageNum == null || pageNum < 1) ? 1 : pageNum;
@@ -106,6 +139,10 @@ public class UserAdminService {
             w.and(x -> x.like(SysUser::getRealName, kw)
                     .or().like(SysUser::getJobNo, kw)
                     .or().like(SysUser::getAccount, kw));
+        }
+        String scopeClause = AdminScopeHelper.applyClause(null, UserContext.require());
+        if (scopeClause != null) {
+            w.apply(scopeClause);
         }
         w.orderByAsc(SysUser::getDeptId).orderByAsc(SysUser::getId);
         Page<SysUser> result = userMapper.selectPage(new Page<>(pn, ps), w);
@@ -139,9 +176,14 @@ public class UserAdminService {
      *
      * <p>对外由 {@code GET /api/users/{id}} 暴露，该端点挂 {@code system:user}；
      * 同时被新建 / 修改 / 调整角色三个写操作复用（返回操作后的最新视图）。
+     *
+     * <p>⚠ <b>它属管理动作，受管理范围限制</b>：否则一个只管本部门的管理员只要把 id
+     * 逐个试过去，就能把全公司人员的手机号 / 邮箱 / 角色读个干净 ——
+     * 列表收窄了、详情没收窄，等于没做。
      */
     public UserVO detail(Long id) {
         SysUser u = requireUser(id);
+        assertUserInAdminScope(u);
         return assemble(u,
                 deptNameMap(u.getDeptId() == null ? Set.of() : Set.of(u.getDeptId())),
                 postNameMap(u.getPostId() == null ? Set.of() : Set.of(u.getPostId())),
@@ -172,6 +214,13 @@ public class UserAdminService {
         u.setPhone(emptyToNull(req.getPhone()));
         u.setEmail(emptyToNull(req.getEmail()));
         u.setDeptId(orgResolver.resolveDeptId(companyId, req.getDeptId(), req.getDeptName()));
+        // 管理范围（C3）两道断言都放在 insert 之前：
+        // 不是为了省一次回滚，而是为了**不产生副作用** —— resolvePostId 会顺手建岗位档案，
+        // 先写库再被断言打回，会留下一条没人用的岗位。
+        assertDeptInAdminScope(u.getDeptId());
+        List<String> roleCodes = orgResolver.resolveRoleCodes(companyId,
+                req.getRoleCodes(), req.getRoleNames());
+        assertNoPrivilegeEscalation(roleCodes);
         u.setPostId(orgResolver.resolvePostId(companyId, req.getPostId(), req.getPostName()));
         u.setStatus(req.getStatus() == null ? 1 : req.getStatus());
         // 管理员设的是「初始密码」，标记为待改密；当前登录流程不强制跳转，仅作留痕
@@ -179,7 +228,7 @@ public class UserAdminService {
         u.setCreatedBy(UserContext.currentUserId());
         userMapper.insert(u);
 
-        rebindRoles(u.getId(), orgResolver.resolveRoleCodes(companyId, req.getRoleCodes(), req.getRoleNames()));
+        rebindRoles(u.getId(), roleCodes);
         rebindPrimaryPost(u);
         snapshotCache.invalidateAfterCommit();
 
@@ -191,6 +240,7 @@ public class UserAdminService {
     @Transactional(rollbackFor = Exception.class)
     public UserVO update(Long id, UserSaveReq req) {
         SysUser exist = requireUser(id);
+        assertUserInAdminScope(exist);
         // 自锁护栏（C6）：不允许改自己的启停状态 —— 系统只有一层管理员时，
         // 停用自己等于把自己锁在门外（login 会以"该账号已停用"拒绝），只能改库恢复。
         if (Objects.equals(id, UserContext.currentUserId())
@@ -211,7 +261,14 @@ public class UserAdminService {
         upd.setRealName(req.getRealName().trim());
         upd.setPhone(emptyToNull(req.getPhone()));
         upd.setEmail(emptyToNull(req.getEmail()));
-        upd.setDeptId(orgResolver.resolveDeptId(companyId, req.getDeptId(), req.getDeptName()));
+        // 管理范围（C3）：目标部门与目标角色都要落在自己的范围内。
+        // ⚠ 部门只在**显式提供**时才校验 —— resolveDeptId 对"没传部门"返回 null（含义是"不改"），
+        //   无条件校验会把「只想改手机号」误判成"要把这个人调到无部门"。
+        if (req.getDeptId() != null || StringUtils.hasText(req.getDeptName())) {
+            Long newDeptId = orgResolver.resolveDeptId(companyId, req.getDeptId(), req.getDeptName());
+            assertDeptInAdminScope(newDeptId);
+            upd.setDeptId(newDeptId);
+        }
         upd.setPostId(orgResolver.resolvePostId(companyId, req.getPostId(), req.getPostName()));
         upd.setStatus(req.getStatus() == null ? exist.getStatus() : req.getStatus());
         if (StringUtils.hasText(req.getPassword())) {
@@ -224,6 +281,7 @@ public class UserAdminService {
         // 角色/岗位：只有显式带了对应字段才覆盖，避免「只想改手机号」把角色清空
         if (req.getRoleCodes() != null || req.getRoleNames() != null) {
             List<String> resolved = orgResolver.resolveRoleCodes(companyId, req.getRoleCodes(), req.getRoleNames());
+            assertNoPrivilegeEscalation(resolved);
             assertNotSelfRoleChange(id, resolved);
             rebindRoles(id, resolved);
         }
@@ -237,7 +295,9 @@ public class UserAdminService {
     @Transactional(rollbackFor = Exception.class)
     public UserVO updateRoles(Long id, List<String> roleCodes) {
         SysUser exist = requireUser(id);
+        assertUserInAdminScope(exist);
         List<String> resolved = orgResolver.resolveRoleCodes(exist.getCompanyId(), roleCodes, null);
+        assertNoPrivilegeEscalation(resolved);
         assertNotSelfRoleChange(id, resolved);
         rebindRoles(id, resolved);
         snapshotCache.invalidateAfterCommit();
@@ -279,6 +339,7 @@ public class UserAdminService {
         if (exist.getStatus() != null && exist.getStatus() == 0) {
             throw BizException.of("员工「%s」已停用", exist.getRealName());
         }
+        assertUserInAdminScope(exist);
         SysUser upd = new SysUser();
         upd.setId(id);
         upd.setStatus(0);
@@ -298,6 +359,97 @@ public class UserAdminService {
         // 账号被停用即权限作废，必须失效；否则同名账号重建后会命中旧快照
         snapshotCache.invalidateAfterCommit();
         log.info("删除员工 id={} account={} 操作人={}", id, exist.getAccount(), UserContext.currentUserId());
+    }
+
+    /* ------------------------------------------------------------------ 管理范围（C3） */
+
+    /**
+     * 写路径断言：目标账号必须落在当前登录人的管理范围内，否则 403。
+     *
+     * <p>判据复用 {@link AdminScopeHelper#applyClause}（与列表分页<b>同一段 SQL</b>），
+     * 而不是在 Java 里另写一套"这个部门是不是我的下级"的比较 ——
+     * 两份实现迟早会在某次修改中分叉，而分叉的表现是"列表里看得到、点进去 403"，
+     * 或者更糟的"列表里看不到、直接调接口却能改"。
+     *
+     * <p>用 selectCount 而不是"把目标查出来再在内存里比"：这条查询自带
+     * {@code deleted = 0} 与公司隔离，口径与列表天然一致。
+     */
+    private void assertUserInAdminScope(SysUser target) {
+        String clause = AdminScopeHelper.applyClause(null, UserContext.require());
+        if (clause == null) {
+            return;
+        }
+        long n = userMapper.selectCount(Wrappers.<SysUser>lambdaQuery()
+                .eq(SysUser::getId, target.getId())
+                .apply(clause));
+        if (n == 0) {
+            throw BizException.forbidden("「%s」不在您的管理范围内，无法操作", target.getRealName());
+        }
+    }
+
+    /**
+     * 写路径断言：目标<b>部门</b>必须落在当前登录人的管理范围内。
+     *
+     * <p>用于新建 / 调岗 —— 那两种场景下目标账号还不存在，没有 id 可以判范围。
+     * 少了它，一个只管本部门的管理员可以创建一个挂在总经理办公室的账号。
+     */
+    private void assertDeptInAdminScope(Long deptId) {
+        LoginUser me = UserContext.require();
+        if (AdminScopeHelper.isUnrestricted(me)) {
+            return;
+        }
+        if (deptId == null) {
+            throw BizException.forbidden("您只能在本部门及下级内管理人员，不能创建或调整「不挂部门」的账号");
+        }
+        String clause = AdminScopeHelper.deptCoveredClause(null, me);
+        long n = deptMapper.selectCount(Wrappers.<Department>lambdaQuery()
+                .eq(Department::getId, deptId)
+                .apply(clause));
+        if (n == 0) {
+            throw BizException.forbidden("目标部门不在您的管理范围内");
+        }
+    }
+
+    /**
+     * 特权提升护栏（C3）：<b>非全公司范围</b>的管理员不得把"自己没有的权限"授予他人。
+     *
+     * <p>管理范围只管"能管哪些人"，管不住"能给人什么"：一个只管本部门的管理员，
+     * 完全可以给自己部门的下属挂上 ADMIN 角色 —— 那个人随后就有了全公司权限，
+     * 而管理员本人<b>一步都没越出自己的范围</b>。范围是真生效的，提权也是真发生了。
+     *
+     * <p>判据用<b>权限点集合的包含关系</b>，不是"角色编码在不在我自己的角色里"：
+     * 后者会让一个"只管人、不审批"的 HR 管理员无法给下属配「员工」这类业务角色
+     * （他自己并不持那些业务权限点），把功能直接堵死。
+     *
+     * <p>{@code all} 范围的管理员不受此限 —— 那正是"全公司管理员"的定义。
+     * 注意判定走的是<b>管理范围</b>而不是"是不是 ADMIN 角色字符串"：
+     * 本项目全局禁止用角色字符串判权（见 {@link LoginUser} 里删掉 {@code hasRole} 的那段说明）。
+     */
+    private void assertNoPrivilegeEscalation(List<String> targetRoleCodes) {
+        if (targetRoleCodes == null || targetRoleCodes.isEmpty()) {
+            return;
+        }
+        LoginUser me = UserContext.require();
+        if (AdminScopeHelper.isUnrestricted(me)) {
+            return;
+        }
+        List<SysRole> roles = roleMapper.selectList(Wrappers.<SysRole>lambdaQuery()
+                .eq(me.getCompanyId() != null, SysRole::getCompanyId, me.getCompanyId())
+                .in(SysRole::getCode, targetRoleCodes));
+        if (roles.isEmpty()) {
+            return;
+        }
+        Set<Long> roleIds = roles.stream().map(SysRole::getId).collect(Collectors.toSet());
+        Set<String> targetPerms = rolePermissionMapper.selectList(Wrappers.<RolePermission>lambdaQuery()
+                        .in(RolePermission::getRoleId, roleIds))
+                .stream().map(RolePermission::getPermCode).collect(Collectors.toSet());
+        List<String> beyond = targetPerms.stream()
+                .filter(p -> !me.hasPerm(p))
+                .sorted()
+                .toList();
+        if (!beyond.isEmpty()) {
+            throw BizException.forbidden("不能授予自己不具备的权限：%s", String.join("、", beyond));
+        }
     }
 
     /* ------------------------------------------------------------------ 内部 */

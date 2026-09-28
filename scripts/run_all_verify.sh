@@ -45,6 +45,13 @@ baseline() {
       ' escalation=',     (SELECT COUNT(*) FROM flow_escalation WHERE deleted=0),
       ' act_task=',       (SELECT COUNT(*) FROM ACT_RU_TASK),
       ' notify=',         (SELECT COUNT(*) FROM notification WHERE deleted=0),
+      -- 分级管理员（C3）：角色管理范围行数。它只被「配/删角色」改动。
+      -- 记进基线是为了让「用例顺手改了 ADMIN 的管理范围」这类污染立刻现形
+      -- （改了不会报错、只会让管理员悄悄管不到人）。
+      -- ⚠ 本段所有注释只用中文引号「」—— 用 ASCII 双引号会**提前结束 bash 双引号串**，
+      --   表现为 mysql 收到残缺参数、打印 help 文本，而基线比对**看起来仍然通过**
+      --   （前后都是同一段 help 文本 ⇒ 字符串相等）。2026-09-28 因此造出过一次假绿。
+      ' rscope=',         (SELECT COUNT(*) FROM role_admin_scope WHERE deleted=0),
       -- 生效流程指向（易漂移、且漂移是静默的）：
       -- 后端按 document_type.flow_config_id 选流程，而「发布新版本」本来就会改这个指向
       -- （FlowConfigAdminService.updateDocTypeFlowConfig）。2026-09-23 10:20 有人发布了两版
@@ -57,12 +64,31 @@ baseline() {
     );" 2>/dev/null
 }
 
+# ------------------------------------------------------------------ 基线自检
+# 【为什么必须有】baseline() 的 SQL 一旦被写坏（最典型：注释里出现 ASCII 双引号或反引号，
+# 把 bash 双引号串提前截断），mysql 收到残缺参数时会打印 help 文本并退出 0。
+# 于是「跑前基线」与「跑后基线」都是**同一段 help 文本** ⇒ 字符串相等 ⇒
+# 打印"全部通过，且演示库基线前后一致"，**假绿**。2026-09-28 真实踩过一次。
+# 这里把"取值失败"变成一眼可见的中止，而不是让它悄悄通过。
+assert_baseline() { # assert_baseline <阶段标签> <基线值>
+  case "$2" in
+    *document=*) return 0 ;;
+    *)
+      echo "✗ 基线取值失败（$1）：输出里没有 document= —— 基线比对**不可信**，中止。" >&2
+      echo "  原始输出：$2" >&2
+      echo "  排查方向：baseline() 的 SQL 是否被写坏（注释里的 ASCII 双引号 / 反引号会截断 bash 串）。" >&2
+      exit 1
+      ;;
+  esac
+}
+
 SUITES=(
   check_perm_reachability
   verify_admin_api
   verify_attachment_api
   verify_idor_fix
   verify_endpoint_gating
+  verify_admin_scope
   verify_master_data_api
   verify_logout_revoke
   verify_seal_api
@@ -102,6 +128,7 @@ if [ "${1:-}" = "--order" ]; then
 fi
 
 BASE_BEFORE="$(baseline)"
+assert_baseline "跑前" "$BASE_BEFORE"
 echo "  跑前基线：$BASE_BEFORE"
 echo
 
@@ -123,6 +150,7 @@ done
 echo
 echo "==================== 基线比对 ===================="
 BASE_AFTER="$(baseline)"
+assert_baseline "跑后" "$BASE_AFTER"
 echo "  跑后基线：$BASE_AFTER"
 BASE_OK=1
 if [ "$BASE_BEFORE" != "$BASE_AFTER" ]; then

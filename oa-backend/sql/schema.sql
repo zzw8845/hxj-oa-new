@@ -14,7 +14,7 @@
 -- -----------------------------------------------------------------------------
 -- 域划分
 --   组织与用户域 : company department post sys_user user_post
---                  sys_role user_role sys_permission role_permission role_data_scope
+--                  sys_role user_role sys_permission role_permission role_data_scope role_admin_scope
 --   表单域       : form_template form_field_permission
 --   流程配置域   : flow_config flow_config_node flow_node_assignee document_type
 --   单据域       : document document_link attachment
@@ -215,6 +215,28 @@ CREATE TABLE IF NOT EXISTS `role_data_scope` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_role_scope` (`role_id`, `deleted`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='角色数据范围';
+
+-- 10b. 角色管理范围（能【管】哪些部门的人）----------------------------------------
+-- ⚠ 与 role_data_scope 是【两个正交维度】，不要合并、也不要互相复用：
+--     role_data_scope  = 能【看】多少数据   → 行级过滤，由 DataScopeHelper 消费
+--     role_admin_scope = 能【管】哪些人     → 用户管理的分页读／写，由 AdminScopeHelper 消费
+--   合成一张表会让「改可见范围」意外改掉「管人范围」（反之亦然）。
+-- ⚠ 也不要用 sys_role.dept_id 顶替：那个字段的语义是「角色归属部门」（给流程 dept_role
+--   指派用），拿它当管理范围会让业务角色意外获得管人能力。
+-- ⚠ 本表【刻意不含 dept_ids】：只实现 none / dept_subtree / all 三档，三档都有消费点。
+--   将来确需「指定部门集合」时再加列 —— 不预留"有列无消费点"的空转配置。
+-- ⚠ 缺省语义 = 不配就是不授权（最窄），与 role_data_scope 缺省降级 self 同一哲学：
+--   漏配不该被解释成放权。
+CREATE TABLE IF NOT EXISTS `role_admin_scope` (
+  `id`          BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `role_id`     BIGINT UNSIGNED NOT NULL                COMMENT '角色ID',
+  `scope_type`  VARCHAR(32)  NOT NULL                   COMMENT '管理范围 none=不能管任何人 / dept_subtree=本部门及下级 / all=全公司',
+  `created_at`  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updated_at`  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `deleted`     TINYINT      NOT NULL DEFAULT 0         COMMENT '逻辑删除 0正常 1删除',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_role_admin_scope` (`role_id`, `deleted`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='角色管理范围（能管哪些部门的人）';
 
 
 -- =============================================================================
