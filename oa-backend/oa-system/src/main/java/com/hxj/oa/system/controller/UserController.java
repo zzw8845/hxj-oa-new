@@ -23,12 +23,15 @@ import java.util.List;
  * <b>写接口统一挂 {@code system:user} 权限点</b>——这是本轮加固补上的缺口：
  * 在加 {@code @RequirePerm} 之前，任何能登录的账号都能调用管理接口。
  *
- * <p><b>读接口的暴露面控制（接手人必读）</b>：全开的 {@code GET /api/users} 已剥离
- * 手机号/邮箱，只返回组织架构必需字段；带个人信息的读走 {@code GET /api/users/page}
- * （挂 {@code system:user}）。本轮另外删掉了三个既无权限点、又没有任何调用方的读端点
- * （{@code GET /api/users/{id}}、{@code GET /api/users/roles}）—— 它们不是"备用接口"
- * 而是绕过门禁的旁路；单查用户请用 {@code /api/users/page?keyword=}，
- * 角色列表请用 {@code GET /api/roles}。
+ * <p><b>读接口的暴露面分级（接手人必读）—— 依据是「数据敏感度」，不是「谁在用」</b>：
+ * 全开的 {@code GET /api/users} 已剥离手机号/邮箱，只返回组织架构必需字段（姓名/工号/部门/岗位/角色），
+ * 因此可以全开给「选审批人」用；带联系方式的读走 {@code GET /api/users/page}
+ * 与 {@code GET /api/users/{id}}，两者都挂 {@code system:user}。
+ * 判据：<b>不含个人联系方式的列表 = 协作必需，可全开；含手机号/邮箱的详情 = 查看他人完整个人信息的管理动作，必须门控</b>
+ * —— 否则任何登录账号都能读到全公司的联系方式。
+ *
+ * <p>另有 {@code GET /api/users/roles}（可选角色列表）已删除：它与 {@code GET /api/roles}
+ * 语义重复，属接口面冗余；取角色列表统一走 {@code GET /api/roles}。
  */
 @RestController
 @RequestMapping("/api/users")
@@ -49,7 +52,11 @@ public class UserController {
      * <ol>
      *   <li><b>剥离个人敏感字段</b>（{@code phone}/{@code email}）—— 选人只需要
      *       姓名/工号/部门/岗位，手机号邮箱属个人信息，只在挂了权限点的
-     *       {@code /api/users/page} 里返回（见 {@code UserAdminService#stripPersonalInfo}）。</li>
+     *       {@code /api/users/page} 与 {@code /api/users/{id}} 里返回
+     *       （见 {@code UserAdminService#stripPersonalInfo}）。
+     *       ⚠ 置 null 后<b>响应里不会有这两个键</b>（全局
+     *       {@code spring.jackson.default-property-inclusion=non_null}），不是"值为 null"；
+     *       前端取 {@code row.phone} 得到的是 {@code undefined}。</li>
      *   <li>返回的组织架构信息（部门、岗位、角色）对内部系统而言是协作必需。</li>
      * </ol>
      *
@@ -82,6 +89,21 @@ public class UserController {
         LoginUser me = UserContext.require();
         Long cid = companyId == null ? me.getCompanyId() : companyId;
         return R.ok(userAdminService.pageWithDetail(cid, pageNum, pageSize, keyword));
+    }
+
+    /**
+     * 单个员工详情（含手机号 / 邮箱 / 部门 / 岗位 / 角色）。
+     *
+     * <p>与全开的 {@code GET /api/users} 分开并挂门控，是因为它<b>带个人联系方式</b>：
+     * 列表已剥离手机号/邮箱所以能全开（选人用），详情会返回完整个资，
+     * 若无权限点则任何登录账号都能遍历全公司联系方式。
+     *
+     * @param id 用户 ID
+     */
+    @GetMapping("/{id}")
+    @RequirePerm("system:user")
+    public R<UserVO> detail(@PathVariable Long id) {
+        return R.ok(userAdminService.detail(id));
     }
 
     /**

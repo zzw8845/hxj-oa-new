@@ -36,9 +36,9 @@ public class UserVO {
     /** 岗位名称，由 postId 反查得到 */
     private String postName;
 
-    /** 手机号：<b>仅 {@code GET /api/users/page}（挂 system:user）返回</b>；全开的 {@code GET /api/users} 恒为 null */
+    /** 手机号：仅 {@code GET /api/users/page} 与 {@code GET /api/users/{id}}（均挂 {@code system:user}）返回；全开的 {@code GET /api/users} <b>不返回该字段</b>（全局 Jackson {@code default-property-inclusion=non_null}，置 null 即不序列化），前端取 {@code row.phone} 得到 {@code undefined} */
     private String phone;
-    /** 邮箱：<b>仅 {@code GET /api/users/page}（挂 system:user）返回</b>；全开的 {@code GET /api/users} 恒为 null */
+    /** 邮箱：同 {@link #phone} —— 仅门控接口返回，全开的 {@code GET /api/users} 不返回该字段 */
     private String email;
 
     /** 1 在职 0 离职 */

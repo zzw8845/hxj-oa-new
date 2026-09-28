@@ -23,10 +23,11 @@ import java.util.List;
  * <p>写接口挂 {@code system:role}。权限点与数据范围拆成独立子资源，
  * 因为它们在界面上是两个动作，语义上也是两件事。
  *
- * <p><b>为什么列表读接口不挂权限点</b>：角色名是单据详情/人员列表里的展示字段
- * （把 roleCode 翻成中文），普通员工看自己的单据也要用，挂了会白打 403。
- * 因此列表返回的角色里不含权限点明细的展示用途限制由前端按 {@code can('system:role')}
- * 控制入口；本轮已删掉零调用且无权限点的 {@code GET /api/roles/{id}}。
+ * <p><b>读接口为何一开一收（依据是「数据敏感度」，不是「谁在用」）</b>：
+ * 列表（{@code GET /api/roles}）<b>不挂权限点</b> —— 角色名是单据详情/人员列表里的展示字段
+ * （把 roleCode 翻成中文），普通员工看自己的单据也要用，挂了会白打 403；
+ * 详情（{@code GET /api/roles/{id}}）<b>挂 {@code system:role}</b> —— 它暴露权限点与数据范围
+ * 配置，属管理信息，不该对普通员工开放。
  */
 @RestController
 @RequestMapping("/api/roles")
@@ -44,6 +45,20 @@ public class RoleController {
     public R<List<RoleVO>> list(@RequestParam(required = false) Long companyId) {
         Long cid = companyId == null ? UserContext.require().getCompanyId() : companyId;
         return R.ok(roleAdminService.listWithDetail(cid));
+    }
+
+    /**
+     * 单个角色详情（含已配权限点与数据范围）。
+     *
+     * <p>挂 {@code system:role} 而列表不挂：列表的用途是「把 roleCode 翻成中文名」，
+     * 详情暴露的是权限点与数据范围配置，属管理信息。
+     *
+     * @param id 角色 ID
+     */
+    @GetMapping("/{id}")
+    @RequirePerm("system:role")
+    public R<RoleVO> detail(@PathVariable Long id) {
+        return R.ok(roleAdminService.detail(id));
     }
 
     /* ------------------------------------------------------------------ 写 */

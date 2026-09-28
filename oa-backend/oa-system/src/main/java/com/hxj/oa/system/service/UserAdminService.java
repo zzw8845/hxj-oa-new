@@ -139,10 +139,12 @@ public class UserAdminService {
      *
      * <p><b>只给全开的 {@code GET /api/users} 用</b>：那个接口不挂权限点（选审批人必须人人可用），
      * 顺带把全公司手机号邮箱发出去不合适。挂了 {@code system:user} 的 {@code /api/users/page}
-     * 不剥 —— 人员管理页是管理场景，需要看联系方式。
+     * 与 {@code /api/users/{id}} 不剥 —— 都是管理场景，需要看联系方式。
      *
      * <p>注意是"置 null"而不是改 {@code assemble}：两个接口共用同一个装配方法，
      * 在装配里剥会把管理页也剥掉。
+     * ⚠ 置 null 后响应里<b>不会有 {@code phone}/{@code email} 键</b>
+     * （全局 {@code spring.jackson.default-property-inclusion=non_null}），不是"值为 null"。
      */
     private List<UserVO> stripPersonalInfo(List<UserVO> list) {
         list.forEach(v -> {
@@ -153,12 +155,11 @@ public class UserAdminService {
     }
 
     /**
-     * 单个人员详情（含部门 / 岗位 / 角色）。
+     * 单个人员详情（含手机号 / 邮箱 / 部门 / 岗位 / 角色）。
      *
-     * <p><b>注意：不再对外暴露为接口。</b>原先它对应 {@code GET /api/users/{id}}，
-     * 那个端点是零调用的无门控旁路，已删除；但本方法在类内部仍被新建/修改/调整角色
-     * 三个写操作复用（用来返回操作后的最新视图），所以保留。
-     * 前端要查单个用户，走 {@code GET /api/users/page?keyword=}。
+     * <p>对外由 {@code GET /api/users/{id}} 暴露，该端点挂 {@code system:user}；
+     * 同时被新建 / 修改 / 调整角色三个写操作复用（返回操作后的最新视图）。
+     * 与全开的 {@code GET /api/users} 不同，本方法<b>不剥离</b>手机号 / 邮箱。
      */
     public UserVO detail(Long id) {
         SysUser u = requireUser(id);

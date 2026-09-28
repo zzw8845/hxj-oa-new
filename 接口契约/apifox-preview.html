@@ -45,11 +45,11 @@ summary .cnt{color:var(--muted);font-weight:400;font-size:12px;margin-left:6px}
 不是手写的，也不是从 Apifox 导出的 —— 用它来检查注释够不够、好不好懂。</p>
 
 <div class="stats">
-  <div class="stat"><div class="n">97</div><div class="l">接口（20 个目录）</div></div>
-  <div class="stat"><div class="n">97/97</div><div class="l">接口有说明</div></div>
+  <div class="stat"><div class="n">99</div><div class="l">接口（20 个目录）</div></div>
+  <div class="stat"><div class="n">99/99</div><div class="l">接口有说明</div></div>
   <div class="stat"><div class="n">575/575</div><div class="l">模型字段有说明</div></div>
-  <div class="stat"><div class="n">48/112</div><div class="l">参数有说明</div></div>
-  <div class="stat"><div class="n">47</div><div class="l">带接口权限门控</div></div>
+  <div class="stat"><div class="n">50/114</div><div class="l">参数有说明</div></div>
+  <div class="stat"><div class="n">49</div><div class="l">带接口权限门控</div></div>
   <div class="stat"><div class="n">50</div><div class="l">带审计留痕</div></div>
 </div>
 
@@ -310,15 +310,17 @@ summary .cnt{color:var(--muted);font-weight:400;font-size:12px;margin-left:6px}
 <tr><td><span class="m put">PUT</span></td><td><code>/api/posts/{id}</code></td><td>修改岗位。</td><td><code>id</code>、<code>req</code>（无说明）</td><td><span class="tag">权限 &quot;system:dept&quot;</span> <span class="tag">写审计</span></td></tr>
 <tr><td><span class="m del">DELETE</span></td><td><code>/api/posts/{id}</code></td><td>删除岗位（逻辑删除）。<div class="desc">仍有员工在任、或仍挂在兼岗记录上时拒绝，并在 msg 里给出人数。</div></td><td><code>id</code></td><td><span class="tag">权限 &quot;system:dept&quot;</span> <span class="tag">写审计</span></td></tr>
 </tbody></table></div></details>
-<details open><summary>RoleController<span class="cnt">6 个接口</span></summary><div class="body"><table><thead><tr><th style="width:60px">方法</th><th style="width:34%">路径</th><th>接口说明（方法注释首行）</th><th style="width:20%">参数</th><th style="width:14%">门控 / 留痕</th></tr></thead><tbody>
+<details open><summary>RoleController<span class="cnt">7 个接口</span></summary><div class="body"><table><thead><tr><th style="width:60px">方法</th><th style="width:34%">路径</th><th>接口说明（方法注释首行）</th><th style="width:20%">参数</th><th style="width:14%">门控 / 留痕</th></tr></thead><tbody>
 <tr><td><span class="m get">GET</span></td><td><code>/api/roles</code></td><td>角色列表（含已配权限点与数据范围，供「配置权限」弹窗回填）。</td><td><code>companyId</code></td><td>—</td></tr>
+<tr><td><span class="m get">GET</span></td><td><code>/api/roles/{id}</code></td><td>单个角色详情（含已配权限点与数据范围）。<div class="desc">挂 `system:role} 而列表不挂：列表的用途是「把 roleCode 翻成中文名」，
+详情暴露的是权限点与数据范围配置，属管理信息。</div></td><td><code>id</code></td><td><span class="tag">权限 &quot;system:role&quot;</span></td></tr>
 <tr><td><span class="m post">POST</span></td><td><code>/api/roles</code></td><td>新建角色。角色编码在同一公司内不允许重复。</td><td><code>req</code>（无说明）</td><td><span class="tag">权限 &quot;system:role&quot;</span> <span class="tag">写审计</span></td></tr>
 <tr><td><span class="m put">PUT</span></td><td><code>/api/roles/{id}</code></td><td>修改角色。<div class="desc">⚠ 内置角色（如 ADMIN）同样可以被修改 —— 后端目前不拦，改之前请确认影响面。</div></td><td><code>id</code>、<code>req</code>（无说明）</td><td><span class="tag">权限 &quot;system:role&quot;</span> <span class="tag">写审计</span></td></tr>
 <tr><td><span class="m put">PUT</span></td><td><code>/api/roles/{id}/permissions</code></td><td>全量覆盖角色权限点（没传的会被移除，不是增量追加）</td><td><code>id</code>、<code>req</code>（无说明）</td><td><span class="tag">权限 &quot;system:role&quot;</span> <span class="tag">写审计</span></td></tr>
 <tr><td><span class="m put">PUT</span></td><td><code>/api/roles/{id}/data-scope</code></td><td>配置数据范围（行级权限）</td><td><code>id</code>、<code>req</code>（无说明）</td><td><span class="tag">权限 &quot;system:role&quot;</span> <span class="tag">写审计</span></td></tr>
 <tr><td><span class="m del">DELETE</span></td><td><code>/api/roles/{id}</code></td><td>删除角色。<div class="desc">内置角色（isBuiltin=1，如 ADMIN）受保护，不可删除。</div></td><td><code>id</code></td><td><span class="tag">权限 &quot;system:role&quot;</span> <span class="tag">写审计</span></td></tr>
 </tbody></table></div></details>
-<details open><summary>UserController<span class="cnt">6 个接口</span></summary><div class="body"><table><thead><tr><th style="width:60px">方法</th><th style="width:34%">路径</th><th>接口说明（方法注释首行）</th><th style="width:20%">参数</th><th style="width:14%">门控 / 留痕</th></tr></thead><tbody>
+<details open><summary>UserController<span class="cnt">7 个接口</span></summary><div class="body"><table><thead><tr><th style="width:60px">方法</th><th style="width:34%">路径</th><th>接口说明（方法注释首行）</th><th style="width:20%">参数</th><th style="width:14%">门控 / 留痕</th></tr></thead><tbody>
 <tr><td><span class="m get">GET</span></td><td><code>/api/users</code></td><td>当前公司用户列表（含部门名/岗位名/角色，供前端「选择审批人/被代理人」与人员管理页共用）。<div class="desc">刻意保留全量：选人下拉要在客户端对全量做模糊搜索，分页反而做不了；
 量级受公司规模天然约束（一家公司几千人是上限），不构成无界增长表。
 为什么这个读接口不挂权限点、而 `/page} 挂了：选审批人、查同事是
@@ -329,6 +331,9 @@ summary .cnt{color:var(--muted);font-weight:400;font-size:12px;margin-left:6px}
 <tr><td><span class="m get">GET</span></td><td><code>/api/users/page</code></td><td>人员管理表格的分页接口（过滤与分页都在 SQL 里完成）。<div class="desc">与 `GET /api/users} 刻意保留两份：后者给选人下拉用，**必须**全量
 （客户端要对全量做模糊搜索）；前者给表格用，必须服务端分页。合成一个接口会顾此失彼 ——
 要么下拉搜不全人，要么表格一次把全公司拉下来。</div></td><td><code>pageNum</code>、<code>pageSize</code>、<code>keyword</code>、<code>companyId</code></td><td><span class="tag">权限 &quot;system:user&quot;</span></td></tr>
+<tr><td><span class="m get">GET</span></td><td><code>/api/users/{id}</code></td><td>单个员工详情（含手机号 / 邮箱 / 部门 / 岗位 / 角色）。<div class="desc">与全开的 `GET /api/users} 分开并挂门控，是因为它带个人联系方式：
+列表已剥离手机号/邮箱所以能全开（选人用），详情会返回完整个资，
+若无权限点则任何登录账号都能遍历全公司联系方式。</div></td><td><code>id</code></td><td><span class="tag">权限 &quot;system:user&quot;</span></td></tr>
 <tr><td><span class="m post">POST</span></td><td><code>/api/users</code></td><td>新建员工。<div class="desc">姓名 / 工号 / 账号 / 密码必填（密码即初始密码，后端会置&quot;待改密&quot;标记，
 登录响应里的 `mustChangePassword} 会告诉前端是否弹强制改密框）。
 部门与岗位支持「传 ID 或传名称」：传了 ID 用 ID，只传名称按「公司 + 名称」反查。</div></td><td><code>req</code>（无说明）</td><td><span class="tag">权限 &quot;system:user&quot;</span> <span class="tag">写审计</span></td></tr>
@@ -586,8 +591,8 @@ uk_escalation_node(node_id, deleted)} 是幂等的**结构性保证**：
 <tr><td><code>deptName</code></td><td><span class="tag">String</span></td><td>部门名称，由 deptId 反查得到</td></tr>
 <tr><td><code>postId</code></td><td><span class="tag">Long</span></td><td>岗位 ID</td></tr>
 <tr><td><code>postName</code></td><td><span class="tag">String</span></td><td>岗位名称，由 postId 反查得到</td></tr>
-<tr><td><code>phone</code></td><td><span class="tag">String</span></td><td>手机号：仅 `GET /api/users/page}（挂 system:user）返回；全开的 `GET /api/users} 恒为 null</td></tr>
-<tr><td><code>email</code></td><td><span class="tag">String</span></td><td>邮箱：仅 `GET /api/users/page}（挂 system:user）返回；全开的 `GET /api/users} 恒为 null</td></tr>
+<tr><td><code>phone</code></td><td><span class="tag">String</span></td><td>手机号：仅 `GET /api/users/page} 与 `GET /api/users/{id}}（均挂 `system:user}）返回；全开的 `GET /api/users} 不返回该字段（全局 Jackson `default-property-inclusion=non_null}，置 null 即不序列化），前端取 `row.phone} 得到 `undefined}</td></tr>
+<tr><td><code>email</code></td><td><span class="tag">String</span></td><td>邮箱：同 `#phone} —— 仅门控接口返回，全开的 `GET /api/users} 不返回该字段</td></tr>
 <tr><td><code>status</code></td><td><span class="tag">Integer</span></td><td>1 在职 0 离职</td></tr>
 <tr><td><code>lastLoginAt</code></td><td><span class="tag">LocalDateTime</span></td><td>最后一次登录时间</td></tr>
 <tr><td><code>roleCodes</code></td><td><span class="tag">List&lt;String&gt;</span></td><td>已分配角色编码</td></tr>

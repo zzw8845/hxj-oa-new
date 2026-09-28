@@ -1,14 +1,14 @@
 {
   "counts": {
-    "operations": 97,
+    "operations": 99,
     "controllers": 20,
-    "ops_with_summary": 97,
-    "params_total": 112,
-    "params_documented": 48,
+    "ops_with_summary": 99,
+    "params_total": 114,
+    "params_documented": 50,
     "models": 69,
     "fields_total": 575,
     "fields_documented": 575,
-    "ops_with_perm": 47,
+    "ops_with_perm": 49,
     "ops_with_audit": 50
   },
   "risks": [
@@ -2713,7 +2713,35 @@
       "audit": "",
       "deprecated": false,
       "file": "oa-backend/oa-system/src/main/java/com/hxj/oa/system/controller/RoleController.java",
-      "line": 43
+      "line": 44
+    },
+    {
+      "controller": "RoleController",
+      "group_doc": "",
+      "method": "detail",
+      "verb": "GET",
+      "path": "/api/roles/{id}",
+      "path_tmpl": "/api/roles/{id}",
+      "summary": "单个角色详情（含已配权限点与数据范围）。",
+      "desc": "挂 `system:role} 而列表不挂：列表的用途是「把 roleCode 翻成中文名」，\n详情暴露的是权限点与数据范围配置，属管理信息。",
+      "params": [
+        {
+          "name": "id",
+          "type": "Long",
+          "kind": "path",
+          "required": null,
+          "raw": "@PathVariable Long id"
+        }
+      ],
+      "javadoc_params": {
+        "id": "角色 ID"
+      },
+      "return": "R<RoleVO>",
+      "require_perm": "\"system:role\"",
+      "audit": "",
+      "deprecated": false,
+      "file": "oa-backend/oa-system/src/main/java/com/hxj/oa/system/controller/RoleController.java",
+      "line": 58
     },
     {
       "controller": "RoleController",
@@ -2739,7 +2767,7 @@
       "audit": "module = \"permission\", action = \"createRole\"",
       "deprecated": false,
       "file": "oa-backend/oa-system/src/main/java/com/hxj/oa/system/controller/RoleController.java",
-      "line": 52
+      "line": 67
     },
     {
       "controller": "RoleController",
@@ -2774,7 +2802,7 @@
       "audit": "module = \"permission\", action = \"updateRole\"",
       "deprecated": false,
       "file": "oa-backend/oa-system/src/main/java/com/hxj/oa/system/controller/RoleController.java",
-      "line": 66
+      "line": 81
     },
     {
       "controller": "RoleController",
@@ -2807,7 +2835,7 @@
       "audit": "module = \"permission\", action = \"grantPerm\"",
       "deprecated": false,
       "file": "oa-backend/oa-system/src/main/java/com/hxj/oa/system/controller/RoleController.java",
-      "line": 74
+      "line": 89
     },
     {
       "controller": "RoleController",
@@ -2840,7 +2868,7 @@
       "audit": "module = \"permission\", action = \"dataScope\"",
       "deprecated": false,
       "file": "oa-backend/oa-system/src/main/java/com/hxj/oa/system/controller/RoleController.java",
-      "line": 82
+      "line": 97
     },
     {
       "controller": "RoleController",
@@ -2868,7 +2896,7 @@
       "audit": "module = \"permission\", action = \"deleteRole\"",
       "deprecated": false,
       "file": "oa-backend/oa-system/src/main/java/com/hxj/oa/system/controller/RoleController.java",
-      "line": 97
+      "line": 112
     },
     {
       "controller": "UserController",
@@ -2878,7 +2906,7 @@
       "path": "/api/users",
       "path_tmpl": "/api/users",
       "summary": "当前公司用户列表（含部门名/岗位名/角色，供前端「选择审批人/被代理人」与人员管理页共用）。",
-      "desc": "刻意保留全量：选人下拉要在客户端对全量做模糊搜索，分页反而做不了；\n量级受公司规模天然约束（一家公司几千人是上限），不构成无界增长表。\n为什么这个读接口不挂权限点、而 `/page} 挂了：选审批人、查同事是\n「发起单据」链路的一环，任何能登录的人都得能用；若挂 `system:user}，\n普通员工一发起单据就选不出审批人。代价是暴露面变大，因此这里做了两件事：\n- 剥离个人敏感字段（`phone}/`email}）—— 选人只需要\n      姓名/工号/部门/岗位，手机号邮箱属个人信息，只在挂了权限点的\n/api/users/page} 里返回（见 `UserAdminService#stripPersonalInfo}）。\n- 返回的组织架构信息（部门、岗位、角色）对内部系统而言是协作必需。",
+      "desc": "刻意保留全量：选人下拉要在客户端对全量做模糊搜索，分页反而做不了；\n量级受公司规模天然约束（一家公司几千人是上限），不构成无界增长表。\n为什么这个读接口不挂权限点、而 `/page} 挂了：选审批人、查同事是\n「发起单据」链路的一环，任何能登录的人都得能用；若挂 `system:user}，\n普通员工一发起单据就选不出审批人。代价是暴露面变大，因此这里做了两件事：\n- 剥离个人敏感字段（`phone}/`email}）—— 选人只需要\n      姓名/工号/部门/岗位，手机号邮箱属个人信息，只在挂了权限点的\n/api/users/page} 与 `/api/users/{id}} 里返回\n      （见 `UserAdminService#stripPersonalInfo}）。\n      ⚠ 置 null 后响应里不会有这两个键（全局\nspring.jackson.default-property-inclusion=non_null}），不是\"值为 null\"；\n      前端取 `row.phone} 得到的是 `undefined}。\n- 返回的组织架构信息（部门、岗位、角色）对内部系统而言是协作必需。",
       "params": [
         {
           "name": "companyId",
@@ -2896,7 +2924,7 @@
       "audit": "",
       "deprecated": false,
       "file": "oa-backend/oa-system/src/main/java/com/hxj/oa/system/controller/UserController.java",
-      "line": 58
+      "line": 65
     },
     {
       "controller": "UserController",
@@ -2948,7 +2976,35 @@
       "audit": "",
       "deprecated": false,
       "file": "oa-backend/oa-system/src/main/java/com/hxj/oa/system/controller/UserController.java",
-      "line": 76
+      "line": 83
+    },
+    {
+      "controller": "UserController",
+      "group_doc": "",
+      "method": "detail",
+      "verb": "GET",
+      "path": "/api/users/{id}",
+      "path_tmpl": "/api/users/{id}",
+      "summary": "单个员工详情（含手机号 / 邮箱 / 部门 / 岗位 / 角色）。",
+      "desc": "与全开的 `GET /api/users} 分开并挂门控，是因为它带个人联系方式：\n列表已剥离手机号/邮箱所以能全开（选人用），详情会返回完整个资，\n若无权限点则任何登录账号都能遍历全公司联系方式。",
+      "params": [
+        {
+          "name": "id",
+          "type": "Long",
+          "kind": "path",
+          "required": null,
+          "raw": "@PathVariable Long id"
+        }
+      ],
+      "javadoc_params": {
+        "id": "用户 ID"
+      },
+      "return": "R<UserVO>",
+      "require_perm": "\"system:user\"",
+      "audit": "",
+      "deprecated": false,
+      "file": "oa-backend/oa-system/src/main/java/com/hxj/oa/system/controller/UserController.java",
+      "line": 103
     },
     {
       "controller": "UserController",
@@ -2974,7 +3030,7 @@
       "audit": "module = \"permission\", action = \"createUser\"",
       "deprecated": false,
       "file": "oa-backend/oa-system/src/main/java/com/hxj/oa/system/controller/UserController.java",
-      "line": 94
+      "line": 116
     },
     {
       "controller": "UserController",
@@ -3009,7 +3065,7 @@
       "audit": "module = \"permission\", action = \"updateUser\"",
       "deprecated": false,
       "file": "oa-backend/oa-system/src/main/java/com/hxj/oa/system/controller/UserController.java",
-      "line": 111
+      "line": 133
     },
     {
       "controller": "UserController",
@@ -3042,7 +3098,7 @@
       "audit": "module = \"permission\", action = \"assignRoles\"",
       "deprecated": false,
       "file": "oa-backend/oa-system/src/main/java/com/hxj/oa/system/controller/UserController.java",
-      "line": 119
+      "line": 141
     },
     {
       "controller": "UserController",
@@ -3070,7 +3126,7 @@
       "audit": "module = \"permission\", action = \"deleteUser\"",
       "deprecated": false,
       "file": "oa-backend/oa-system/src/main/java/com/hxj/oa/system/controller/UserController.java",
-      "line": 131
+      "line": 153
     }
   ],
   "models": {
@@ -6134,12 +6190,12 @@
         {
           "name": "phone",
           "type": "String",
-          "comment": "手机号：仅 `GET /api/users/page}（挂 system:user）返回；全开的 `GET /api/users} 恒为 null"
+          "comment": "手机号：仅 `GET /api/users/page} 与 `GET /api/users/{id}}（均挂 `system:user}）返回；全开的 `GET /api/users} 不返回该字段（全局 Jackson `default-property-inclusion=non_null}，置 null 即不序列化），前端取 `row.phone} 得到 `undefined}"
         },
         {
           "name": "email",
           "type": "String",
-          "comment": "邮箱：仅 `GET /api/users/page}（挂 system:user）返回；全开的 `GET /api/users} 恒为 null"
+          "comment": "邮箱：同 `#phone} —— 仅门控接口返回，全开的 `GET /api/users} 不返回该字段"
         },
         {
           "name": "status",
