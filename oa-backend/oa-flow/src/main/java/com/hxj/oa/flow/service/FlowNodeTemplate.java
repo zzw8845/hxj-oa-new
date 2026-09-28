@@ -66,6 +66,8 @@ public class FlowNodeTemplate {
         private Double slaHours;
         /** 该节点是否允许加签 */
         private Boolean allowCountersign;
+        /** 该节点是否允许驳回：默认允许（true），只有流程编辑器里显式关掉才为 false */
+        private Boolean allowReject;
         /** 是否必须上传办理凭证：办理类节点（出纳付款回单、用印盖章件）默认为真 */
         private Boolean requireAttachment;
         /**
@@ -165,6 +167,8 @@ public class FlowNodeTemplate {
         t.setRuleLabel("条件分支：按条件走不同节点，本身不产生审批任务");
         t.setSlaHours(0d);
         t.setAllowCountersign(false);
+        // 条件分支不产生审批任务，谈不上驳回/加签
+        t.setAllowReject(false);
         t.setRequireAttachment(false);
         return t;
     }
@@ -240,6 +244,9 @@ public class FlowNodeTemplate {
         t.setRuleLabel(ruleLabel);
         t.setSlaHours(slaHours);
         t.setAllowCountersign(allowCountersign);
+        // 预设模板的审批/办理节点一律允许驳回（唯一例外是条件分支，见网关的构造处）：
+        // 驳回是审批的基本动作，默认关掉会让人以为系统坏了
+        t.setAllowReject(true);
         // 办理类节点（出纳付款、用印办理）几乎必然要回单或盖章件，
         // 默认强制上传凭证；审批类节点不强制，避免把普通审批卡死。
         t.setRequireAttachment(nodeType == TYPE_HANDLE);
@@ -267,6 +274,7 @@ public class FlowNodeTemplate {
         t.setRuleLabel(src.getRuleLabel());
         t.setSlaHours(src.getSlaHours());
         t.setAllowCountersign(src.getAllowCountersign());
+        t.setAllowReject(src.getAllowReject());
         t.setRequireAttachment(src.getRequireAttachment());
         if (src.getBranches() != null) {
             // 深拷一份：模板库里的常量对象绝不能被调用方改到，否则一个流程的分支会串到另一条流程上

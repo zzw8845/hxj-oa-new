@@ -41,13 +41,6 @@ public class UserService {
                 .orderByAsc(SysUser::getDeptId, SysUser::getId));
     }
 
-    public List<SysRole> listRoles(Long companyId) {
-        return roleMapper.selectList(Wrappers.<SysRole>lambdaQuery()
-                .eq(companyId != null, SysRole::getCompanyId, companyId)
-                .eq(SysRole::getStatus, 1)
-                .orderByAsc(SysRole::getId));
-    }
-
     /** 批量取用户ID → 姓名，避免 N+1 */
     public Map<Long, String> nameMap(Set<Long> userIds) {
         if (userIds == null || userIds.isEmpty()) {

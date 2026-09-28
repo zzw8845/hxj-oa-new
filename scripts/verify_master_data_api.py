@@ -192,9 +192,19 @@ check('删除有子部门的部门 → 被拦',
       st == 200 and r.get('code') != 0 and '子部门' in (r.get('msg') or ''),
       'HTTP %d / %s' % (st, (r.get('msg') or '')[:40]))
 
-busy_dept = sql_scalar("SELECT dept_id FROM sys_user WHERE deleted=0 AND dept_id IS NOT NULL LIMIT 1")
+# 夹具必须"有员工**且**无子部门"：部门删除有两条守卫（先子部门、后员工），
+# 若挑中的部门本身有子部门，删它会被子部门守卫先拦下，报的错是"还有子部门"，
+# 这条断言就会以"员工"为关键词判失败 —— 那是假红，且随 MySQL 无 ORDER BY 的
+# 返回顺序时红时绿。锁定"无子部门"的部门，才真正验到员工守卫。
+busy_dept = sql_scalar("""SELECT u.dept_id FROM sys_user u
+    WHERE u.deleted=0 AND u.dept_id IS NOT NULL
+      AND NOT EXISTS (SELECT 1 FROM department d WHERE d.parent_id = u.dept_id AND d.deleted = 0)
+    ORDER BY u.dept_id LIMIT 1""")
+if not busy_dept:
+    print('[FAIL] 夹具不成立：演示库里找不到「有员工且无子部门」的部门，本断言无法执行')
+    FAIL.append('删除有员工的部门（夹具不成立）')
 st, r = call('DELETE', '/api/depts/%s' % busy_dept, token=admin)
-check('删除有员工的部门 → 被拦',
+check('删除有员工的部门 → 被拦（员工守卫）',
       st == 200 and r.get('code') != 0 and '员工' in (r.get('msg') or ''),
       'HTTP %d / %s' % (st, (r.get('msg') or '')[:40]))
 

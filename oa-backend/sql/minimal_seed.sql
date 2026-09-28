@@ -77,7 +77,8 @@ INSERT INTO `sys_permission` (`code`,`name`,`perm_type`,`parent_code`,`sort_no`)
 ('system:form',             '表单配置',       2, 'admin:menu',      95),
 ('system:dict',             '字典管理',       2, 'admin:menu',      96),
 ('system:audit',            '审计日志',       2, 'admin:menu',      97),
-('system:docType',          '单据类型管理',   2, 'admin:menu',      98);
+('system:docType',          '单据类型管理',   2, 'admin:menu',      98),
+('system:company',          '公司信息管理',   2, 'admin:menu',      99);
 
 -- 5. ADMIN 角色绑定全部权限点
 INSERT INTO `role_permission` (`role_id`,`perm_code`)
@@ -92,7 +93,7 @@ INSERT INTO `user_role` (`user_id`,`role_id`) VALUES (1,1);
 
 -- =============================================================================
 -- 灌完后数据库状态（用于核对）
---   company=1  sys_user=1  sys_role=1  sys_permission=25  role_permission=25
+--   company=1  sys_user=1  sys_role=1  sys_permission=26  role_permission=26
 --   role_data_scope=1  user_role=1
 --   department=0  post=0  sys_dict=0  document_type=0  form_template=0
 --   flow_config=0  document=0

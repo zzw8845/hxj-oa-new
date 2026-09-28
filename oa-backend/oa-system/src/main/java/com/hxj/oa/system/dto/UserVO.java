@@ -36,9 +36,9 @@ public class UserVO {
     /** 岗位名称，由 postId 反查得到 */
     private String postName;
 
-    /** 手机号 */
+    /** 手机号：<b>仅 {@code GET /api/users/page}（挂 system:user）返回</b>；全开的 {@code GET /api/users} 恒为 null */
     private String phone;
-    /** 邮箱 */
+    /** 邮箱：<b>仅 {@code GET /api/users/page}（挂 system:user）返回</b>；全开的 {@code GET /api/users} 恒为 null */
     private String email;
 
     /** 1 在职 0 离职 */

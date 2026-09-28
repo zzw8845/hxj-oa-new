@@ -8,9 +8,7 @@ import com.hxj.oa.common.security.RequirePerm;
 import com.hxj.oa.common.security.UserContext;
 import com.hxj.oa.system.dto.UserSaveReq;
 import com.hxj.oa.system.dto.UserVO;
-import com.hxj.oa.system.entity.SysRole;
 import com.hxj.oa.system.service.UserAdminService;
-import com.hxj.oa.system.service.UserService;
 import jakarta.validation.Valid;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
@@ -24,13 +22,19 @@ import java.util.List;
  * <p>读接口对全体登录用户开放（选审批人、查同事都要用）；
  * <b>写接口统一挂 {@code system:user} 权限点</b>——这是本轮加固补上的缺口：
  * 在加 {@code @RequirePerm} 之前，任何能登录的账号都能调用管理接口。
+ *
+ * <p><b>读接口的暴露面控制（接手人必读）</b>：全开的 {@code GET /api/users} 已剥离
+ * 手机号/邮箱，只返回组织架构必需字段；带个人信息的读走 {@code GET /api/users/page}
+ * （挂 {@code system:user}）。本轮另外删掉了三个既无权限点、又没有任何调用方的读端点
+ * （{@code GET /api/users/{id}}、{@code GET /api/users/roles}）—— 它们不是"备用接口"
+ * 而是绕过门禁的旁路；单查用户请用 {@code /api/users/page?keyword=}，
+ * 角色列表请用 {@code GET /api/roles}。
  */
 @RestController
 @RequestMapping("/api/users")
 @RequiredArgsConstructor
 public class UserController {
 
-    private final UserService userService;
     private final UserAdminService userAdminService;
 
     /**
@@ -38,6 +42,16 @@ public class UserController {
      *
      * <p>刻意保留全量：选人下拉要在客户端对全量做模糊搜索，分页反而做不了；
      * 量级受公司规模天然约束（一家公司几千人是上限），不构成无界增长表。
+     *
+     * <p><b>为什么这个读接口不挂权限点、而 {@code /page} 挂了</b>：选审批人、查同事是
+     * 「发起单据」链路的一环，任何能登录的人都得能用；若挂 {@code system:user}，
+     * 普通员工一发起单据就选不出审批人。代价是暴露面变大，因此这里做了两件事：
+     * <ol>
+     *   <li><b>剥离个人敏感字段</b>（{@code phone}/{@code email}）—— 选人只需要
+     *       姓名/工号/部门/岗位，手机号邮箱属个人信息，只在挂了权限点的
+     *       {@code /api/users/page} 里返回（见 {@code UserAdminService#stripPersonalInfo}）。</li>
+     *   <li>返回的组织架构信息（部门、岗位、角色）对内部系统而言是协作必需。</li>
+     * </ol>
      *
      * @param companyId 公司 ID；不传则取当前登录人的公司
      */
@@ -69,28 +83,6 @@ public class UserController {
         Long cid = companyId == null ? me.getCompanyId() : companyId;
         return R.ok(userAdminService.pageWithDetail(cid, pageNum, pageSize, keyword));
     }
-
-    /**
-     * 人员详情（含部门 / 岗位 / 角色）。
-     *
-     * @param id 用户 ID
-     */
-    @GetMapping("/{id}")
-    public R<UserVO> get(@PathVariable Long id) {
-        return R.ok(userAdminService.detail(id));
-    }
-
-    /**
-     * 可选角色列表（「调整角色」弹窗的选项数据源）。
-     *
-     * @param companyId 公司 ID；不传则取当前登录人的公司
-     */
-    @GetMapping("/roles")
-    public R<List<SysRole>> roles(@RequestParam(required = false) Long companyId) {
-        LoginUser me = UserContext.require();
-        return R.ok(userService.listRoles(companyId == null ? me.getCompanyId() : companyId));
-    }
-
 
     /**
      * 新建员工。

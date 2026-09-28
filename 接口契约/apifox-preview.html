@@ -45,12 +45,12 @@ summary .cnt{color:var(--muted);font-weight:400;font-size:12px;margin-left:6px}
 不是手写的，也不是从 Apifox 导出的 —— 用它来检查注释够不够、好不好懂。</p>
 
 <div class="stats">
-  <div class="stat"><div class="n">98</div><div class="l">接口（19 个目录）</div></div>
-  <div class="stat"><div class="n">98/98</div><div class="l">接口有说明</div></div>
-  <div class="stat"><div class="n">580/580</div><div class="l">模型字段有说明</div></div>
-  <div class="stat"><div class="n">51/114</div><div class="l">参数有说明</div></div>
-  <div class="stat"><div class="n">46</div><div class="l">带接口权限门控</div></div>
-  <div class="stat"><div class="n">49</div><div class="l">带审计留痕</div></div>
+  <div class="stat"><div class="n">97</div><div class="l">接口（20 个目录）</div></div>
+  <div class="stat"><div class="n">97/97</div><div class="l">接口有说明</div></div>
+  <div class="stat"><div class="n">575/575</div><div class="l">模型字段有说明</div></div>
+  <div class="stat"><div class="n">48/112</div><div class="l">参数有说明</div></div>
+  <div class="stat"><div class="n">47</div><div class="l">带接口权限门控</div></div>
+  <div class="stat"><div class="n">50</div><div class="l">带审计留痕</div></div>
 </div>
 
 <h2>同步前请先确认（4 件事）</h2>
@@ -100,6 +100,7 @@ summary .cnt{color:var(--muted);font-weight:400;font-size:12px;margin-left:6px}
 <li><span class="pill">请求体/查询对象参数无说明（前端看不出这是干嘛的）</span><code>PUT /api/flows/configs/{id}/assignees 参数 List&lt;FlowConfigAdminService.NodeAssignReq&gt; req</code></li>
 <li><span class="pill">请求体/查询对象参数无说明（前端看不出这是干嘛的）</span><code>POST /api/auth/login 参数 LoginRequest req</code></li>
 <li><span class="pill">请求体/查询对象参数无说明（前端看不出这是干嘛的）</span><code>PUT /api/auth/password 参数 com.hxj.oa.system.dto.ChangePasswordReq req</code></li>
+<li><span class="pill">请求体/查询对象参数无说明（前端看不出这是干嘛的）</span><code>PUT /api/company 参数 CompanySaveReq req</code></li>
 <li><span class="pill">请求体/查询对象参数无说明（前端看不出这是干嘛的）</span><code>POST /api/depts 参数 DeptSaveReq req</code></li>
 <li><span class="pill">请求体/查询对象参数无说明（前端看不出这是干嘛的）</span><code>PUT /api/depts/{id} 参数 DeptSaveReq req</code></li>
 <li><span class="pill">请求体/查询对象参数无说明（前端看不出这是干嘛的）</span><code>POST /api/dicts 参数 DictSaveReq req</code></li>
@@ -276,6 +277,12 @@ summary .cnt{color:var(--muted);font-weight:400;font-size:12px;margin-left:6px}
 头缺失或 token 已过期时**不报错** —— 登出的语义是&quot;尽力作废&quot;，
 前端随后无论如何都会清掉本地 token。</div></td><td><code>authorization</code></td><td><span class="tag">写审计</span></td></tr>
 </tbody></table></div></details>
+<details open><summary>CompanyController<span class="cnt">2 个接口</span></summary><div class="body"><table><thead><tr><th style="width:60px">方法</th><th style="width:34%">路径</th><th>接口说明（方法注释首行）</th><th style="width:20%">参数</th><th style="width:14%">门控 / 留痕</th></tr></thead><tbody>
+<tr><td><span class="m get">GET</span></td><td><code>/api/company</code></td><td>当前登录人所属公司信息。<div class="desc">不挂权限点：登录后立刻要用（左侧 logo 显示公司简称、单据详情里的「所属公司」），
+挂了会让普通员工看到 403 或空白。返回的是公司自身信息，不含任何人员数据。</div></td><td>—</td><td>—</td></tr>
+<tr><td><span class="m put">PUT</span></td><td><code>/api/company</code></td><td>修改公司名称与简称。<div class="desc">⚠ 改的是当前登录人所属的那家公司（请求体里没有公司 ID，也就改不到别家）。
+简称留空 = 不使用简称，界面回退显示全称。</div></td><td><code>req</code>（无说明）</td><td><span class="tag">权限 &quot;system:company&quot;</span> <span class="tag">写审计</span></td></tr>
+</tbody></table></div></details>
 <details open><summary>DepartmentController<span class="cnt">5 个接口</span></summary><div class="body"><table><thead><tr><th style="width:60px">方法</th><th style="width:34%">路径</th><th>接口说明（方法注释首行）</th><th style="width:20%">参数</th><th style="width:14%">门控 / 留痕</th></tr></thead><tbody>
 <tr><td><span class="m get">GET</span></td><td><code>/api/depts/tree</code></td><td>部门树（按 parentId 组成 children 层级），组织架构图与「选部门」下拉用。</td><td><code>companyId</code></td><td>—</td></tr>
 <tr><td><span class="m get">GET</span></td><td><code>/api/depts</code></td><td>部门平铺列表（无层级结构，需要树形请用 /tree）。</td><td><code>companyId</code></td><td>—</td></tr>
@@ -303,23 +310,25 @@ summary .cnt{color:var(--muted);font-weight:400;font-size:12px;margin-left:6px}
 <tr><td><span class="m put">PUT</span></td><td><code>/api/posts/{id}</code></td><td>修改岗位。</td><td><code>id</code>、<code>req</code>（无说明）</td><td><span class="tag">权限 &quot;system:dept&quot;</span> <span class="tag">写审计</span></td></tr>
 <tr><td><span class="m del">DELETE</span></td><td><code>/api/posts/{id}</code></td><td>删除岗位（逻辑删除）。<div class="desc">仍有员工在任、或仍挂在兼岗记录上时拒绝，并在 msg 里给出人数。</div></td><td><code>id</code></td><td><span class="tag">权限 &quot;system:dept&quot;</span> <span class="tag">写审计</span></td></tr>
 </tbody></table></div></details>
-<details open><summary>RoleController<span class="cnt">7 个接口</span></summary><div class="body"><table><thead><tr><th style="width:60px">方法</th><th style="width:34%">路径</th><th>接口说明（方法注释首行）</th><th style="width:20%">参数</th><th style="width:14%">门控 / 留痕</th></tr></thead><tbody>
+<details open><summary>RoleController<span class="cnt">6 个接口</span></summary><div class="body"><table><thead><tr><th style="width:60px">方法</th><th style="width:34%">路径</th><th>接口说明（方法注释首行）</th><th style="width:20%">参数</th><th style="width:14%">门控 / 留痕</th></tr></thead><tbody>
 <tr><td><span class="m get">GET</span></td><td><code>/api/roles</code></td><td>角色列表（含已配权限点与数据范围，供「配置权限」弹窗回填）。</td><td><code>companyId</code></td><td>—</td></tr>
-<tr><td><span class="m get">GET</span></td><td><code>/api/roles/{id}</code></td><td>角色详情。</td><td><code>id</code></td><td>—</td></tr>
 <tr><td><span class="m post">POST</span></td><td><code>/api/roles</code></td><td>新建角色。角色编码在同一公司内不允许重复。</td><td><code>req</code>（无说明）</td><td><span class="tag">权限 &quot;system:role&quot;</span> <span class="tag">写审计</span></td></tr>
 <tr><td><span class="m put">PUT</span></td><td><code>/api/roles/{id}</code></td><td>修改角色。<div class="desc">⚠ 内置角色（如 ADMIN）同样可以被修改 —— 后端目前不拦，改之前请确认影响面。</div></td><td><code>id</code>、<code>req</code>（无说明）</td><td><span class="tag">权限 &quot;system:role&quot;</span> <span class="tag">写审计</span></td></tr>
 <tr><td><span class="m put">PUT</span></td><td><code>/api/roles/{id}/permissions</code></td><td>全量覆盖角色权限点（没传的会被移除，不是增量追加）</td><td><code>id</code>、<code>req</code>（无说明）</td><td><span class="tag">权限 &quot;system:role&quot;</span> <span class="tag">写审计</span></td></tr>
 <tr><td><span class="m put">PUT</span></td><td><code>/api/roles/{id}/data-scope</code></td><td>配置数据范围（行级权限）</td><td><code>id</code>、<code>req</code>（无说明）</td><td><span class="tag">权限 &quot;system:role&quot;</span> <span class="tag">写审计</span></td></tr>
 <tr><td><span class="m del">DELETE</span></td><td><code>/api/roles/{id}</code></td><td>删除角色。<div class="desc">内置角色（isBuiltin=1，如 ADMIN）受保护，不可删除。</div></td><td><code>id</code></td><td><span class="tag">权限 &quot;system:role&quot;</span> <span class="tag">写审计</span></td></tr>
 </tbody></table></div></details>
-<details open><summary>UserController<span class="cnt">8 个接口</span></summary><div class="body"><table><thead><tr><th style="width:60px">方法</th><th style="width:34%">路径</th><th>接口说明（方法注释首行）</th><th style="width:20%">参数</th><th style="width:14%">门控 / 留痕</th></tr></thead><tbody>
+<details open><summary>UserController<span class="cnt">6 个接口</span></summary><div class="body"><table><thead><tr><th style="width:60px">方法</th><th style="width:34%">路径</th><th>接口说明（方法注释首行）</th><th style="width:20%">参数</th><th style="width:14%">门控 / 留痕</th></tr></thead><tbody>
 <tr><td><span class="m get">GET</span></td><td><code>/api/users</code></td><td>当前公司用户列表（含部门名/岗位名/角色，供前端「选择审批人/被代理人」与人员管理页共用）。<div class="desc">刻意保留全量：选人下拉要在客户端对全量做模糊搜索，分页反而做不了；
-量级受公司规模天然约束（一家公司几千人是上限），不构成无界增长表。</div></td><td><code>companyId</code></td><td>—</td></tr>
+量级受公司规模天然约束（一家公司几千人是上限），不构成无界增长表。
+为什么这个读接口不挂权限点、而 `/page} 挂了：选审批人、查同事是
+「发起单据」链路的一环，任何能登录的人都得能用；若挂 `system:user}，
+普通员工一发起单据就选不出审批人。代价是暴露面变大，因此这里做了两件事：
+- 剥离个人敏感字段（`phone}/`email}）—— 选人只需要
+</div></td><td><code>companyId</code></td><td>—</td></tr>
 <tr><td><span class="m get">GET</span></td><td><code>/api/users/page</code></td><td>人员管理表格的分页接口（过滤与分页都在 SQL 里完成）。<div class="desc">与 `GET /api/users} 刻意保留两份：后者给选人下拉用，**必须**全量
 （客户端要对全量做模糊搜索）；前者给表格用，必须服务端分页。合成一个接口会顾此失彼 ——
 要么下拉搜不全人，要么表格一次把全公司拉下来。</div></td><td><code>pageNum</code>、<code>pageSize</code>、<code>keyword</code>、<code>companyId</code></td><td><span class="tag">权限 &quot;system:user&quot;</span></td></tr>
-<tr><td><span class="m get">GET</span></td><td><code>/api/users/{id}</code></td><td>人员详情（含部门 / 岗位 / 角色）。</td><td><code>id</code></td><td>—</td></tr>
-<tr><td><span class="m get">GET</span></td><td><code>/api/users/roles</code></td><td>可选角色列表（「调整角色」弹窗的选项数据源）。</td><td><code>companyId</code></td><td>—</td></tr>
 <tr><td><span class="m post">POST</span></td><td><code>/api/users</code></td><td>新建员工。<div class="desc">姓名 / 工号 / 账号 / 密码必填（密码即初始密码，后端会置&quot;待改密&quot;标记，
 登录响应里的 `mustChangePassword} 会告诉前端是否弹强制改密框）。
 部门与岗位支持「传 ID 或传名称」：传了 ID 用 ID，只传名称按「公司 + 名称」反查。</div></td><td><code>req</code>（无说明）</td><td><span class="tag">权限 &quot;system:user&quot;</span> <span class="tag">写审计</span></td></tr>
@@ -577,8 +586,8 @@ uk_escalation_node(node_id, deleted)} 是幂等的**结构性保证**：
 <tr><td><code>deptName</code></td><td><span class="tag">String</span></td><td>部门名称，由 deptId 反查得到</td></tr>
 <tr><td><code>postId</code></td><td><span class="tag">Long</span></td><td>岗位 ID</td></tr>
 <tr><td><code>postName</code></td><td><span class="tag">String</span></td><td>岗位名称，由 postId 反查得到</td></tr>
-<tr><td><code>phone</code></td><td><span class="tag">String</span></td><td>手机号</td></tr>
-<tr><td><code>email</code></td><td><span class="tag">String</span></td><td>邮箱</td></tr>
+<tr><td><code>phone</code></td><td><span class="tag">String</span></td><td>手机号：仅 `GET /api/users/page}（挂 system:user）返回；全开的 `GET /api/users} 恒为 null</td></tr>
+<tr><td><code>email</code></td><td><span class="tag">String</span></td><td>邮箱：仅 `GET /api/users/page}（挂 system:user）返回；全开的 `GET /api/users} 恒为 null</td></tr>
 <tr><td><code>status</code></td><td><span class="tag">Integer</span></td><td>1 在职 0 离职</td></tr>
 <tr><td><code>lastLoginAt</code></td><td><span class="tag">LocalDateTime</span></td><td>最后一次登录时间</td></tr>
 <tr><td><code>roleCodes</code></td><td><span class="tag">List&lt;String&gt;</span></td><td>已分配角色编码</td></tr>
@@ -619,24 +628,6 @@ uk_escalation_node(node_id, deleted)} 是幂等的**结构性保证**：
 <tr><td><code>channel</code></td><td><span class="tag">String</span></td><td>inner 站内 / mail 邮件 / sms 短信</td></tr>
 <tr><td><code>isRead</code></td><td><span class="tag">Integer</span></td><td>是否已读 1 已读 0 未读</td></tr>
 <tr><td><code>readAt</code></td><td><span class="tag">LocalDateTime</span></td><td>阅读时间；未读为 null</td></tr>
-</tbody></table></div></details>
-<details><summary>SysRole<span class="cnt">14 个字段 · 继承自 BaseEntity</summary><div class="body">
-<div class="desc">角色</div>
-<table><thead><tr><th style="width:22%">字段</th><th style="width:20%">类型</th><th>说明</th></tr></thead><tbody>
-<tr><td><code>id</code></td><td><span class="tag">Long</span></td><td>主键，数据库自增。前端做详情 / 修改 / 删除时用的就是这个 id</td></tr>
-<tr><td><code>createdAt</code></td><td><span class="tag">LocalDateTime</span></td><td>创建时间，由数据库默认值写入，前端只读</td></tr>
-<tr><td><code>updatedAt</code></td><td><span class="tag">LocalDateTime</span></td><td>最后更新时间，由数据库 ON UPDATE 维护，前端只读</td></tr>
-<tr><td><code>deleted</code></td><td><span class="tag">Integer</span></td><td>⚠ 逻辑删除标记（0 未删 / 1 已删）。查询已自动过滤，前端**忽略该字段**即可</td></tr>
-<tr><td><code>companyId</code></td><td><span class="tag">Long</span></td><td>所属公司 ID</td></tr>
-<tr><td><code>code</code></td><td><span class="tag">String</span></td><td>角色编码，如 ACCOUNTANT / DEPT_HEAD。流程指派规则按此编码解析</td></tr>
-<tr><td><code>name</code></td><td><span class="tag">String</span></td><td>角色名称，如 核算会计</td></tr>
-<tr><td><code>deptId</code></td><td><span class="tag">Long</span></td><td>归属部门 ID，可空（表示不限部门）</td></tr>
-<tr><td><code>postName</code></td><td><span class="tag">String</span></td><td>对应岗位名称（展示用）</td></tr>
-<tr><td><code>isBuiltin</code></td><td><span class="tag">Integer</span></td><td>是否内置角色 1 是 0 否；内置角色不可删</td></tr>
-<tr><td><code>status</code></td><td><span class="tag">Integer</span></td><td>状态 1 启用 0 停用</td></tr>
-<tr><td><code>remark</code></td><td><span class="tag">String</span></td><td>备注</td></tr>
-<tr><td><code>createdBy</code></td><td><span class="tag">Long</span></td><td>创建人 ID</td></tr>
-<tr><td><code>updatedBy</code></td><td><span class="tag">Long</span></td><td>最后更新人 ID</td></tr>
 </tbody></table></div></details>
 <details><summary>AttachmentVO<span class="cnt">13 个字段</summary><div class="body">
 <div class="desc">附件视图对象。
@@ -744,6 +735,22 @@ uk_escalation_node(node_id, deleted)} 是幂等的**结构性保证**：
 <tr><td><code>userAgent</code></td><td><span class="tag">String</span></td><td>客户端 User-Agent</td></tr>
 <tr><td><code>createdAt</code></td><td><span class="tag">LocalDateTime</span></td><td>操作时间</td></tr>
 </tbody></table></div></details>
+<details><summary>FlowNodeTemplate.NodeTemplate<span class="cnt">11 个字段</summary><div class="body">
+<div class="desc">节点模板：前端下拉直接用它渲染，每个候选都对应一条确定的规则</div>
+<table><thead><tr><th style="width:22%">字段</th><th style="width:20%">类型</th><th>说明</th></tr></thead><tbody>
+<tr><td><code>name</code></td><td><span class="tag">String</span></td><td>节点名称（中文，客户看到的）</td></tr>
+<tr><td><code>nodeType</code></td><td><span class="tag">Integer</span></td><td>1 审批 2 抄送 3 条件分支 4 办理 5 发起</td></tr>
+<tr><td><code>nodeTypeLabel</code></td><td><span class="tag">String</span></td><td>节点类型的中文名，前端直接展示</td></tr>
+<tr><td><code>ruleType</code></td><td><span class="tag">String</span></td><td>指派规则类型，见 rule_type 取值</td></tr>
+<tr><td><code>ruleValue</code></td><td><span class="tag">String</span></td><td>规则参数 JSON</td></tr>
+<tr><td><code>ruleLabel</code></td><td><span class="tag">String</span></td><td>规则的人话说明</td></tr>
+<tr><td><code>slaHours</code></td><td><span class="tag">Double</span></td><td>处理时限（小时）</td></tr>
+<tr><td><code>allowCountersign</code></td><td><span class="tag">Boolean</span></td><td>该节点是否允许加签</td></tr>
+<tr><td><code>allowReject</code></td><td><span class="tag">Boolean</span></td><td>该节点是否允许驳回：默认允许（true），只有流程编辑器里显式关掉才为 false</td></tr>
+<tr><td><code>requireAttachment</code></td><td><span class="tag">Boolean</span></td><td>是否必须上传办理凭证：办理类节点（出纳付款回单、用印盖章件）默认为真</td></tr>
+<tr><td><code>branches</code></td><td><span class="tag">List&lt;Branch&gt;</span></td><td>条件分支节点已解析好的分支（target 已是最终 nodeKey）。
+仅 `nodeType=3} 的节点会有值，其余节点为 null。</td></tr>
+</tbody></table></div></details>
 <details><summary>LoginUser<span class="cnt">11 个字段</summary><div class="body">
 <div class="desc">登录用户上下文（由 JWT 解析得到）。GET /api/auth/me 返回的就是它。
 ⚠ 这里是「登录那一刻」的快照：token 里装的就是下面这些字段，
@@ -793,21 +800,6 @@ uk_escalation_node(node_id, deleted)} 是幂等的**结构性保证**：
 <tr><td><code>createdBy</code></td><td><span class="tag">Long</span></td><td>创建人 ID</td></tr>
 <tr><td><code>updatedBy</code></td><td><span class="tag">Long</span></td><td>最后更新人 ID</td></tr>
 </tbody></table></div></details>
-<details><summary>FlowNodeTemplate.NodeTemplate<span class="cnt">10 个字段</summary><div class="body">
-<div class="desc">节点模板：前端下拉直接用它渲染，每个候选都对应一条确定的规则</div>
-<table><thead><tr><th style="width:22%">字段</th><th style="width:20%">类型</th><th>说明</th></tr></thead><tbody>
-<tr><td><code>name</code></td><td><span class="tag">String</span></td><td>节点名称（中文，客户看到的）</td></tr>
-<tr><td><code>nodeType</code></td><td><span class="tag">Integer</span></td><td>1 审批 2 抄送 3 条件分支 4 办理 5 发起</td></tr>
-<tr><td><code>nodeTypeLabel</code></td><td><span class="tag">String</span></td><td>节点类型的中文名，前端直接展示</td></tr>
-<tr><td><code>ruleType</code></td><td><span class="tag">String</span></td><td>指派规则类型，见 rule_type 取值</td></tr>
-<tr><td><code>ruleValue</code></td><td><span class="tag">String</span></td><td>规则参数 JSON</td></tr>
-<tr><td><code>ruleLabel</code></td><td><span class="tag">String</span></td><td>规则的人话说明</td></tr>
-<tr><td><code>slaHours</code></td><td><span class="tag">Double</span></td><td>处理时限（小时）</td></tr>
-<tr><td><code>allowCountersign</code></td><td><span class="tag">Boolean</span></td><td>该节点是否允许加签</td></tr>
-<tr><td><code>requireAttachment</code></td><td><span class="tag">Boolean</span></td><td>是否必须上传办理凭证：办理类节点（出纳付款回单、用印盖章件）默认为真</td></tr>
-<tr><td><code>branches</code></td><td><span class="tag">List&lt;Branch&gt;</span></td><td>条件分支节点已解析好的分支（target 已是最终 nodeKey）。
-仅 `nodeType=3} 的节点会有值，其余节点为 null。</td></tr>
-</tbody></table></div></details>
 <details><summary>FormTemplateDetailVO<span class="cnt">10 个字段</summary><div class="body">
 <div class="desc">表单模板详情：模板本体（schema 已解析）+ 字段级权限</div>
 <table><thead><tr><th style="width:22%">字段</th><th style="width:20%">类型</th><th>说明</th></tr></thead><tbody>
@@ -821,6 +813,27 @@ uk_escalation_node(node_id, deleted)} 是幂等的**结构性保证**：
 <tr><td><code>editable</code></td><td><span class="tag">Boolean</span></td><td>是否可编辑：只有草稿能改（生效版本要改必须新建版本，见 FormAdminService 的说明）</td></tr>
 <tr><td><code>schema</code></td><td><span class="tag">Map&lt;String,Object&gt;</span></td><td>表单 Schema：{ docType, layout, fields:[{key,type,label,...}], rules:[{when,then}] }</td></tr>
 <tr><td><code>fieldPermissions</code></td><td><span class="tag">List&lt;Map&lt;String,Object&gt;&gt;</span></td><td>字段级权限：每项含 nodeKey（* 表示全部节点）、fieldKey、visible、editable</td></tr>
+</tbody></table></div></details>
+<details><summary>NodeItem<span class="cnt">10 个字段</summary><div class="body">
+<div class="desc">一个流程节点的结构化定义（含条件分支时用 branches）</div>
+<table><thead><tr><th style="width:22%">字段</th><th style="width:20%">类型</th><th>说明</th></tr></thead><tbody>
+<tr><td><code>nodeName</code></td><td><span class="tag">String</span></td><td>节点名称，如「直属部门负责人」</td></tr>
+<tr><td><code>nodeType</code></td><td><span class="tag">Integer</span></td><td>1 审批 2 抄送 3 条件分支 4 办理 5 发起</td></tr>
+<tr><td><code>ruleType</code></td><td><span class="tag">String</span></td><td>指派规则（「谁是审批人」的唯一来源）：initiator_leader 发起人部门负责人 / dept_role 某部门某角色 / biztype_role 某业务类型某角色 / role 某角色 / user 指定人 / condition</td></tr>
+<tr><td><code>ruleValue</code></td><td><span class="tag">String</span></td><td>规则参数（JSON 字符串，含义随 ruleType 变化）</td></tr>
+<tr><td><code>signMode</code></td><td><span class="tag">Integer</span></td><td>会签模式：1 或签（一人通过即可）2 会签（需全部通过）</td></tr>
+<tr><td><code>slaHours</code></td><td><span class="tag">Double</span></td><td>处理时限（小时），用于风险预警与超时升级；留空 = 无时限</td></tr>
+<tr><td><code>allowCountersign</code></td><td><span class="tag">Boolean</span></td><td>该节点是否允许加签</td></tr>
+<tr><td><code>allowReject</code></td><td><span class="tag">Boolean</span></td><td>该节点是否允许驳回。
+留空 = 允许（与 `allowCountersign} 的默认相反，是有意的）：
+驳回是审批的基本动作，加签是附加能力。存量流程的该列为空/1，
+必须继续允许驳回，否则升级后所有流程的驳回按钮会集体消失。</td></tr>
+<tr><td><code>requireAttachment</code></td><td><span class="tag">Boolean</span></td><td>该节点办理是否必须上传凭证；留空则按节点类型推默认（办理节点为真）</td></tr>
+<tr><td><code>branches</code></td><td><span class="tag">List&lt;BranchItem&gt;</span></td><td>条件分支节点的分支定义，仅 `nodeType=3} 的节点可填。
+为什么目标用「位置号」而不是 nodeKey：nodeKey 是服务端按顺序分配的
+（`n1..nN}），客户端并不知道也不该猜；位置号就是本数组的下标 + 1，
+服务端据此翻译成最终 nodeKey。前端从库里读已有流程时，用
+「nodeKey → 行号」的映射把存量 `target} 还原成位置号，不要做算术。</td></tr>
 </tbody></table></div></details>
 <details><summary>SysDict<span class="cnt">10 个字段 · 继承自 BaseEntity</summary><div class="body">
 <div class="desc">数据字典</div>
@@ -892,23 +905,6 @@ role 指定角色 / user 指定人 / condition 条件触发</td></tr>
 <tr><td><code>ruleValue</code></td><td><span class="tag">String</span></td><td>规则参数 JSON，如 {&quot;roleCode&quot;:&quot;ACCOUNTANT&quot;,&quot;fallback&quot;:&quot;company&quot;}</td></tr>
 <tr><td><code>signMode</code></td><td><span class="tag">Integer</span></td><td>1 或签 2 会签 3 依次审批</td></tr>
 <tr><td><code>sortNo</code></td><td><span class="tag">Integer</span></td><td>同级规则排序号</td></tr>
-</tbody></table></div></details>
-<details><summary>NodeItem<span class="cnt">9 个字段</summary><div class="body">
-<div class="desc">一个流程节点的结构化定义（含条件分支时用 branches）</div>
-<table><thead><tr><th style="width:22%">字段</th><th style="width:20%">类型</th><th>说明</th></tr></thead><tbody>
-<tr><td><code>nodeName</code></td><td><span class="tag">String</span></td><td>节点名称，如「直属部门负责人」</td></tr>
-<tr><td><code>nodeType</code></td><td><span class="tag">Integer</span></td><td>1 审批 2 抄送 3 条件分支 4 办理 5 发起</td></tr>
-<tr><td><code>ruleType</code></td><td><span class="tag">String</span></td><td>指派规则（「谁是审批人」的唯一来源）：initiator_leader 发起人部门负责人 / dept_role 某部门某角色 / biztype_role 某业务类型某角色 / role 某角色 / user 指定人 / condition</td></tr>
-<tr><td><code>ruleValue</code></td><td><span class="tag">String</span></td><td>规则参数（JSON 字符串，含义随 ruleType 变化）</td></tr>
-<tr><td><code>signMode</code></td><td><span class="tag">Integer</span></td><td>会签模式：1 或签（一人通过即可）2 会签（需全部通过）</td></tr>
-<tr><td><code>slaHours</code></td><td><span class="tag">Double</span></td><td>处理时限（小时），用于风险预警与超时升级；留空 = 无时限</td></tr>
-<tr><td><code>allowCountersign</code></td><td><span class="tag">Boolean</span></td><td>该节点是否允许加签</td></tr>
-<tr><td><code>requireAttachment</code></td><td><span class="tag">Boolean</span></td><td>该节点办理是否必须上传凭证；留空则按节点类型推默认（办理节点为真）</td></tr>
-<tr><td><code>branches</code></td><td><span class="tag">List&lt;BranchItem&gt;</span></td><td>条件分支节点的分支定义，仅 `nodeType=3} 的节点可填。
-为什么目标用「位置号」而不是 nodeKey：nodeKey 是服务端按顺序分配的
-（`n1..nN}），客户端并不知道也不该猜；位置号就是本数组的下标 + 1，
-服务端据此翻译成最终 nodeKey。前端从库里读已有流程时，用
-「nodeKey → 行号」的映射把存量 `target} 还原成位置号，不要做算术。</td></tr>
 </tbody></table></div></details>
 <details><summary>RoleSaveReq<span class="cnt">9 个字段</summary><div class="body">
 <div class="desc">角色新建 / 编辑请求。字段语义同 `UserSaveReq}：ID 优先、名称兜底</div>
@@ -1064,6 +1060,17 @@ category} 是系统级枚举（DAILY/BIZ/REIMBURSE/SEAL），前端下拉只是
 <tr><td><code>noDeadline</code></td><td><span class="tag">int</span></td><td>无处理时限的进行中节点数 —— 「没有时限」本身是需要披露的风险</td></tr>
 <tr><td><code>riskTotal</code></td><td><span class="tag">int</span></td><td>超期 + 临期，前端顶部汇总用</td></tr>
 <tr><td><code>dueSoonHours</code></td><td><span class="tag">int</span></td><td>临期判定阈值（小时），前端展示「24 小时内到期」的说明文案要与它一致</td></tr>
+</tbody></table></div></details>
+<details><summary>CompanyVO<span class="cnt">5 个字段</summary><div class="body">
+<div class="desc">公司信息视图对象。
+供登录后的两处展示用：左侧 logo 的公司简称、单据详情里的「所属公司」；
+以及公司信息维护页的回填。字段刻意精简 —— 公司表里没有对用户有意义的其他信息。</div>
+<table><thead><tr><th style="width:22%">字段</th><th style="width:20%">类型</th><th>说明</th></tr></thead><tbody>
+<tr><td><code>id</code></td><td><span class="tag">Long</span></td><td>公司 ID</td></tr>
+<tr><td><code>code</code></td><td><span class="tag">String</span></td><td>公司编码（如 HXJ）：系统内部标识，用于对接外部系统时定位，一般不需要展示给用户</td></tr>
+<tr><td><code>name</code></td><td><span class="tag">String</span></td><td>公司全称，如「福建海峡金投资有限公司」</td></tr>
+<tr><td><code>shortName</code></td><td><span class="tag">String</span></td><td>公司简称，如「海峡金」—— 界面上的 logo 与列表里显示的是这个</td></tr>
+<tr><td><code>status</code></td><td><span class="tag">Integer</span></td><td>1 启用 0 停用</td></tr>
 </tbody></table></div></details>
 <details><summary>DelegationSaveReq<span class="cnt">5 个字段</summary><div class="body">
 <div class="desc">新建审批委托。**委托人固定为当前登录用户**，请求里没有 delegatorId 字段 ——
@@ -1257,6 +1264,14 @@ schema 用 `Map} 而不是字符串接收：服务端必须**结构化校验**�
 <table><thead><tr><th style="width:22%">字段</th><th style="width:20%">类型</th><th>说明</th></tr></thead><tbody>
 <tr><td><code>taskIds</code></td><td><span class="tag">List&lt;String&gt;</span></td><td>要审批的任务 ID 列表（来自 GET /api/todos 的 taskId），一次最多 50 条</td></tr>
 <tr><td><code>comment</code></td><td><span class="tag">String</span></td><td>统一审批意见（可选，会写进每条任务的审批记录）</td></tr>
+</tbody></table></div></details>
+<details><summary>CompanySaveReq<span class="cnt">2 个字段</summary><div class="body">
+<div class="desc">修改公司信息的请求体。
+只开放两个字段：名称与简称。编码（code）不开放 —— 它被用来拼流程定义 KEY 等
+内部标识，改了会牵动存量的流程与单据，不是&quot;编辑公司信息&quot;这个动作该干的事。</div>
+<table><thead><tr><th style="width:22%">字段</th><th style="width:20%">类型</th><th>说明</th></tr></thead><tbody>
+<tr><td><code>name</code></td><td><span class="tag">String</span></td><td>公司全称，必填</td></tr>
+<tr><td><code>shortName</code></td><td><span class="tag">String</span></td><td>公司简称：留空则前端回退显示全称</td></tr>
 </tbody></table></div></details>
 <details><summary>CountersignRequest<span class="cnt">2 个字段</summary><div class="body">
 <div class="desc">加签请求</div>

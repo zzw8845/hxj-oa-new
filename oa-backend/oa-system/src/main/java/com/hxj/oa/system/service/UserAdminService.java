@@ -82,7 +82,7 @@ public class UserAdminService {
                 .eq(companyId != null, SysUser::getCompanyId, companyId)
                 .orderByAsc(SysUser::getDeptId)
                 .orderByAsc(SysUser::getId));
-        return assembleAll(users, companyId);
+        return stripPersonalInfo(assembleAll(users, companyId));
     }
 
     /**
@@ -134,6 +134,32 @@ public class UserAdminService {
                 .toList();
     }
 
+    /**
+     * 剥掉个人敏感字段（手机号 / 邮箱）。
+     *
+     * <p><b>只给全开的 {@code GET /api/users} 用</b>：那个接口不挂权限点（选审批人必须人人可用），
+     * 顺带把全公司手机号邮箱发出去不合适。挂了 {@code system:user} 的 {@code /api/users/page}
+     * 不剥 —— 人员管理页是管理场景，需要看联系方式。
+     *
+     * <p>注意是"置 null"而不是改 {@code assemble}：两个接口共用同一个装配方法，
+     * 在装配里剥会把管理页也剥掉。
+     */
+    private List<UserVO> stripPersonalInfo(List<UserVO> list) {
+        list.forEach(v -> {
+            v.setPhone(null);
+            v.setEmail(null);
+        });
+        return list;
+    }
+
+    /**
+     * 单个人员详情（含部门 / 岗位 / 角色）。
+     *
+     * <p><b>注意：不再对外暴露为接口。</b>原先它对应 {@code GET /api/users/{id}}，
+     * 那个端点是零调用的无门控旁路，已删除；但本方法在类内部仍被新建/修改/调整角色
+     * 三个写操作复用（用来返回操作后的最新视图），所以保留。
+     * 前端要查单个用户，走 {@code GET /api/users/page?keyword=}。
+     */
     public UserVO detail(Long id) {
         SysUser u = requireUser(id);
         return assemble(u,

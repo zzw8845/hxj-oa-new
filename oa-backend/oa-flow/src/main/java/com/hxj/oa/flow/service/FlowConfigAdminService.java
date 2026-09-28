@@ -285,6 +285,9 @@ public class FlowConfigAdminService {
         if (item.getAllowCountersign() != null) {
             t.setAllowCountersign(item.getAllowCountersign());
         }
+        if (item.getAllowReject() != null) {
+            t.setAllowReject(item.getAllowReject());
+        }
         if (item.getRequireAttachment() != null) {
             t.setRequireAttachment(item.getRequireAttachment());
         }
@@ -486,6 +489,8 @@ public class FlowConfigAdminService {
             item.setNodeType(n.getNodeType());
             item.setSlaHours(n.getSlaHours() == null ? null : n.getSlaHours().doubleValue());
             item.setAllowCountersign(n.getAllowCountersign() != null && n.getAllowCountersign() == 1);
+            // 与 TodoService 的判定保持一致：库里为 null 视为"允许驳回"（存量数据兼容）
+            item.setAllowReject(n.getAllowReject() == null || n.getAllowReject() == 1);
             item.setRequireAttachment(n.getRequireAttachment() != null && n.getRequireAttachment() == 1);
             if (n.getNodeType() != null && n.getNodeType() == FlowNodeTemplate.TYPE_GATEWAY) {
                 item.setBranches(branchesToItems(n.getConditionExpr(), positionByKey));
@@ -524,7 +529,10 @@ public class FlowConfigAdminService {
             n.setNodeType(s.getNodeType() == null ? FlowNodeTemplate.TYPE_APPROVAL : s.getNodeType());
             n.setSeqNo(seq);
             n.setAllowCountersign(Boolean.TRUE.equals(s.getAllowCountersign()) ? 1 : 0);
-            n.setAllowReject(1);
+            // 与 allowCountersign 同构：以前这里是硬编码 1，导致"该节点能否驳回"恒为真、
+            // 前端也没有开关，配置项形同虚设。默认允许（只有显式传 false 才禁），
+            // 与 TodoService 里 null→允许 的判定一致。
+            n.setAllowReject(Boolean.FALSE.equals(s.getAllowReject()) ? 0 : 1);
             n.setSlaHours(s.getSlaHours() == null ? null : BigDecimal.valueOf(s.getSlaHours()));
             // 未显式指定时按节点类型推默认值：办理类节点（出纳/用印）默认必须上传凭证
             boolean needAttach = s.getRequireAttachment() != null

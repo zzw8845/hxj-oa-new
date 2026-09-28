@@ -1,15 +1,15 @@
 {
   "counts": {
-    "operations": 98,
-    "controllers": 19,
-    "ops_with_summary": 98,
-    "params_total": 114,
-    "params_documented": 51,
-    "models": 68,
-    "fields_total": 580,
-    "fields_documented": 580,
-    "ops_with_perm": 46,
-    "ops_with_audit": 49
+    "operations": 97,
+    "controllers": 20,
+    "ops_with_summary": 97,
+    "params_total": 112,
+    "params_documented": 48,
+    "models": 69,
+    "fields_total": 575,
+    "fields_documented": 575,
+    "ops_with_perm": 47,
+    "ops_with_audit": 50
   },
   "risks": [
     {
@@ -246,6 +246,11 @@
       "level": "P1",
       "kind": "请求体/查询对象参数无说明（前端看不出这是干嘛的）",
       "detail": "PUT /api/auth/password 参数 com.hxj.oa.system.dto.ChangePasswordReq req"
+    },
+    {
+      "level": "P1",
+      "kind": "请求体/查询对象参数无说明（前端看不出这是干嘛的）",
+      "detail": "PUT /api/company 参数 CompanySaveReq req"
     },
     {
       "level": "P1",
@@ -2224,6 +2229,50 @@
       "line": 83
     },
     {
+      "controller": "CompanyController",
+      "group_doc": "",
+      "method": "current",
+      "verb": "GET",
+      "path": "/api/company",
+      "path_tmpl": "/api/company",
+      "summary": "当前登录人所属公司信息。",
+      "desc": "不挂权限点：登录后立刻要用（左侧 logo 显示公司简称、单据详情里的「所属公司」），\n挂了会让普通员工看到 403 或空白。返回的是公司自身信息，不含任何人员数据。",
+      "params": [],
+      "javadoc_params": {},
+      "return": "R<CompanyVO>",
+      "require_perm": "",
+      "audit": "",
+      "deprecated": false,
+      "file": "oa-backend/oa-system/src/main/java/com/hxj/oa/system/controller/CompanyController.java",
+      "line": 37
+    },
+    {
+      "controller": "CompanyController",
+      "group_doc": "",
+      "method": "update",
+      "verb": "PUT",
+      "path": "/api/company",
+      "path_tmpl": "/api/company",
+      "summary": "修改公司名称与简称。",
+      "desc": "⚠ 改的是当前登录人所属的那家公司（请求体里没有公司 ID，也就改不到别家）。\n简称留空 = 不使用简称，界面回退显示全称。",
+      "params": [
+        {
+          "name": "req",
+          "type": "CompanySaveReq",
+          "kind": "body",
+          "required": null,
+          "raw": "@Valid @RequestBody CompanySaveReq req"
+        }
+      ],
+      "javadoc_params": {},
+      "return": "R<CompanyVO>",
+      "require_perm": "\"system:company\"",
+      "audit": "module = \"permission\", action = \"updateCompany\"",
+      "deprecated": false,
+      "file": "oa-backend/oa-system/src/main/java/com/hxj/oa/system/controller/CompanyController.java",
+      "line": 48
+    },
+    {
       "controller": "DepartmentController",
       "group_doc": "",
       "method": "tree",
@@ -2664,35 +2713,7 @@
       "audit": "",
       "deprecated": false,
       "file": "oa-backend/oa-system/src/main/java/com/hxj/oa/system/controller/RoleController.java",
-      "line": 38
-    },
-    {
-      "controller": "RoleController",
-      "group_doc": "",
-      "method": "detail",
-      "verb": "GET",
-      "path": "/api/roles/{id}",
-      "path_tmpl": "/api/roles/{id}",
-      "summary": "角色详情。",
-      "desc": "",
-      "params": [
-        {
-          "name": "id",
-          "type": "Long",
-          "kind": "path",
-          "required": null,
-          "raw": "@PathVariable Long id"
-        }
-      ],
-      "javadoc_params": {
-        "id": "角色 ID"
-      },
-      "return": "R<RoleVO>",
-      "require_perm": "",
-      "audit": "",
-      "deprecated": false,
-      "file": "oa-backend/oa-system/src/main/java/com/hxj/oa/system/controller/RoleController.java",
-      "line": 49
+      "line": 43
     },
     {
       "controller": "RoleController",
@@ -2718,7 +2739,7 @@
       "audit": "module = \"permission\", action = \"createRole\"",
       "deprecated": false,
       "file": "oa-backend/oa-system/src/main/java/com/hxj/oa/system/controller/RoleController.java",
-      "line": 57
+      "line": 52
     },
     {
       "controller": "RoleController",
@@ -2753,7 +2774,7 @@
       "audit": "module = \"permission\", action = \"updateRole\"",
       "deprecated": false,
       "file": "oa-backend/oa-system/src/main/java/com/hxj/oa/system/controller/RoleController.java",
-      "line": 71
+      "line": 66
     },
     {
       "controller": "RoleController",
@@ -2786,7 +2807,7 @@
       "audit": "module = \"permission\", action = \"grantPerm\"",
       "deprecated": false,
       "file": "oa-backend/oa-system/src/main/java/com/hxj/oa/system/controller/RoleController.java",
-      "line": 79
+      "line": 74
     },
     {
       "controller": "RoleController",
@@ -2819,7 +2840,7 @@
       "audit": "module = \"permission\", action = \"dataScope\"",
       "deprecated": false,
       "file": "oa-backend/oa-system/src/main/java/com/hxj/oa/system/controller/RoleController.java",
-      "line": 87
+      "line": 82
     },
     {
       "controller": "RoleController",
@@ -2847,7 +2868,7 @@
       "audit": "module = \"permission\", action = \"deleteRole\"",
       "deprecated": false,
       "file": "oa-backend/oa-system/src/main/java/com/hxj/oa/system/controller/RoleController.java",
-      "line": 102
+      "line": 97
     },
     {
       "controller": "UserController",
@@ -2857,7 +2878,7 @@
       "path": "/api/users",
       "path_tmpl": "/api/users",
       "summary": "当前公司用户列表（含部门名/岗位名/角色，供前端「选择审批人/被代理人」与人员管理页共用）。",
-      "desc": "刻意保留全量：选人下拉要在客户端对全量做模糊搜索，分页反而做不了；\n量级受公司规模天然约束（一家公司几千人是上限），不构成无界增长表。",
+      "desc": "刻意保留全量：选人下拉要在客户端对全量做模糊搜索，分页反而做不了；\n量级受公司规模天然约束（一家公司几千人是上限），不构成无界增长表。\n为什么这个读接口不挂权限点、而 `/page} 挂了：选审批人、查同事是\n「发起单据」链路的一环，任何能登录的人都得能用；若挂 `system:user}，\n普通员工一发起单据就选不出审批人。代价是暴露面变大，因此这里做了两件事：\n- 剥离个人敏感字段（`phone}/`email}）—— 选人只需要\n      姓名/工号/部门/岗位，手机号邮箱属个人信息，只在挂了权限点的\n/api/users/page} 里返回（见 `UserAdminService#stripPersonalInfo}）。\n- 返回的组织架构信息（部门、岗位、角色）对内部系统而言是协作必需。",
       "params": [
         {
           "name": "companyId",
@@ -2875,7 +2896,7 @@
       "audit": "",
       "deprecated": false,
       "file": "oa-backend/oa-system/src/main/java/com/hxj/oa/system/controller/UserController.java",
-      "line": 44
+      "line": 58
     },
     {
       "controller": "UserController",
@@ -2927,63 +2948,7 @@
       "audit": "",
       "deprecated": false,
       "file": "oa-backend/oa-system/src/main/java/com/hxj/oa/system/controller/UserController.java",
-      "line": 62
-    },
-    {
-      "controller": "UserController",
-      "group_doc": "",
-      "method": "get",
-      "verb": "GET",
-      "path": "/api/users/{id}",
-      "path_tmpl": "/api/users/{id}",
-      "summary": "人员详情（含部门 / 岗位 / 角色）。",
-      "desc": "",
-      "params": [
-        {
-          "name": "id",
-          "type": "Long",
-          "kind": "path",
-          "required": null,
-          "raw": "@PathVariable Long id"
-        }
-      ],
-      "javadoc_params": {
-        "id": "用户 ID"
-      },
-      "return": "R<UserVO>",
-      "require_perm": "",
-      "audit": "",
-      "deprecated": false,
-      "file": "oa-backend/oa-system/src/main/java/com/hxj/oa/system/controller/UserController.java",
-      "line": 78
-    },
-    {
-      "controller": "UserController",
-      "group_doc": "",
-      "method": "roles",
-      "verb": "GET",
-      "path": "/api/users/roles",
-      "path_tmpl": "/api/users/roles",
-      "summary": "可选角色列表（「调整角色」弹窗的选项数据源）。",
-      "desc": "",
-      "params": [
-        {
-          "name": "companyId",
-          "type": "Long",
-          "kind": "query",
-          "required": false,
-          "raw": "@RequestParam(required = false) Long companyId"
-        }
-      ],
-      "javadoc_params": {
-        "companyId": "公司 ID；不传则取当前登录人的公司"
-      },
-      "return": "R<List<SysRole>>",
-      "require_perm": "",
-      "audit": "",
-      "deprecated": false,
-      "file": "oa-backend/oa-system/src/main/java/com/hxj/oa/system/controller/UserController.java",
-      "line": 88
+      "line": 76
     },
     {
       "controller": "UserController",
@@ -3009,7 +2974,7 @@
       "audit": "module = \"permission\", action = \"createUser\"",
       "deprecated": false,
       "file": "oa-backend/oa-system/src/main/java/com/hxj/oa/system/controller/UserController.java",
-      "line": 102
+      "line": 94
     },
     {
       "controller": "UserController",
@@ -3044,7 +3009,7 @@
       "audit": "module = \"permission\", action = \"updateUser\"",
       "deprecated": false,
       "file": "oa-backend/oa-system/src/main/java/com/hxj/oa/system/controller/UserController.java",
-      "line": 119
+      "line": 111
     },
     {
       "controller": "UserController",
@@ -3077,7 +3042,7 @@
       "audit": "module = \"permission\", action = \"assignRoles\"",
       "deprecated": false,
       "file": "oa-backend/oa-system/src/main/java/com/hxj/oa/system/controller/UserController.java",
-      "line": 127
+      "line": 119
     },
     {
       "controller": "UserController",
@@ -3105,7 +3070,7 @@
       "audit": "module = \"permission\", action = \"deleteUser\"",
       "deprecated": false,
       "file": "oa-backend/oa-system/src/main/java/com/hxj/oa/system/controller/UserController.java",
-      "line": 139
+      "line": 131
     }
   ],
   "models": {
@@ -5219,6 +5184,11 @@
           "comment": "该节点是否允许加签"
         },
         {
+          "name": "allowReject",
+          "type": "Boolean",
+          "comment": "该节点是否允许驳回：默认允许（true），只有流程编辑器里显式关掉才为 false"
+        },
+        {
           "name": "requireAttachment",
           "type": "Boolean",
           "comment": "是否必须上传办理凭证：办理类节点（出纳付款回单、用印盖章件）默认为真"
@@ -5513,6 +5483,59 @@
       ],
       "resolved": true,
       "super": "BaseEntity"
+    },
+    "CompanyVO": {
+      "fqn": "com.hxj.oa.system.dto.CompanyVO",
+      "kind": "class",
+      "javadoc": "公司信息视图对象。\n供登录后的两处展示用：左侧 logo 的公司简称、单据详情里的「所属公司」；\n以及公司信息维护页的回填。字段刻意精简 —— 公司表里没有对用户有意义的其他信息。",
+      "fields": [
+        {
+          "name": "id",
+          "type": "Long",
+          "comment": "公司 ID"
+        },
+        {
+          "name": "code",
+          "type": "String",
+          "comment": "公司编码（如 HXJ）：系统内部标识，用于对接外部系统时定位，一般不需要展示给用户"
+        },
+        {
+          "name": "name",
+          "type": "String",
+          "comment": "公司全称，如「福建海峡金投资有限公司」"
+        },
+        {
+          "name": "shortName",
+          "type": "String",
+          "comment": "公司简称，如「海峡金」—— 界面上的 logo 与列表里显示的是这个"
+        },
+        {
+          "name": "status",
+          "type": "Integer",
+          "comment": "1 启用 0 停用"
+        }
+      ],
+      "resolved": true,
+      "super": null
+    },
+    "CompanySaveReq": {
+      "fqn": "com.hxj.oa.system.dto.CompanySaveReq",
+      "kind": "class",
+      "javadoc": "修改公司信息的请求体。\n只开放两个字段：名称与简称。编码（code）不开放 —— 它被用来拼流程定义 KEY 等\n内部标识，改了会牵动存量的流程与单据，不是\"编辑公司信息\"这个动作该干的事。",
+      "fields": [
+        {
+          "name": "name",
+          "type": "String",
+          "comment": "公司全称，必填"
+        },
+        {
+          "name": "shortName",
+          "type": "String",
+          "comment": "公司简称：留空则前端回退显示全称"
+        }
+      ],
+      "resolved": true,
+      "super": null
     },
     "DeptTreeVO": {
       "fqn": "com.hxj.oa.system.dto.DeptTreeVO",
@@ -6111,12 +6134,12 @@
         {
           "name": "phone",
           "type": "String",
-          "comment": "手机号"
+          "comment": "手机号：仅 `GET /api/users/page}（挂 system:user）返回；全开的 `GET /api/users} 恒为 null"
         },
         {
           "name": "email",
           "type": "String",
-          "comment": "邮箱"
+          "comment": "邮箱：仅 `GET /api/users/page}（挂 system:user）返回；全开的 `GET /api/users} 恒为 null"
         },
         {
           "name": "status",
@@ -6141,85 +6164,6 @@
       ],
       "resolved": true,
       "super": null
-    },
-    "SysRole": {
-      "fqn": "com.hxj.oa.system.entity.SysRole",
-      "kind": "class",
-      "javadoc": "角色",
-      "fields": [
-        {
-          "name": "id",
-          "type": "Long",
-          "comment": "主键，数据库自增。前端做详情 / 修改 / 删除时用的就是这个 id"
-        },
-        {
-          "name": "createdAt",
-          "type": "LocalDateTime",
-          "comment": "创建时间，由数据库默认值写入，前端只读"
-        },
-        {
-          "name": "updatedAt",
-          "type": "LocalDateTime",
-          "comment": "最后更新时间，由数据库 ON UPDATE 维护，前端只读"
-        },
-        {
-          "name": "deleted",
-          "type": "Integer",
-          "comment": "⚠ 逻辑删除标记（0 未删 / 1 已删）。查询已自动过滤，前端**忽略该字段**即可"
-        },
-        {
-          "name": "companyId",
-          "type": "Long",
-          "comment": "所属公司 ID"
-        },
-        {
-          "name": "code",
-          "type": "String",
-          "comment": "角色编码，如 ACCOUNTANT / DEPT_HEAD。流程指派规则按此编码解析"
-        },
-        {
-          "name": "name",
-          "type": "String",
-          "comment": "角色名称，如 核算会计"
-        },
-        {
-          "name": "deptId",
-          "type": "Long",
-          "comment": "归属部门 ID，可空（表示不限部门）"
-        },
-        {
-          "name": "postName",
-          "type": "String",
-          "comment": "对应岗位名称（展示用）"
-        },
-        {
-          "name": "isBuiltin",
-          "type": "Integer",
-          "comment": "是否内置角色 1 是 0 否；内置角色不可删"
-        },
-        {
-          "name": "status",
-          "type": "Integer",
-          "comment": "状态 1 启用 0 停用"
-        },
-        {
-          "name": "remark",
-          "type": "String",
-          "comment": "备注"
-        },
-        {
-          "name": "createdBy",
-          "type": "Long",
-          "comment": "创建人 ID"
-        },
-        {
-          "name": "updatedBy",
-          "type": "Long",
-          "comment": "最后更新人 ID"
-        }
-      ],
-      "resolved": true,
-      "super": "BaseEntity"
     },
     "UserSaveReq": {
       "fqn": "com.hxj.oa.system.dto.UserSaveReq",
@@ -6636,6 +6580,11 @@
           "name": "allowCountersign",
           "type": "Boolean",
           "comment": "该节点是否允许加签"
+        },
+        {
+          "name": "allowReject",
+          "type": "Boolean",
+          "comment": "该节点是否允许驳回。\n留空 = 允许（与 `allowCountersign} 的默认相反，是有意的）：\n驳回是审批的基本动作，加签是附加能力。存量流程的该列为空/1，\n必须继续允许驳回，否则升级后所有流程的驳回按钮会集体消失。"
         },
         {
           "name": "requireAttachment",

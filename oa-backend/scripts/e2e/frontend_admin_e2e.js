@@ -10,6 +10,13 @@
  */
 const puppeteer = require('puppeteer-core');
 const { execSync } = require('child_process');
+/* 截图目录必须先建：此前这里直接写死 /tmp/proto/shots2/xxx.png，而 /tmp 会被系统清理 ——
+   目录一旦不在，套件就在"断言跑到一半"时抛 ENOENT 中断，末行报的是
+   "[断言未跑完，本次结果无效]"。这个报错跟被测功能毫无关系，却会让人误以为后端坏了。
+   截图是套件自己的产物，目录就该由套件自己保证存在。 */
+const fs = require('fs');
+const SHOTS = '/tmp/proto/shots2';
+fs.mkdirSync(SHOTS, { recursive: true });
 /** 最小 SQL 助手：本套件不需要 hygiene，但用印闭环的收尾必须能物理还原状态 */
 function sql(stmt) {
   return execSync('mysql -uroot haixiajin_oa -N -B -e ' + JSON.stringify(stmt),
@@ -23,7 +30,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
    为什么要把这个数写死在代码里：本项目出过一次「假绿灯」—— 上游某条断言依赖的接口被回退后
    抛错中断，导致其后 16 条断言（含整条审计留痕链路）**从未执行**，而末行照样打印
    "85/85 通过"。有了这个数，任何"少跑了"都会立刻变成红灯，而不是无声无息。 */
-const EXPECTED_TOTAL = 88;
+const EXPECTED_TOTAL = 90;
 
 const results = [];
 function check(name, ok, extra) {
@@ -238,7 +245,7 @@ async function closeDialogs(page) {
   const pickedRole = await pickSelect(page, '分配角色', '普通员工');
   check('  角色下拉选项来自后端', !!pickedRole, '选中：' + pickedRole);
 
-  await page.screenshot({ path: '/tmp/proto/shots2/admin-person.png' });
+  await page.screenshot({ path: SHOTS + '/admin-person.png' });
 
   console.log('\n=== 3. 走一次完整的新增员工（UI → 落库） ===');
   const stamp = String(Date.now()).slice(-6);
@@ -338,7 +345,7 @@ async function closeDialogs(page) {
     (roleNodes.find(t => t.includes('对应成员：')) || '(无)').slice(0, 110));
   check('角色节点显示权限点中文名', roleNodes.some(t => /查看|审批|管理|发起|提交|上传/.test(t)),
     (roleNodes[0] || '').slice(0, 110));
-  await page.screenshot({ path: '/tmp/proto/shots2/admin-role.png' });
+  await page.screenshot({ path: SHOTS + '/admin-role.png' });
 
   // 新增角色弹窗：权限勾选项必须来自后端权限点目录（GET /api/permissions）
   await clickButtonByText(page, '新增角色');
@@ -497,7 +504,7 @@ async function closeDialogs(page) {
   check('新增时说明了为什么多出一个承接节点',
     /承接节点/.test(afterAdd.msg || ''), (afterAdd.msg || '').slice(0, 90));
 
-  await page.screenshot({ path: '/tmp/proto/shots2/admin-flow.png' });
+  await page.screenshot({ path: SHOTS + '/admin-flow.png' });
 
   /* ---- 节点指派界面（本次新增：接现成的 PUT /configs/{id}/assignees） ----
      只打开看渲染，**不保存** —— 改审批人的写路径由 verify_flow_assignee_admin 覆盖
@@ -739,11 +746,27 @@ async function closeDialogs(page) {
     tabs: [...document.querySelectorAll('.el-tabs__item')].map(t => t.textContent.trim()),
     treeNodes: [...document.querySelectorAll('.el-tree .el-tree-node__content')].length
   }));
-  check('「主数据」页可进入（含 部门/岗位/数据字典/单据类型 四个 tab）',
-    mdHead.h2 === '主数据' && mdHead.tabs.length === 4 && mdHead.tabs.includes('单据类型'), 'tabs=' + mdHead.tabs.join('/'));
+  check('「主数据」页可进入（含 部门/岗位/数据字典/单据类型/公司信息 五个 tab）',
+    mdHead.h2 === '主数据' && mdHead.tabs.length === 5 && mdHead.tabs.includes('单据类型')
+      && mdHead.tabs.includes('公司信息'), 'tabs=' + mdHead.tabs.join('/'));
   check('★ 部门树渲染出真实节点', mdHead.treeNodes > 0, '节点数=' + mdHead.treeNodes);
   check('主数据页有「新增一级部门」入口（admin 有 system:dept）',
     await page.evaluate(() => [...document.querySelectorAll('.el-main button')].some(b => b.textContent.includes('新增一级部门'))), '');
+
+  /* ---- 公司信息 tab（2026-09-28 新增）：断言读的是**后端真值**（GET /api/company），
+     不是模板占位。只验"tab 在不在"会漏掉"接口没接上、框里是空的"这一类问题。 ---- */
+  await page.evaluate(() => {
+    const t = [...document.querySelectorAll('.el-tabs__item')].find(x => x.textContent.includes('公司信息'));
+    if (t) t.click();
+  });
+  await sleep(900);
+  const companyTab = await page.evaluate(() => ({
+    vals: [...document.querySelectorAll('.el-main input')].map(i => i.value).filter(Boolean),
+    hasSave: [...document.querySelectorAll('.el-main button')].some(b => b.textContent.trim() === '保存')
+  }));
+  check('★ 主数据「公司信息」回填的是后端真值（GET /api/company，非硬编码）',
+    companyTab.vals.some(v => v.indexOf('海峡金') >= 0), 'vals=' + JSON.stringify(companyTab.vals));
+  check('主数据「公司信息」有保存入口（admin 有 system:company）', companyTab.hasSave, '');
 
   await page.evaluate(() => {
     const t = [...document.querySelectorAll('.el-tabs__item')].find(x => x.textContent.includes('岗位'));

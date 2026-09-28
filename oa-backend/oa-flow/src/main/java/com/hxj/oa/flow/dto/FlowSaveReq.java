@@ -55,6 +55,14 @@ public class FlowSaveReq {
         private Double slaHours;
         /** 该节点是否允许加签 */
         private Boolean allowCountersign;
+        /**
+         * 该节点是否允许驳回。
+         *
+         * <p>留空 = 允许（与 {@code allowCountersign} 的默认相反，<b>是有意的</b>）：
+         * 驳回是审批的基本动作，加签是附加能力。存量流程的该列为空/1，
+         * 必须继续允许驳回，否则升级后所有流程的驳回按钮会集体消失。
+         */
+        private Boolean allowReject;
         /** 该节点办理是否必须上传凭证；留空则按节点类型推默认（办理节点为真） */
         private Boolean requireAttachment;
         /**

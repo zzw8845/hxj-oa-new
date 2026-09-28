@@ -50,9 +50,14 @@ if [ -z "$NODE" ] || ! "$NODE" --version >/dev/null 2>&1; then
 fi
 echo "使用 node：${NODE}（$("$NODE" --version)）"
 
+# 截图产物目录：/tmp 会被系统清理，而若干套件会把截图写到这里。
+# 目录不在时套件会在跑到一半抛 ENOENT 中断（末行显示"[断言未跑完，本次结果无效]"），
+# 那是环境问题，却长得像功能故障 —— 这里统一先建好。
+mkdir -p /tmp/proto/shots2
+
 # 套件:预期断言数 —— 改动套件时这里必须同步改，否则下面的核对会失败（故意的）
 SUITES="
-frontend_admin_e2e:88
+frontend_admin_e2e:90
 frontend_attachment_e2e:56
 frontend_dashboard_e2e:46
 frontend_final_gaps_e2e:65
