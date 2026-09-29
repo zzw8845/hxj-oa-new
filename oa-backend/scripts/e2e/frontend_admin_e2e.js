@@ -30,7 +30,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
    为什么要把这个数写死在代码里：本项目出过一次「假绿灯」—— 上游某条断言依赖的接口被回退后
    抛错中断，导致其后 16 条断言（含整条审计留痕链路）**从未执行**，而末行照样打印
    "85/85 通过"。有了这个数，任何"少跑了"都会立刻变成红灯，而不是无声无息。 */
-const EXPECTED_TOTAL = 97;
+const EXPECTED_TOTAL = 102;
 
 const results = [];
 function check(name, ok, extra) {
@@ -121,6 +121,30 @@ async function closeDialogs(page) {
   });
   await sleep(700);
   return n;
+}
+
+/* 顶栏「切换登录身份」下拉切账号。为什么必须走它而不是只清 token：
+   switchAccount 内部是 doLogout（作废服务端 token）+ 重新 login —— 拿到的是
+   **新签发的 JWT**。改了角色权限后不重新登录就是旧快照（硬约束 2），
+   所以「临时授权 → 切 linjl」这条链必须真登录一次，快照里才有新权限。 */
+async function switchTopAccount(page, namePrefix) {
+  const opened = await page.evaluate(() => {
+    const sel = document.querySelector('.top-actions .el-select');
+    if (!sel) return false;
+    const w = sel.querySelector('.el-select__wrapper') || sel;
+    w.click();
+    return true;
+  });
+  if (!opened) return null;
+  await sleep(800);
+  const picked = await page.evaluate((pre) => {
+    const opts = [...document.querySelectorAll('.el-select-dropdown__item')].filter(o => o.offsetParent !== null);
+    const o = opts.find(x => x.textContent.trim().indexOf(pre) === 0);
+    if (o) { o.click(); return o.textContent.trim(); }
+    return null;
+  }, namePrefix);
+  await sleep(4200);   // switchAccount = 登出 + 登录 + afterLogin 全量拉数据
+  return picked;
 }
 
 (async () => {
@@ -599,7 +623,12 @@ async function closeDialogs(page) {
   check('节点指派弹窗按节点列出规则编辑器', asgDlg.open && asgDlg.blocks >= 3, JSON.stringify(asgDlg));
   await closeDialogs(page);
 
-  console.log('\n=== 6. 用印台账与归还闭环（后端 seal_apply/seal_record 的可视化验证） ===');
+  console.log('\n=== 6. 用印台账与归还闭环（C4/D8 后：admin 无权 → 临时授权 DEPT_HEAD → linjl 跑闭环） ===');
+  /* C4/D8 出口 B（2026-09-28）把 document:approve:seal 从 ADMIN 摘除后，本段验证两件事：
+     ① **权限守卫**：admin 打开台账页 → 前端根本不发 /api/seals（守卫在 refreshSeals 里，
+        无权不白打必然 403 的请求）—— 这本身就是"ADMIN 转纯管理账号"的 UI 证据；
+     ② **闭环功能**：用印的登记/归还闭环不能因为没有持权账号就失去 UI 覆盖 ——
+        按 verify_seal_api.py 的夹具模式临时授权 DEPT_HEAD，切 linjl（登录时权限快照生效）跑闭环，收尾撤销。 */
   await page.reload({ waitUntil: 'networkidle2' });
   await sleep(2600);
   const sealMenuHit = await page.evaluate(() => {
@@ -617,9 +646,31 @@ async function closeDialogs(page) {
   });
   check('  页面标题为「用印台账」', sealTitle === '用印台账', sealTitle);
 
-  const sealCalls = apiCalls.filter(u => u.indexOf('/api/seals') >= 0);
-  check('  台账数据来自服务端接口 /api/seals（不是前端造的假数据）',
-    sealCalls.length >= 1, '命中 ' + sealCalls.length + ' 次');
+  const adminSealCalls = apiCalls.filter(u => u.indexOf('/api/seals') >= 0);
+  check('★ admin 已无用印权：台账接口不被请求（前端守卫生效，不白打 403）',
+    adminSealCalls.length === 0, '命中 ' + adminSealCalls.length + ' 次');
+  const adminSealRows = await page.$$eval('.el-main .el-table__body tbody tr', els => els.length).catch(() => -1);
+  check('★ admin 无权时台账为空（守卫置空，不是造的假数据）', adminSealRows === 0, '行数=' + adminSealRows);
+
+  /* ---- 临时授权夹具（与 verify_seal_api.py 同一模式）：DEPT_HEAD ← document:approve:seal ----
+     先预清理（防上次异常中断遗留），再注入；操作人 linjl 是 DEPT_HEAD，
+     登录时后端把权限快照进 JWT —— 所以授权必须发生在 linjl 登录**之前**。 */
+  const SEAL_PERM = 'document:approve:seal';
+  sql("DELETE rp FROM role_permission rp JOIN sys_role r ON r.id=rp.role_id WHERE r.code='DEPT_HEAD' AND rp.perm_code='" + SEAL_PERM + "'");
+  sql("INSERT INTO role_permission (role_id, perm_code) SELECT id, '" + SEAL_PERM + "' FROM sys_role WHERE code='DEPT_HEAD' AND deleted=0");
+  check('临时授权已注入（DEPT_HEAD ← document:approve:seal）',
+    sql("SELECT COUNT(*) FROM role_permission rp JOIN sys_role r ON r.id=rp.role_id WHERE r.code='DEPT_HEAD' AND rp.perm_code='" + SEAL_PERM + "' AND rp.deleted=0") === '1');
+
+  const pickedLin = await switchTopAccount(page, '林经理');
+  const whoLin = await page.$eval('.topbar .who', e => e.textContent.trim()).catch(() => '');
+  check('已切换为 linjl（重新登录，权限快照生效）',
+    !!pickedLin && whoLin.indexOf('林') >= 0, pickedLin + ' / ' + whoLin);
+
+  await clickMenu(page, '用印台账');
+  await sleep(2200);
+  const linSealCalls = apiCalls.filter(u => u.indexOf('/api/seals') >= 0);
+  check('linjl 台账数据来自服务端接口 /api/seals（不是前端造的假数据）',
+    linSealCalls.length >= 1, '命中 ' + linSealCalls.length + ' 次');
 
   /**
    * 按按钮文案找台账行。
@@ -686,14 +737,22 @@ async function closeDialogs(page) {
 
   /* 收尾：**重置全部**而不是只还原刚操作的那一条。
      只还原一条的话，上一次异常中断留下的脏数据会一直躺在库里，
-     把下一次的断言带偏（实测踩过一次）。演示基线就是"全部待用印、无动作记录"。 */
+     把下一次的断言带偏（实测踩过一次）。演示基线就是"全部待用印、无动作记录"。
+     同时撤销临时授权（精确到 DEPT_HEAD × seal 权限点这一条，不碰别的配置），
+     并**切回 admin** —— 第 7 段的委托/主数据断言是管理端视角。 */
   sql("DELETE FROM seal_record");
   sql("UPDATE seal_apply SET return_status=0, seal_time=NULL, return_at=NULL");
-  check('收尾：台账全部还原为「待用印」、seal_record 清空（E2E 不留残渣）',
+  sql("DELETE rp FROM role_permission rp JOIN sys_role r ON r.id=rp.role_id WHERE r.code='DEPT_HEAD' AND rp.perm_code='" + SEAL_PERM + "'");
+  check('收尾：台账还原 + 临时授权已撤销（演示库不留数据/配置残渣）',
     sql('SELECT COUNT(*) FROM seal_record') === '0'
-    && sql('SELECT COUNT(*) FROM seal_apply WHERE return_status<>0') === '0',
+    && sql('SELECT COUNT(*) FROM seal_apply WHERE return_status<>0') === '0'
+    && sql("SELECT COUNT(*) FROM role_permission rp JOIN sys_role r ON r.id=rp.role_id WHERE r.code='DEPT_HEAD' AND rp.perm_code='" + SEAL_PERM + "' AND rp.deleted=0") === '0',
     'record=' + sql('SELECT COUNT(*) FROM seal_record')
-    + ' 非待用印=' + sql('SELECT COUNT(*) FROM seal_apply WHERE return_status<>0'));
+    + ' 非待用印=' + sql('SELECT COUNT(*) FROM seal_apply WHERE return_status<>0')
+    + ' 授权残留=' + sql("SELECT COUNT(*) FROM role_permission rp JOIN sys_role r ON r.id=rp.role_id WHERE r.code='DEPT_HEAD' AND rp.perm_code='" + SEAL_PERM + "' AND rp.deleted=0"));
+
+  const pickedAdmin = await switchTopAccount(page, '系统管理员');
+  check('已切回 admin（第 7 段继续管理端视角）', !!pickedAdmin, pickedAdmin || '(切换失败)');
 
   console.log('\n=== 7. 委托 / 批量审批 / 超时升级 的可视化操作 ===');
   await page.reload({ waitUntil: 'networkidle2' });

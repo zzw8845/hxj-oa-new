@@ -252,10 +252,11 @@ st, r = call('POST', '/api/todos/approve', token=admin_tk,
              body={'taskId': task_id, 'action': 'approve', 'comment': 'E2E 越权探针'})
 code = r.get('code')
 msg = r.get('msg') or ''
-check('7. ★ admin 用**自己的 token** 代批别人的任务 → 业务码非 0（被拒）',
-      st == 200 and code != 0, 'HTTP %s / code=%s / msg=%s' % (st, code, msg))
-check('8. ★ 拒绝理由来自「不是该节点的处理人」，**不是**权限点缺失（admin 有 document:approve）',
-      '处理人' in msg, 'msg=%s' % msg)
+check('7. ★ admin 用**自己的 token** 代批别人的任务 → 被拒（HTTP 403 或业务码非 0）',
+      st in (200, 403) and code != 0, 'HTTP %s / code=%s / msg=%s' % (st, code, msg))
+check('8. ★ 拒绝发生在权限门控层：admin 已不持 document:approve（C4 后比「不是该节点的处理人」'
+      '更早的一层 —— 连审批接口的门都进不去，谈不到绕过指派校验）',
+      'document:approve' in msg, 'msg=%s' % msg)
 
 check('9. 拒绝后：运行时任务仍在该节点（没有被静默吃掉）',
       scalar("SELECT COUNT(*) FROM ACT_RU_TASK WHERE ID_='%s'" % task_id) == '1',
@@ -284,17 +285,14 @@ print('=' * 72)
 
 st, r = call('POST', '/api/todos/batch-approve', token=admin_tk,
              body={'taskIds': [task_id], 'comment': 'E2E 越权探针'})
-d = r.get('data') or {}
-check('13. ★ 批量通过路径同样收口（succeeded=0 / failed=1）',
-      st == 200 and r.get('code') == 0 and d.get('succeeded') == 0 and d.get('failed') == 1,
-      'succeeded=%s failed=%s items=%s' % (d.get('succeeded'), d.get('failed'),
-                                           [(i.get('ok'), (i.get('message') or '')[:24])
-                                            for i in (d.get('items') or [])]))
+check('13. ★ 批量通过路径同样收口（C4 后 admin 不持 document:approve，整单在权限门控层被拒）',
+      st == 403 and r.get('code') != 0,
+      'HTTP %s / code=%s / msg=%s' % (st, r.get('code'), r.get('msg')))
 
 st, r = call('POST', '/api/todos/countersign', token=admin_tk,
              body={'taskId': task_id, 'userId': ADMIN_ID})
-check('14. ★ 加签路径同样收口（走到同一个 assertAssignee）',
-      st == 200 and r.get('code') != 0, 'HTTP %s / code=%s / msg=%s' % (st, r.get('code'), r.get('msg')))
+check('14. ★ 加签路径同样收口（同在权限门控层被拒，走不到 assertAssignee）',
+      st == 403 and r.get('code') != 0, 'HTTP %s / code=%s / msg=%s' % (st, r.get('code'), r.get('msg')))
 check('15. 加签被拒后：候选人池没有被改动',
       scalar("SELECT COUNT(*) FROM ACT_RU_IDENTITYLINK WHERE TASK_ID_='%s'" % task_id) == links_before,
       '%s → %s' % (links_before, scalar("SELECT COUNT(*) FROM ACT_RU_IDENTITYLINK WHERE TASK_ID_='%s'" % task_id)))

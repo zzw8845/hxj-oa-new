@@ -160,6 +160,16 @@ if handler is None:
     handler = next((v for k, v in accounts.items() if k != admin_id and v['scope'] == 'COMPANY'), None)
 handler_id = next((k for k, v in accounts.items() if v is handler), None)
 
+# 发起人：C4（2026-09-28）后 admin 不再持 document:create，发单/改草稿/提交都会被
+# DocumentController 的 @RequirePerm 拦下（实测 403），夹具单据必须由业务账号发起。
+# 选 DEPT_HEAD：持 document:create；范围不是 SELF（不会与下面的越权账号撞车）；
+# 也不是办理人（办理人选的是 CASHIER）。
+creator = next((v for k, v in accounts.items()
+                if k != admin_id and 'DEPT_HEAD' in (v.get('roles') or [])
+                and v.get('scope') != 'SELF'), None)
+creator_id = next((k for k, v in accounts.items() if v is creator), None)
+creator_token = (creator or {}).get('token')
+
 outsider_token = (outsider or {}).get('token')
 handler_token = (handler or {}).get('token')
 print('      越权测试账号：%s（范围 %s，角色 %s）' % (
@@ -168,6 +178,8 @@ print('      办理节点处理人：%s（范围 %s，角色 %s，id=%s）' % (
     (handler or {}).get('account'), (handler or {}).get('scope'), (handler or {}).get('roles'), handler_id))
 check('两类测试账号就位（越权=SELF，办理=COMPANY 且非发起人）',
       outsider_token is not None and handler_token is not None)
+check('发起账号就位（DEPT_HEAD 业务账号 —— C4 后 admin 不能再发单）',
+      creator_token is not None, (creator or {}).get('account'))
 
 # 预清理：上一次运行若中途失败会留下残留，这里一并扫掉，保证脚本可重复执行
 _left = sql_scalar("SELECT id FROM document_type WHERE code='%s'" % TMP_CODE)
@@ -264,7 +276,7 @@ FORM = {'title': '附件验证单', 'amount': 100, 'payType': 'CASH',
 
 doc_id = None
 if tmp_id:
-    st, r = call('POST', '/api/documents', token=admin, body={
+    st, r = call('POST', '/api/documents', token=creator_token, body={
         'docTypeId': int(tmp_id), 'formData': FORM, 'title': FORM['title'],
         'amount': FORM['amount'], 'reason': FORM['reason']})
     if st == 200 and r.get('code') == 0:
@@ -278,8 +290,9 @@ print('二、上传 / 列表 / 下载 / 预览')
 print('=' * 74)
 
 att = None
+txt_att = None   # 防御：夹具单据没建成时，第五节引用它不应 NameError（实测踩过一次）
 if doc_id:
-    st, r = upload('/api/attachments', admin,
+    st, r = upload('/api/attachments', creator_token,
                    {'documentId': doc_id, 'bizType': 'apply'}, '凭证样本.png', PNG, 'image/png')
     att = r.get('data') if st == 200 and r.get('code') == 0 else None
     check('上传附件', att is not None, 'HTTP %d / %s' % (st, r.get('msg', '')))
@@ -298,17 +311,17 @@ if doc_id:
         check('  文件真的落盘（数据库键 → 磁盘文件）', os.path.isfile(disk),
               '%s（%d 字节）' % (key, os.path.getsize(disk) if os.path.isfile(disk) else -1))
 
-    st, r = call('GET', '/api/attachments?documentId=%s' % doc_id, token=admin)
+    st, r = call('GET', '/api/attachments?documentId=%s' % doc_id, token=creator_token)
     lst = r.get('data') or []
     check('附件列表', st == 200 and len(lst) == 1, '共 %d 个' % len(lst))
 
-    st, r = call('GET', '/api/documents/%s' % doc_id, token=admin)
+    st, r = call('GET', '/api/documents/%s' % doc_id, token=creator_token)
     detail_atts = ((r.get('data') or {}).get('attachments')) or []
     check('单据详情内联带出附件', len(detail_atts) == 1 and detail_atts[0].get('fileName') == '凭证样本.png',
           str([a.get('fileName') for a in detail_atts]))
 
 if att:
-    st, body, hd = fetch_raw('/api/attachments/%s/download' % att['id'], admin)
+    st, body, hd = fetch_raw('/api/attachments/%s/download' % att['id'], creator_token)
     check('下载内容与上传字节一致', st == 200 and body == PNG,
           'HTTP %d / %d 字节 / %s' % (st, len(body), hd.get('Content-Type')))
     check('下载响应头做了防嗅探与落盘处理',
@@ -321,21 +334,21 @@ if att:
     check('  中文文件名用 RFC 5987 编码（不出现乱码直出）',
           "filename*=UTF-8''" in (hd.get('Content-Disposition') or ''))
 
-    st, body, hd = fetch_raw('/api/attachments/%s/preview' % att['id'], admin)
+    st, body, hd = fetch_raw('/api/attachments/%s/preview' % att['id'], creator_token)
     check('图片可在线预览', st == 200 and (hd.get('Content-Type') or '').startswith('image/png'),
           'HTTP %d / %s' % (st, hd.get('Content-Type')))
 
 # 非图片类型的预览必须被拒绝（否则 SVG/HTML 之类会被浏览器当页面渲染）
 if doc_id:
-    st, r = upload('/api/attachments', admin,
+    st, r = upload('/api/attachments', creator_token,
                    {'documentId': doc_id, 'bizType': 'apply'}, '说明.txt', '纯文本'.encode('utf-8'), 'text/plain')
     txt_att = r.get('data') if st == 200 and r.get('code') == 0 else None
     check('上传 txt（白名单内）成功', txt_att is not None, r.get('msg', ''))
     if txt_att:
-        st2, body2, hd2 = fetch_raw('/api/attachments/%s/preview' % txt_att['id'], admin)
+        st2, body2, hd2 = fetch_raw('/api/attachments/%s/preview' % txt_att['id'], creator_token)
         check('  txt 预览被拒绝（只允许图片/PDF 内联）', st2 == 200 and b'code' in body2[:60],
               'HTTP %d / %s' % (st2, body2[:80]))
-        check('  但可以正常下载', fetch_raw('/api/attachments/%s/download' % txt_att['id'], admin)[0] == 200)
+        check('  但可以正常下载', fetch_raw('/api/attachments/%s/download' % txt_att['id'], creator_token)[0] == 200)
 
 # --------------------------------------------------------------------- 三、输入校验
 print()
@@ -344,26 +357,26 @@ print('三、输入校验：不该进来的必须被拦')
 print('=' * 74)
 
 if doc_id:
-    st, r = upload('/api/attachments', admin,
+    st, r = upload('/api/attachments', creator_token,
                    {'documentId': doc_id, 'bizType': 'apply'}, '木马.exe', b'MZ\x90\x00', 'application/octet-stream')
     check('非白名单扩展名 .exe 被拒绝', st == 200 and r.get('code') != 0, r.get('msg', ''))
 
-    st, r = upload('/api/attachments', admin,
+    st, r = upload('/api/attachments', creator_token,
                    {'documentId': doc_id, 'bizType': 'apply'}, '无扩展名', b'data', 'application/octet-stream')
     check('无扩展名文件被拒绝', st == 200 and r.get('code') != 0, r.get('msg', ''))
 
     big = b'\x00' * (21 * 1024 * 1024)
-    st, r = upload('/api/attachments', admin,
+    st, r = upload('/api/attachments', creator_token,
                    {'documentId': doc_id, 'bizType': 'apply'}, '超大.pdf', big, 'application/pdf')
     check('超过 20MB 被拒绝，且给出可读原因（不是「服务异常」）',
           r.get('code') not in (0, None) and ('上限' in (r.get('msg') or '')),
           'HTTP %d / %s' % (st, r.get('msg', '')))
 
-    st, r = upload('/api/attachments', admin,
+    st, r = upload('/api/attachments', creator_token,
                    {'documentId': doc_id, 'bizType': 'apply'}, '空.png', b'', 'image/png')
     check('空文件被拒绝', st == 200 and r.get('code') != 0, r.get('msg', ''))
 
-    st, r = upload('/api/attachments', admin,
+    st, r = upload('/api/attachments', creator_token,
                    {'documentId': doc_id, 'bizType': 'bogus'}, 'a.png', PNG, 'image/png')
     check('未知业务类型被拒绝', st == 200 and r.get('code') != 0, r.get('msg', ''))
 
@@ -401,7 +414,7 @@ sql("INSERT INTO attachment (company_id, document_id, biz_type, file_name, file_
     "uploader_id, uploader_name, deleted) VALUES (1, %s, 'apply', '穿越.txt', "
     "'../../../../../../etc/passwd', 100, %s, '越权测试', 0)" % (doc_id or 1, admin_id))
 evil_id = sql_scalar("SELECT id FROM attachment WHERE file_name='穿越.txt' ORDER BY id DESC LIMIT 1")
-st, body, _ = fetch_raw('/api/attachments/%s/download' % evil_id, admin)
+st, body, _ = fetch_raw('/api/attachments/%s/download' % evil_id, creator_token)
 is_passwd = b'root:' in body
 check('存储键含 ../../ 的脏数据被拦下（无任意文件读取）',
       not is_passwd, 'HTTP %d，响应是否包含 /etc/passwd 内容=%s' % (st, is_passwd))
@@ -414,7 +427,7 @@ print('五、删除规则：草稿可删，提交后属于留痕不可删')
 print('=' * 74)
 
 if txt_att:
-    st, r = call('DELETE', '/api/attachments/%s' % txt_att['id'], token=admin)
+    st, r = call('DELETE', '/api/attachments/%s' % txt_att['id'], token=creator_token)
     check('本人删除草稿附件', st == 200 and r.get('code') == 0, r.get('msg', ''))
     check('  记录已移除', not sql_scalar("SELECT id FROM attachment WHERE id=%s "
                                      "AND deleted=0" % txt_att['id']))
@@ -432,7 +445,7 @@ print('=' * 74)
 task_id = None
 node_key = None
 if doc_id and tmp_flow and handler_token:
-    st, r = call('POST', '/api/documents/%s/submit' % doc_id, token=admin)
+    st, r = call('POST', '/api/documents/%s/submit' % doc_id, token=creator_token)
     check('提交临时单据（任务落到出纳的办理节点）', st == 200 and r.get('code') == 0, r.get('msg', ''))
     if st == 200 and r.get('code') == 0:
         node_key = r['data'].get('currentNodeKey')
@@ -479,10 +492,10 @@ if task_id:
 
 # 办结后不允许再追加附件
 if doc_id:
-    st, r = call('GET', '/api/documents/%s' % doc_id, token=admin)
+    st, r = call('GET', '/api/documents/%s' % doc_id, token=creator_token)
     final_status = ((r.get('data') or {}).get('document') or {}).get('status')
     if final_status in (3, 6):
-        st, r = upload('/api/attachments', admin,
+        st, r = upload('/api/attachments', creator_token,
                        {'documentId': doc_id, 'bizType': 'apply'}, '事后补.png', PNG, 'image/png')
         check('办结后追加附件被拒绝', r.get('code') not in (0, None), r.get('msg', ''))
     else:

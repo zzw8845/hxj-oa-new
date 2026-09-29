@@ -102,9 +102,19 @@ INSERT INTO `sys_permission` (`code`,`name`,`perm_type`,`parent_code`,`sort_no`)
 ('system:company',          '公司信息管理',   2, 'admin:menu',      99),
 ('flow:intervene:transfer', '转办（流程干预）', 2, 'admin:menu',     100);
 
--- 5. ADMIN 角色绑定全部权限点
+-- 5. ADMIN 角色绑定权限点 —— **系统层 + 只读**，不含业务动作（C4/D8 出口 B，2026-09-28）
+--    管理员是纯管理账号：不发起、不审批任何单据（P3：审批决定权永不给管理员）。
+--    摘掉 8 个业务动作：document:create / approve / approve:leader|accountant|cashier|seal /
+--    countersign / supplement。保留：document:menu / view:* / export —— 只读与导出，
+--    管理员排查问题时**看得见**单据，但动不了它。
+--    ⚠ 与 DocumentController 的 @RequirePerm("document:create") 门控是一对：
+--    只摘配置不补门控 = 账面收权（权限点拦不住请求）；只补门控不摘配置 = 账面合规。
 INSERT INTO `role_permission` (`role_id`,`perm_code`)
-SELECT 1, `code` FROM `sys_permission` WHERE `deleted` = 0;
+SELECT 1, `code` FROM `sys_permission`
+WHERE `deleted` = 0
+  AND `code` NOT IN ('document:create','document:approve','document:approve:leader',
+                     'document:approve:accountant','document:approve:cashier',
+                     'document:approve:seal','document:countersign','document:supplement');
 
 -- 5b. AUDIT_ADMIN 只绑两个点：审计日志 + 它的父菜单
 --     为什么连 admin:menu 一起给 —— 它是**菜单分组点**（perm_type=1，后端 0 引用），
@@ -142,9 +152,9 @@ INSERT INTO `user_role` (`user_id`,`role_id`) VALUES (1,1);
 
 -- =============================================================================
 -- 灌完后数据库状态（用于核对）
---   company=1  sys_user=1  sys_role=2  sys_permission=27  role_permission=29
+--   company=1  sys_user=1  sys_role=2  sys_permission=27  role_permission=21
 --   role_data_scope=2  role_admin_scope=2  user_role=1
---   （role_permission = 27 全量给 ADMIN + 2 给 AUDIT_ADMIN）
+--   （role_permission = 19 给 ADMIN（系统层+只读，见第 5 段）+ 2 给 AUDIT_ADMIN）
 --   department=0  post=0  sys_dict=0  document_type=0  form_template=0
 --   flow_config=0  document=0
 -- =============================================================================

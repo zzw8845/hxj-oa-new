@@ -29,18 +29,19 @@ import java.util.List;
 /**
  * 单据：发起、提交、查询、撤回、台账导出。
  *
- * <p><b>门控现状（2026-09-28 补）</b>：<b>只给读路径挂了门控</b> ——
- * 详情 / 列表 / 统计用 {@code document:view:*}（OR），导出用 {@code document:export}。
+ * <p><b>门控现状（2026-09-28 补，C4/D8 出口 B 落地后）</b>：
+ * 读路径 —— 详情 / 列表 / 统计用 {@code document:view:*}（OR），导出用 {@code document:export}；
+ * 写路径 —— <b>发起三件套（创建 / 改草稿 / 提交）挂 {@code document:create}</b>；
+ * 撤回不走权限点 —— 它拦的是「是不是本人发起的」，属行级归属校验，
+ * 用权限点表达反而会把它降级成角色判断。
  *
- * <p>写路径<b>刻意不挂</b>，理由是它们要拦的不是「角色」而是「归属」：
- * 保存草稿 / 更新 / 提交走 {@code requireOwnEditable}、撤回判定 {@code applicantId}，
- * 这属于行级归属校验，用权限点表达反而会把它降级成角色判断。
- *
- * <p>⚠ <b>建单 {@code POST} 单独说</b>：给它补 {@code document:create} 是<b>真收权</b>
- * ——现网只有 ADMIN / DEPT_HEAD / EMPLOYEE 持有该点，业务审批角色（GM / 财务总监 / 会计 /
- * 出纳 / 内控）都没有，补上去出纳当场发不了单。所以它必须与「谁能发起单据」这个
- * 产品决策一起定，不能顺手补。同理 {@code /types}（单据类型清单）服务于「发起单据」对话框，
- * 归到同一决策里。
+ * <p><b>为什么建单的门控拖到今天才补</b>：它是<b>真收权</b> —— 业务审批角色
+ * （GM / 财务总监 / 会计 / 出纳 / 内控）都不持有 {@code document:create}，补上去他们当场
+ * 发不了单。所以它必须与「谁能发起单据」这个产品决策一起定，不能顺手补。
+ * <b>该决策已于 2026-09-28 由用户拍板（C4/D8 出口 B）</b>：发单是业务动作，只归持单角色
+ * （DEPT_HEAD / EMPLOYEE），管理员是纯管理账号、不参与业务 —— 本门控即该决策的执行。
+ * {@code /types}（单据类型清单）保持不挂：它同时服务于列表的类型名渲染，
+ * 挂上会把"看单据的人"一并拦掉，且它是只读、无越权面。
  */
 @RestController
 @RequestMapping("/api/documents")
@@ -63,22 +64,32 @@ public class DocumentController {
         return R.ok(docTypeAdminService.listEnabled(companyId));
     }
 
-    /** 保存草稿 */
+    /**
+     * 保存草稿。
+     *
+     * <p>2026-09-28 补门控：此前 {@code document:create} 是"有声明无引用"的空转控制，
+     * 任何能登录的人都能发单。当年不补是因为它与「谁能发起单据」这个产品决策绑在一起；
+     * 该决策已定（C4/D8 出口 B）：发单是业务动作，只归持单角色（DEPT_HEAD / EMPLOYEE），
+     * 管理员是纯管理账号、不参与业务 —— 现在补上，正是执行这个决策。
+     */
     @PostMapping
+    @RequirePerm("document:create")
     @Audit(module = "document", action = "createDraft")
     public R<Document> create(@Valid @RequestBody DocumentCreateRequest req) {
         return R.ok(documentService.createDraft(req, UserContext.require()), "草稿已保存");
     }
 
-    /** 更新草稿 */
+    /** 更新草稿。与创建同权：改的是自己没提交的草稿，能发起的人才谈得上改 */
     @PutMapping("/{id}")
+    @RequirePerm("document:create")
     @Audit(module = "document", action = "updateDraft")
     public R<Document> update(@PathVariable Long id, @RequestBody DocumentCreateRequest req) {
         return R.ok(documentService.updateDraft(id, req, UserContext.require()), "已保存");
     }
 
-    /** 提交审批 */
+    /** 提交审批。与创建同权：提交是"发起"这件事的后半步 */
     @PostMapping("/{id}/submit")
+    @RequirePerm("document:create")
     @Audit(module = "document", action = "submit")
     public R<Document> submit(@PathVariable Long id) {
         return R.ok(documentService.submit(id, UserContext.require()), "已提交审批");

@@ -47,11 +47,12 @@ B = 'http://127.0.0.1:8080'
 DB = 'haixiajin_oa'
 
 # 演示库格局（实查）：
-#   dept 4「资金结算部」负责人 = 5 zhaocs，且在编人员只有他本人
-#     ⇒ zhaocs 自己发单 ⇒ 首审批节点 n2 的 initiator_leader 解析出他自己 ⇒ **自审**
-#   dept 8「业务一部」负责人 = 7 linjl，huangxm(9) 是该部门普通成员
-#     ⇒ huangxm 发单 ⇒ n2 解析出 linjl ⇒ **非自审**（对照组）
-SELF_ACCOUNT = 'zhaocs'      # 自审用例：申请人 = 本部门负责人
+#   dept 8「业务一部」负责人 = 7 linjl
+#     ⇒ linjl 自己发单 ⇒ 首审批节点 n2 的 initiator_leader 解析出他自己 ⇒ **自审**
+#     ⇒ huangxm(9)（同部门普通成员）发单 ⇒ n2 解析出 linjl ⇒ **非自审**（对照组）
+#   ⚠ C4（2026-09-28）后自审申请人从 zhaocs 换成 linjl：出纳不持 document:create，
+#     发单会被 DocumentController 的新门控拦下（403）；"申请人=本部门负责人"这个前提不变。
+SELF_ACCOUNT = 'linjl'       # 自审用例：申请人 = 本部门负责人（且持发单权）
 CTRL_ACCOUNT = 'huangxm'     # 对照用例：申请人 ≠ 本部门负责人
 FIRST_NODE = 'n2'            # V4 的首个审批节点「直属部门负责人」
 EXPECTED_TOTAL = 14
@@ -176,13 +177,13 @@ self_tk = login(SELF_ACCOUNT)
 ctrl_tk = login(CTRL_ACCOUNT)
 check('1. 两个账号登录成功（自审方 %s / 对照方 %s）' % (SELF_ACCOUNT, CTRL_ACCOUNT),
       bool(self_tk and ctrl_tk))
-check('2. 夹具前提成立：%s 是其部门的负责人（zhaocs 是 dept 4 负责人）' % SELF_ACCOUNT,
+check('2. 夹具前提成立：%s 是其部门的负责人（linjl 是 dept 8 负责人）' % SELF_ACCOUNT,
       scalar('SELECT leader_id FROM department WHERE id='
              "(SELECT dept_id FROM sys_user WHERE account='%s')" % SELF_ACCOUNT)
       == scalar("SELECT id FROM sys_user WHERE account='%s'" % SELF_ACCOUNT),
-      'dept4 负责人=%s zhaocs=%s'
-      % (scalar('SELECT leader_id FROM department WHERE id=4'),
-         scalar("SELECT id FROM sys_user WHERE account='zhaocs'")))
+      'dept8 负责人=%s linjl=%s'
+      % (scalar('SELECT leader_id FROM department WHERE id=8'),
+         scalar("SELECT id FROM sys_user WHERE account='linjl'")))
 check('3. 对照前提成立：%s 不是其部门负责人（dept 8 负责人是 linjl）' % CTRL_ACCOUNT,
       scalar('SELECT leader_id FROM department WHERE id='
              "(SELECT dept_id FROM sys_user WHERE account='%s')" % CTRL_ACCOUNT)

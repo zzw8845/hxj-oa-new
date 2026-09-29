@@ -26,7 +26,7 @@ os.environ['NO_PROXY'] = os.environ['no_proxy']
 B = 'http://127.0.0.1:8080'
 DB = 'haixiajin_oa'
 
-EXPECTED_TOTAL = 30
+EXPECTED_TOTAL = 32
 
 PASS, FAIL = [], []
 created_draft_id = None
@@ -82,6 +82,26 @@ print('=' * 72)
 admin = login('admin')
 check('admin 登录成功', bool(admin))
 
+# ---------------------------------------------------------------- 〇、临时授权
+# C4（2026-09-28）后 document:approve:seal 已从 ADMIN 摘除，归属由用户在界面上自行分配
+# （没人持有 = 用印功能暂时无人可办 —— 那是配置待定，不是缺陷）。
+# 本套件**自建夹具**：把该权限点临时授予 DEPT_HEAD（用印节点的历史承办人 zhouzh 所在角色，
+# 操作人用 linjl），跑完**只撤本次加的这一个权限点**，还原精确到行。
+SEAL_PERM = 'document:approve:seal'
+GRANT_ROLE = 'DEPT_HEAD'
+OPERATOR_ACCOUNT = 'linjl'   # DEPT_HEAD，同时持 document:create（第二节的负例草稿要靠它建）
+_pre = scalar("SELECT COUNT(*) FROM role_permission rp JOIN sys_role r ON r.id=rp.role_id "
+              "WHERE r.code='%s' AND rp.perm_code='%s' AND rp.deleted=0" % (GRANT_ROLE, SEAL_PERM))
+if _pre and int(_pre) > 0:
+    print('! 预清理：发现上次运行遗留的临时授权（%s ← %s），先撤掉再重做' % (GRANT_ROLE, SEAL_PERM))
+    sql("DELETE rp FROM role_permission rp JOIN sys_role r ON r.id=rp.role_id "
+        "WHERE r.code='%s' AND rp.perm_code='%s'" % (GRANT_ROLE, SEAL_PERM))
+sql("INSERT INTO role_permission (role_id, perm_code) "
+    "SELECT id, '%s' FROM sys_role WHERE code='%s' AND deleted=0" % (SEAL_PERM, GRANT_ROLE))
+operator = login(OPERATOR_ACCOUNT)
+check('用印操作人 %s 登录成功（DEPT_HEAD 已临时持 %s）' % (OPERATOR_ACCOUNT, SEAL_PERM),
+      bool(operator))
+
 # 选一张已通过（status=3）的 SEAL 单做闭环
 seal_doc = scalar("SELECT id FROM document WHERE deleted=0 AND business_category='SEAL' "
                   "AND status=3 ORDER BY id LIMIT 1")
@@ -99,8 +119,8 @@ print()
 print('=' * 72)
 print('一、权限：没有 document:approve:seal 的账号一律 403')
 print('=' * 72)
-weak = login('linjl')
-check('弱权限账号 linjl 登录成功（用于越权验证）', bool(weak))
+weak = login('huangxm')
+check('弱权限账号 huangxm 登录成功（EMPLOYEE，不持 document:approve:seal，用于越权验证）', bool(weak))
 if weak:
     st, _ = call('GET', '/api/seals?pageNum=1&pageSize=20', token=weak)
     check('无权限读用印台账 → 403', st == 403, 'HTTP %d' % st)
@@ -125,18 +145,18 @@ print('=' * 72)
 print('二、负例：非用印单 / 未用印就归还 / 草稿用印')
 print('=' * 72)
 
-st, r = call('POST', '/api/seals/use', token=admin, body={'documentId': int(non_seal)})
+st, r = call('POST', '/api/seals/use', token=operator, body={'documentId': int(non_seal)})
 check('★ 对非 SEAL 类单据登记用印 → 业务拒绝',
       biz_fail(st, r) and '用印类' in (r.get('msg') or ''),
       'HTTP %d / %s' % (st, (r.get('msg') or '')[:60]))
 
-st, r = call('POST', '/api/seals/return', token=admin, body={'documentId': int(seal_doc2)})
+st, r = call('POST', '/api/seals/return', token=operator, body={'documentId': int(seal_doc2)})
 check('★ 还没用印就直接归还 → 业务拒绝',
       biz_fail(st, r) and '不能直接归还' in (r.get('msg') or ''),
       'HTTP %d / %s' % (st, (r.get('msg') or '')[:60]))
 
 # 新建一张 SEAL 草稿（不提交）来验证"草稿不允许用印"，跑完物理删掉
-st, r = call('POST', '/api/documents', token=admin, body={
+st, r = call('POST', '/api/documents', token=operator, body={
     'docTypeId': 3,
     'formData': {'title': 'E2E用印草稿（跑完即删）', 'sealType': 'OFFICIAL',
                  'sealProject': 'E2E用印草稿（跑完即删）', 'sealReason': 'E2E 夹具'},
@@ -146,7 +166,7 @@ created_draft_id = (r.get('data') or {}).get('id') if st == 200 and r.get('code'
 check('建一张用印草稿做负例', bool(created_draft_id), 'docId=%s' % created_draft_id)
 
 if created_draft_id:
-    st, r = call('POST', '/api/seals/use', token=admin, body={'documentId': created_draft_id})
+    st, r = call('POST', '/api/seals/use', token=operator, body={'documentId': created_draft_id})
     check('★ 草稿单据登记用印 → 业务拒绝（没走完审批不许盖章）',
           biz_fail(st, r) and '不允许用印' in (r.get('msg') or ''),
           'HTTP %d / %s' % (st, (r.get('msg') or '')[:60]))
@@ -159,7 +179,7 @@ print('=' * 72)
 print('三、闭环：待用印 → 登记用印 → 归还')
 print('=' * 72)
 
-st, r = call('GET', '/api/seals/by-document/%s' % seal_doc, token=admin)
+st, r = call('GET', '/api/seals/by-document/%s' % seal_doc, token=operator)
 d0 = r.get('data') or {}
 # 两种形态都表示"还没用印"：① 提交即建行之前的历史单据 —— 无行（id 为空）；
 # ② 之后的单据 —— 有行但状态为待用印。断言只关心"待用印"这个业务含义。
@@ -171,7 +191,7 @@ check('  视图带出单据可读信息（单号/申请人/用章类型中文）
       bool(d0.get('docNo')) and bool(d0.get('applicantName')) and d0.get('sealTypeName') == '合同章',
       'docNo=%s applicant=%s sealTypeName=%s' % (d0.get('docNo'), d0.get('applicantName'), d0.get('sealTypeName')))
 
-st, r = call('POST', '/api/seals/use', token=admin,
+st, r = call('POST', '/api/seals/use', token=operator,
              body={'documentId': int(seal_doc), 'remark': 'E2E 登记用印'})
 d1 = r.get('data') or {}
 check('登记用印成功', st == 200 and r.get('code') == 0, 'HTTP %d / %s' % (st, r.get('msg', '')))
@@ -181,11 +201,11 @@ check('★ 台账落了一条 use 记录（含操作人）',
       any(x.get('action') == 'use' and x.get('operatorName') for x in (d1.get('records') or [])),
       'records=%s' % [(x.get('action'), x.get('operatorName')) for x in (d1.get('records') or [])])
 
-st, r = call('POST', '/api/seals/use', token=admin, body={'documentId': int(seal_doc)})
+st, r = call('POST', '/api/seals/use', token=operator, body={'documentId': int(seal_doc)})
 check('★ 重复登记用印 → 业务拒绝', biz_fail(st, r) and '已登记用印' in (r.get('msg') or ''),
       'HTTP %d / %s' % (st, (r.get('msg') or '')[:60]))
 
-st, r = call('POST', '/api/seals/return', token=admin,
+st, r = call('POST', '/api/seals/return', token=operator,
              body={'documentId': int(seal_doc), 'remark': 'E2E 归还'})
 d2 = r.get('data') or {}
 check('归还成功', st == 200 and r.get('code') == 0, 'HTTP %d / %s' % (st, r.get('msg', '')))
@@ -197,7 +217,7 @@ check('★ 台账共两条（use + return），闭环可追溯',
       and [x.get('action') for x in (d2.get('records') or [])] == ['use', 'return'],
       'actions=%s' % [x.get('action') for x in (d2.get('records') or [])])
 
-st, r = call('POST', '/api/seals/return', token=admin, body={'documentId': int(seal_doc)})
+st, r = call('POST', '/api/seals/return', token=operator, body={'documentId': int(seal_doc)})
 check('★ 重复归还 → 业务拒绝', biz_fail(st, r) and '已归还' in (r.get('msg') or ''),
       'HTTP %d / %s' % (st, (r.get('msg') or '')[:60]))
 
@@ -207,7 +227,7 @@ print('=' * 72)
 print('四、用印台账查询')
 print('=' * 72)
 
-st, r = call('GET', '/api/seals?pageNum=1&pageSize=20', token=admin)
+st, r = call('GET', '/api/seals?pageNum=1&pageSize=20', token=operator)
 pg = r.get('data') or {}
 check('台账能查到刚闭环的那条', st == 200 and (pg.get('total') or 0) >= 1,
       'HTTP %d total=%s' % (st, pg.get('total')))
@@ -215,13 +235,13 @@ check('★ 台账行带出单号与用章类型', any(x.get('docNo') and x.get('
                                        for x in (pg.get('records') or [])),
       '首行=%s' % json.dumps((pg.get('records') or [{}])[0], ensure_ascii=False)[:110])
 
-st, r = call('GET', '/api/seals?returnStatus=2&pageNum=1&pageSize=20', token=admin)
+st, r = call('GET', '/api/seals?returnStatus=2&pageNum=1&pageSize=20', token=operator)
 pg2 = r.get('data') or {}
 check('按「已归还」筛选生效', st == 200 and (pg2.get('total') or 0) >= 1
       and all(x.get('returnStatus') == 2 for x in (pg2.get('records') or [])),
       'total=%s' % pg2.get('total'))
 
-st, r = call('GET', '/api/seals?returnStatus=0&pageNum=1&pageSize=20', token=admin)
+st, r = call('GET', '/api/seals?returnStatus=0&pageNum=1&pageSize=20', token=operator)
 pg3 = r.get('data') or {}
 check('按「待用印」筛选生效（已归还的不该出现在这里）',
       st == 200 and all(x.get('returnStatus') == 0 for x in (pg3.get('records') or [])),
@@ -242,6 +262,14 @@ print('=' * 72)
 #   （历史用印单回填而来），全表删掉会把 admin E2E 的用印断言打挂（实测踩过：
 #   E2E 报"台账为空"4 条失败）。这里只还原本次动过的东西：
 #   删掉本次产生的动作记录 + 把被操作的那张单还原为「待用印」。
+# 撤销本次的临时授权（精确到"DEPT_HEAD × seal 权限点"这一条，不碰别的配置）
+sql("DELETE rp FROM role_permission rp JOIN sys_role r ON r.id=rp.role_id "
+    "WHERE r.code='%s' AND rp.perm_code='%s'" % (GRANT_ROLE, SEAL_PERM))
+check('临时授权已撤销（DEPT_HEAD 不再持 %s）' % SEAL_PERM,
+      scalar("SELECT COUNT(*) FROM role_permission rp JOIN sys_role r ON r.id=rp.role_id "
+             "WHERE r.code='%s' AND rp.perm_code='%s' AND rp.deleted=0"
+             % (GRANT_ROLE, SEAL_PERM)) == '0')
+
 used_doc = seal_doc if seal_doc else None
 sql('DELETE FROM seal_record')
 if used_doc:

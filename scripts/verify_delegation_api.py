@@ -26,9 +26,12 @@ os.environ['NO_PROXY'] = os.environ['no_proxy']
 B = 'http://127.0.0.1:8080'
 DB = 'haixiajin_oa'
 
-# 夹具：申请人 admin（综合管理中心 dept 6，部门负责人=周综合）
-DELEGATOR = 'zhouzh'      # 周综合（委托人，待办的原本承办人）
-DELEGATE = 'linjl'        # 林经理（受托人）
+# 夹具：发起人 huangxm（业务一部，部门负责人=林经理）。
+#   ⚠ C4（2026-09-28）后 admin 不再持 document:create，不能再用"admin 的部门负责人是
+#   周综合"这条巧合来造待办 —— 改用 huangxm：他的直属部门负责人正是委托人 linjl。
+DELEGATOR = 'linjl'       # 林经理（委托人，待办的原本承办人）
+DELEGATE = 'zhouzh'       # 周综合（受托人；不参与该流程任何节点，是干净的局外人）
+INITIATOR = 'huangxm'     # 发起人（持 document:create 的业务账号）
 EXPECTED_TOTAL = 24
 
 PASS, FAIL = [], []
@@ -114,17 +117,17 @@ print('=' * 72)
 before_doc = scalar('SELECT COUNT(*) FROM document')
 before_task = scalar('SELECT COUNT(*) FROM ACT_RU_TASK')
 
-admin = login('admin')
+initiator = login(INITIATOR)
 delegator = login(DELEGATOR)
 delegate = login(DELEGATE)
-check('三个账号登录成功（申请人 admin / 委托人 zhouzh / 受托人 linjl）',
-      bool(admin and delegator and delegate))
+check('三个账号登录成功（发起人 huangxm / 委托人 linjl / 受托人 zhouzh）',
+      bool(initiator and delegator and delegate))
 
 delegator_id = scalar("SELECT id FROM sys_user WHERE account='%s'" % DELEGATOR)
 delegate_id = scalar("SELECT id FROM sys_user WHERE account='%s'" % DELEGATE)
 
-# ---- 夹具：admin 建单提交（首节点指派给其部门负责人 周综合）----
-st, r = call('POST', '/api/documents', token=admin, body={
+# ---- 夹具：huangxm 建单提交（首节点=直属部门负责人，指派给委托人 linjl）----
+st, r = call('POST', '/api/documents', token=initiator, body={
     'docTypeId': 1, 'title': 'E2E委托夹具', 'amount': 200, 'reason': 'E2E 委托夹具',
     'formData': {'title': 'E2E委托夹具', 'amount': 200, 'payType': 'GOODS',
                  'payeeName': '测试收款方', 'payeeAccount': '6222020000000000',
@@ -132,7 +135,7 @@ st, r = call('POST', '/api/documents', token=admin, body={
 })
 doc = r.get('data') or {}
 doc_id, doc_no = doc.get('id'), doc.get('docNo')
-st2, _ = call('POST', '/api/documents/%s/submit' % doc_id, token=admin)
+st2, _ = call('POST', '/api/documents/%s/submit' % doc_id, token=initiator)
 fixture.append((doc_id, doc_no))
 task_id = scalar('SELECT task_id FROM flow_instance_node WHERE document_id=%s AND status IN (0,1) '
                  'ORDER BY id DESC LIMIT 1' % doc_id)
@@ -183,7 +186,7 @@ if d1.get('id'):
 check('新建委托成功且当前生效', st == 200 and d1.get('active') is True,
       'HTTP %d / active=%s' % (st, d1.get('active')))
 check('委托条目带出双方姓名（界面可直接展示）',
-      d1.get('delegatorName') == '周综合' and d1.get('delegateName') == '林经理',
+      d1.get('delegatorName') == '林经理' and d1.get('delegateName') == '周综合',
       '%s → %s' % (d1.get('delegatorName'), d1.get('delegateName')))
 
 st, r = call('POST', '/api/delegations', token=delegator, body={
@@ -205,8 +208,8 @@ check('受托人能在「委托给我的」里看到这条', any(x.get('id') == 
 
 seen2 = [t for t in todos_of(delegate) if t.get('taskId') == task_id]
 check('★ 委托生效后，该待办出现在受托人的待办列表里', len(seen2) == 1, '命中 %d 条' % len(seen2))
-check('★ 该待办标注了「代 周综合 办理」',
-      bool(seen2) and seen2[0].get('onBehalfOf') == '周综合',
+check('★ 该待办标注了「代 林经理 办理」',
+      bool(seen2) and seen2[0].get('onBehalfOf') == '林经理',
       'onBehalfOf=%s' % (seen2[0].get('onBehalfOf') if seen2 else '(无)'))
 
 st, r = call('POST', '/api/todos/approve', token=delegate,
@@ -231,7 +234,7 @@ st, r = call('DELETE', '/api/delegations/%s' % d1.get('id'), token=delegator)
 check('委托人本人撤销成功', st == 200 and r.get('code') == 0, 'HTTP %d / %s' % (st, r.get('msg', '')))
 
 # 撤销后：再造一张夹具的单，确认受托人既看不到也批不了
-st, r = call('POST', '/api/documents', token=admin, body={
+st, r = call('POST', '/api/documents', token=initiator, body={
     'docTypeId': 1, 'title': 'E2E委托夹具2', 'amount': 300, 'reason': 'E2E 委托夹具2',
     'formData': {'title': 'E2E委托夹具2', 'amount': 300, 'payType': 'GOODS',
                  'payeeName': '测试收款方', 'payeeAccount': '6222020000000000',
@@ -239,7 +242,7 @@ st, r = call('POST', '/api/documents', token=admin, body={
 })
 doc2 = r.get('data') or {}
 if doc2.get('id'):
-    call('POST', '/api/documents/%s/submit' % doc2['id'], token=admin)
+    call('POST', '/api/documents/%s/submit' % doc2['id'], token=initiator)
     fixture.append((doc2['id'], doc2.get('docNo')))
 task2 = scalar('SELECT task_id FROM flow_instance_node WHERE document_id=%s AND status IN (0,1) '
                'ORDER BY id DESC LIMIT 1' % doc2.get('id'))
