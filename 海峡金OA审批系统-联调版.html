@@ -22,7 +22,7 @@ body{background:linear-gradient(135deg,#f4faff 0,#edf7fe 45%,#f8fbff 100%);color
 
 </style></head><body><div id="app">
 <el-container class="shell"><el-aside width="228px" class="aside"><div class="logo"><i>{{companyShortName.charAt(0)}}</i><div><b>{{companyShortName}}</b><span>OA 内控审批中心</span></div></div><el-menu :default-active="page" background-color="#172036" text-color="#aeb8cf" active-text-color="#fff" @select="page=$event"><el-menu-item index="home"><span class="mi">⌂</span>首页</el-menu-item><el-menu-item index="work"><span class="mi">▦</span>工作台<el-badge :value="unreadCount" :max="99" :hidden="!unreadCount" class="menu-badge"></el-badge></el-menu-item><el-menu-item index="board"><span class="mi">▥</span>工作看板</el-menu-item><div class="menu-label">业务管理</div><el-menu-item index="forms"><span class="mi">▤</span>全部表单</el-menu-item><el-menu-item index="approve"><span class="mi">✓</span>审批中心<el-badge :value="todos.length" :max="99" :hidden="!todos.length" class="menu-badge"></el-badge></el-menu-item><el-menu-item index="archive"><span class="mi">≡</span>台账档案</el-menu-item><el-menu-item index="seal"><span class="mi">▣</span>用印台账</el-menu-item><el-menu-item index="delegation"><span class="mi">⇄</span>我的委托</el-menu-item><div class="menu-label">系统管理</div><el-menu-item index="permission"><span class="mi">♙</span>权限管理</el-menu-item><el-menu-item index="flow"><span class="mi">▷</span>流程管理</el-menu-item><el-menu-item index="risk"><span class="mi">△</span>风险预警</el-menu-item><el-menu-item index="masterdata" v-if="can('system:dept') || can('system:dict') || can('system:company')"><span class="mi">⌗</span>主数据</el-menu-item><el-menu-item index="formtpl" v-if="can('system:form')"><span class="mi">✎</span>表单模板</el-menu-item><el-menu-item index="audit" v-if="can('system:audit')"><span class="mi">☰</span>审计日志</el-menu-item></el-menu><div class="aside-foot"><i></i>系统运行正常<span>数据更新于 10:28</span></div></el-aside>
-<el-container><el-header class="topbar"><div><h1>{{pageNames[page]}}</h1><el-breadcrumb separator="/"><el-breadcrumb-item>审批中心</el-breadcrumb-item><el-breadcrumb-item>{{pageNames[page]}}</el-breadcrumb-item></el-breadcrumb></div><div class="top-actions"><el-button circle>⌕</el-button><el-badge :value="unreadCount" :max="99" :hidden="!unreadCount" @click="openNotify" style="cursor:pointer"><el-button circle title="通知中心">♧</el-button></el-badge><el-tooltip content="修改密码" placement="bottom"><el-button circle @click="openPwd(false)">钥</el-button></el-tooltip><el-avatar shape="square">林</el-avatar><div class="who"><b>林安然</b><span>{{role}}</span></div><el-select v-model="role" size="small" style="width:112px"><el-option v-for="r in roles" :key="r" :label="r" :value="r"></el-option></el-select></div></el-header><el-main>
+<el-container><el-header class="topbar"><div><h1>{{pageNames[page]}}</h1><el-breadcrumb separator="/"><el-breadcrumb-item>审批中心</el-breadcrumb-item><el-breadcrumb-item>{{pageNames[page]}}</el-breadcrumb-item></el-breadcrumb></div><div class="top-actions"><el-button circle>⌕</el-button><el-badge :value="unreadCount" :max="99" :hidden="!unreadCount" @click="openNotify" style="cursor:pointer"><el-button circle title="通知中心">♧</el-button></el-badge><el-tooltip content="修改密码" placement="bottom"><el-button circle @click="openPwd(false)">钥</el-button></el-tooltip><el-avatar shape="square">林</el-avatar><div class="who"><b>林安然</b><span>{{role}}</span></div></div></el-header><el-main>
 <template v-if="page==='home'"><section class="hero"><div><span>2026年8月26日 · 星期三</span><h2>早上好，林安然</h2><p>今日有 <b>{{todoCount}} 项审批</b>待处理，{{riskOverview.overdue}} 项风险预警需要关注。</p><el-button type="primary" plain @click="openSubmit('员工报销')">＋ 发起报销</el-button><el-button class="glass" @click="openSubmit('日常付款')">＋ 付款申请</el-button></div><el-progress type="circle" :percentage="completionRate" color="#fff"><template #default><b class="percent">{{completionRate}}%</b><small>办结率</small></template></el-progress></section><div class="stats"><el-card v-for="s in stats" :key="s.name" shadow="never"><i :class="s.color">{{s.icon}}</i><div><span>{{s.name}}</span><b>{{s.value}}</b><small>{{s.note}}</small></div></el-card></div><div class="grid2"><el-card shadow="never"><template #header><div class="card-title"><div><b>待办审批</b><span>优先处理临近超时的申请</span></div><el-button link type="primary" @click="page='approve'">查看全部 →</el-button></div></template><div class="todo" v-for="t in homeTodos" :key="t.taskId" @click="openDetail({docId:t.documentId})"><i>{{(t.docTypeName||t.title||'单')[0]}}</i><div><b>{{t.title}}</b><span>{{t.applicantName}} · {{t.deptName}} · {{t.nodeName}}</span></div><strong>{{money(t.amount)}}<small>{{t.overdue ? '已超时' : '待处理'}}</small></strong></div><div class="todo" v-if="!homeTodos.length" style="justify-content:center;color:var(--muted)">当前没有待你处理的单据</div></el-card><el-card shadow="never"><template #header><div class="card-title"><div><b>流程透明度</b><span>所有节点均可穿透查看前置资料</span></div><el-tag type="success">100% 留痕</el-tag></div></template><div class="transparency"><div class="shield">✓</div><h3>前置流程完整可见</h3><p>审批人可查看申请表、历史附件、全部前置节点意见和操作时间。</p><el-button type="primary" plain @click="page='approve'">进入审批中心</el-button></div></el-card></div></template>
 <template v-else-if="page==='work'"><div class="page-head"><div><h2>工作台</h2><p>按业务区域发起申请，常用单据一键提交</p></div></div><div class="work-zones"><el-card shadow="never" class="zone daily"><template #header><div class="zone-title"><i>日</i><div><b>日常提交</b><span>个人日常费用与行政类申请</span></div><el-button type="primary" @click="openSubmit('员工报销')">新建报销</el-button></div></template><div class="quick-docs"><button v-for="q in dailyQuick" @click="quickSubmit(q,'报销申请单')"><i>{{q[0]}}</i><b>{{q}}</b><span>快捷提交 →</span></button></div></el-card><el-card shadow="never" class="zone business"><template #header><div class="zone-title"><i>业</i><div><b>业务单据提交</b><span>付款、供应商及经营业务申请</span></div><el-button type="primary" @click="openSubmit('日常付款')">新建付款</el-button></div></template><div class="quick-docs"><button v-for="q in businessQuick" @click="quickSubmit(q,'付款申请单')"><i>{{q[0]}}</i><b>{{q}}</b><span>快捷提交 →</span></button></div></el-card></div><el-card shadow="never"><template #header><div class="card-title"><div><b>我已发起的单据</b><span>点击查看全流程，或复制历史单据再次提交</span></div><el-input v-model="keyword" clearable placeholder="搜索单号或事项" style="width:260px" @input="onDocsKeywordInput" @clear="onDocsKeywordInput"></el-input></div></template><el-table :data="myDocuments" @row-click="openDetail" class="click-table" empty-text="你还没有发起过单据 —— 点右上角「＋ 发起单据」开始"><el-table-column prop="id" label="单据编号" width="165"></el-table-column><el-table-column prop="title" label="申请事项" min-width="210"></el-table-column><el-table-column prop="type" label="类型" width="110"></el-table-column><el-table-column label="金额" width="130"><template #default="s">{{money(s.row.amount)}}</template></el-table-column><el-table-column prop="current" label="当前节点" width="130"></el-table-column><el-table-column label="状态" width="110"><template #default="s"><el-tag :type="tagType(s.row.status)">{{s.row.status}}</el-tag></template></el-table-column><el-table-column label="操作" width="180"><template #default="s"><el-button link type="primary" @click.stop="openDetail(s.row)">查看全流程</el-button><el-button link @click.stop="repeatSubmit(s.row)">再次提交</el-button></template></el-table-column></el-table><el-pagination style="margin-top:14px;display:flex;justify-content:flex-end" background layout="total, sizes, prev, pager, next" :total="myTotal" :current-page="myPage" :page-size="myPageSize" :page-sizes="[10,20,50]" @current-change="myPageChange" @size-change="mySizeChange"></el-pagination></el-card></template>
 <template v-else-if="page==='board'"><div class="page-head"><div><h2>工作看板</h2><p>审批进度、效能与风险实时总览</p></div><el-date-picker v-model="boardDate" type="daterange" range-separator="至"></el-date-picker></div><div class="stats"><el-card v-for="s in boardStats" shadow="never"><div><span>{{s.name}}</span><b>{{s.value}}</b><small>{{s.note}}</small></div></el-card></div><div class="grid2"><el-card shadow="never"><template #header><b>各节点处理效率</b></template><div class="eff-row" v-for="e in efficiency"><span>{{e.name}}</span><el-progress :percentage="e.p" :color="e.color"></el-progress><b>{{e.time}}</b></div></el-card><el-card shadow="never"><template #header><b>单据状态分布</b></template><div class="status-grid"><div v-for="s in statusBoard"><b>{{s[1]}}</b><span>{{s[0]}}</span></div></div></el-card></div></template>
@@ -197,18 +197,9 @@ const bizLabel = function(code){ return bizCategoryLabels[code] || code || ''; }
    START/n2/n3/n3/n5）。它有两个问题：①「核算会计」与「内控合规」都指向 n3，选哪个都一样；
    ② 只在「日常付款」这一条流程上碰巧对得上，换单据类型就全错。
    已改为按单据实际在跑的流程动态生成 —— 见 setup 里的 rejectTargets 计算属性。 */
-const DEMO_ACCOUNTS = [
-  {account:'admin',     name:'系统管理员', title:'全部权限'},
-  {account:'huangxm',   name:'黄小明',    title:'普通员工 · 发起人'},
-  {account:'linjl',     name:'林经理',    title:'部门负责人'},
-  {account:'wangkj',    name:'王会计',    title:'核算会计'},
-  {account:'zhangzong', name:'张总',      title:'公司领导 · 大额'},
-  {account:'zhaocs',    name:'赵出纳',    title:'出纳'},
-  {account:'chennk',    name:'陈内控',    title:'内控合规'},
-  /* 以下两个审批人此前缺失，导致「用印申请」和「大额报销」两条链路在界面上无法走完 */
-  {account:'zhouzh',    name:'周综合',    title:'部门负责人 · 综合管理部 · 用印办理'},
-  {account:'lifinance', name:'李财务',    title:'财务总监 · 报销大额'}
-];
+/* DEMO_ACCOUNTS 已删除（2026-10-08 用户拍板）：登录页快捷芯片与顶栏切换身份下拉
+   均已移除，账号清单不再有任何消费方。写死的账号清单在交付库重建后必然失真，
+   与其留着过期数据不如整个删掉 —— 登录一律手输真实账号。 */
 const DEMO_PASSWORD = '123456';
 
 /* ================= HTTP 封装 ================= */
@@ -537,17 +528,12 @@ document.querySelector('.shell').setAttribute('v-if','me');
   }
   function setHtml(el, html){ if (el) el.innerHTML = html; }
 
-  /* ---- 顶栏：真实用户 + 账号切换 ---- */
+  /* ---- 顶栏：真实用户显示 ---- */
   setHtml(qOne('.topbar el-avatar'), '{{ (me && me.realName) ? me.realName.slice(0,1) : "?" }}');
   setHtml(qOne('.topbar .who'), '<b>{{me?me.realName:""}}</b><span>{{roleText}}</span>');
-  const acctSel = qOne('.top-actions > el-select');
-  if (acctSel){
-    acctSel.setAttribute('v-model','currentAccount');
-    acctSel.setAttribute('@change','switchAccount');
-    acctSel.setAttribute('placeholder','切换登录身份');
-    acctSel.setAttribute('style','width:196px');
-    setHtml(acctSel, '<el-option v-for="a in demoAccounts" :key="a.account" :label="a.name + \' · \' + a.title" :value="a.account"></el-option>');
-  }
+  /* 「切换登录身份」下拉已删除（2026-10-08 用户拍板）：其账号清单来自写死的
+     DEMO_ACCOUNTS，交付库重建后 9 个账号均不存在，切换必报错。
+     模板里原生的 el-select（v-model="role"）也一并移除，避免补丁删除后裸露。 */
   /* 铃铛＝通知中心入口：绑定已上移到主模板（那里是单一来源）。
      原来这里用 setAttribute 覆盖一次，导致**同一个元素有两层定义且不一致**
      （模板写 :value="3"、补丁改写为 unreadCount）—— 读模板的人会以为角标写死了，
@@ -653,10 +639,9 @@ createApp({setup(){
   const me = ref(null), logging = ref(false), loginError = ref(''), pingOk = ref(false), pingText = ref('检测中…'), corsBlocked = ref(false);
   const loginForm = reactive({account:'admin', password:DEMO_PASSWORD});
   const currentAccount = ref('admin');
-  const demoAccounts = DEMO_ACCOUNTS;
-  /* 演示账号快捷登录块已删除（2026-10-08 用户拍板）：交付库重建后 8 个演示账号
-     均不存在，点选必报错，且把账号+密码印在登录页本身是事故级信息。
-     DEMO_ACCOUNTS 仍保留 —— 顶栏「切换登录身份」下拉还在消费它。 */
+  /* 演示账号体系已整体删除（2026-10-08 用户拍板）：登录页快捷芯片、
+     顶栏「切换登录身份」下拉、DEMO_ACCOUNTS 账号清单三件套全下线。
+     交付库重建后写死账号必然失真 —— 登录一律手输真实账号。 */
 
   const page = ref('home'), role = ref(''), keyword = ref(''), statusFilter = ref('全部');
   const businessTypeFilter = ref(''), docTypeFilter = ref(''), applicantFilter = ref('');
@@ -1411,24 +1396,6 @@ const nodeTemplateList = ref([]);       // 流程节点模板库（含各自的�
       if (r.mustChangePassword === true) openPwd(true);
     } catch(e){
       loginError.value = e.message;
-    } finally { logging.value = false; }
-  };
-  const switchAccount = async function(account){
-    if (!account) return;
-    logging.value = true;
-    try {
-      // 切换身份就是一次"登出"：不先把旧 token 作废的话，旧身份的凭证在 12 小时内仍然可用，
-      // 界面上却已经显示成别人了 —— 这是"看着登出了其实没登出"的典型场景。
-      await doLogout();
-      const r = await api.login(account, DEMO_PASSWORD);
-      setToken(r.token); me.value = r.user; currentAccount.value = account;
-      await afterLogin();
-      page.value = 'home'; detailVisible.value = false; keyword.value = '';
-      ElementPlus.ElMessage.success('已切换为 ' + me.value.realName + '（' + (me.value.roleCodes||[]).join('/') + '）');
-      if (r.mustChangePassword === true) openPwd(true);
-    } catch(e){
-      ElementPlus.ElMessage.error('切换失败：' + e.message);
-      currentAccount.value = me.value ? me.value.account : 'admin';
     } finally { logging.value = false; }
   };
   const logout = function(){
@@ -3427,8 +3394,8 @@ const nodeTemplateList = ref([]);       // 流程节点模板库（含各自的�
   });
 
   return {
-    apiBase, me, logging, loginError, loginForm, currentAccount, demoAccounts,
-    doLogin, switchAccount, logout, doLogout, adminPeople, peoplePage, peoplePageSize, peopleTotal, peopleKeyword,
+    apiBase, me, logging, loginError, loginForm, currentAccount,
+    doLogin, logout, doLogout, adminPeople, peoplePage, peoplePageSize, peopleTotal, peopleKeyword,
            onPeopleKeywordInput, changePeoplePage, changePeopleSize, refreshAdminPeople, onDocsKeywordInput,
            sealRows, sealTotal, sealTypeFilter, sealStatusFilter, refreshSeals, sealUse, sealReturn,
            batchSelected, batchApproving, onTodoSelect, batchApprove,
