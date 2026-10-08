@@ -16,13 +16,16 @@ import com.hxj.oa.document.dto.DocumentDetailVO;
 import com.hxj.oa.document.dto.DocumentLinkVO;
 import com.hxj.oa.document.dto.DocumentQuery;
 import com.hxj.oa.document.dto.DocumentStatsVO;
+import com.hxj.oa.document.dto.FlowOutlineNode;
 import com.hxj.oa.document.entity.*;
 import com.hxj.oa.document.mapper.*;
 import com.hxj.oa.flow.entity.FlowConfig;
+import com.hxj.oa.flow.entity.FlowConfigNode;
 import com.hxj.oa.flow.entity.FlowInstance;
 import com.hxj.oa.flow.entity.FlowInstanceNode;
 import com.hxj.oa.flow.dto.FlowStartRequest;
 import com.hxj.oa.flow.mapper.FlowConfigMapper;
+import com.hxj.oa.flow.mapper.FlowConfigNodeMapper;
 import com.hxj.oa.flow.mapper.FlowInstanceNodeMapper;
 import com.hxj.oa.flow.service.FlowRuntimeService;
 import lombok.RequiredArgsConstructor;
@@ -58,6 +61,7 @@ public class DocumentService {
     private final DocNoGenerator docNoGenerator;
     private final FlowRuntimeService flowRuntimeService;
     private final FlowConfigMapper flowConfigMapper;
+    private final FlowConfigNodeMapper flowConfigNodeMapper;
     private final FlowInstanceNodeMapper flowInstanceNodeMapper;
     private final SealService sealService;
 
@@ -410,6 +414,7 @@ public class DocumentService {
         vo.setFlowVersion(doc.getFormTemplateVer());
         vo.setViewingNodeKey(viewingNode);
         vo.setFlowHistory(history);
+        vo.setFlowOutline(buildFlowOutline(flowConfig, history));
         vo.setPendingTaskId(pendingTaskId);
         vo.setRequireAttachment(pendingTaskId != null && nodeRequiresAttachment(doc, viewingNode));
         vo.setAvailableActions(availableActions(doc, pendingTaskId, user));
@@ -441,6 +446,56 @@ public class DocumentService {
             }).toList());
         }
         return vo;
+    }
+
+    /**
+     * 流程定义骨架（detail 的 flowOutline）：整条链的节点顺序，前端用它画
+     * 「全流程」进度图——history 里没有的 nodeKey 就是未来节点（灰色）。
+     *
+     * <p>分支（网关）节点把 conditionExpr 还原成分支去向列表，条件原文直接下发、
+     * 由前端展示（「金额 >= 5000 → 公司领导 / 否则 → 出纳付款」）。
+     * 定义查询失败不该连累详情打开——空列表降级，前端退回纯 history 渲染。
+     */
+    private List<FlowOutlineNode> buildFlowOutline(FlowConfig flowConfig, List<FlowInstanceNode> history) {
+        if (flowConfig == null) {
+            return List.of();
+        }
+        try {
+            List<FlowConfigNode> defs = flowConfigNodeMapper.selectList(
+                    Wrappers.<FlowConfigNode>lambdaQuery()
+                            .eq(FlowConfigNode::getFlowConfigId, flowConfig.getId())
+                            .orderByAsc(FlowConfigNode::getSeqNo));
+            if (defs.isEmpty()) {
+                return List.of();
+            }
+            Map<String, Integer> posByKey = new HashMap<>();
+            for (int i = 0; i < defs.size(); i++) {
+                posByKey.put(defs.get(i).getNodeKey(), i);
+            }
+            List<FlowOutlineNode> outline = new ArrayList<>(defs.size());
+            for (FlowConfigNode n : defs) {
+                List<FlowOutlineNode.Branch> branches = null;
+                if (n.getNodeType() != null && n.getNodeType() == 3 && n.getConditionExpr() != null) {
+                    branches = new ArrayList<>();
+                    for (Map<String, Object> b : JsonColumn.toList(n.getConditionExpr())) {
+                        String target = JsonColumn.str(b, "target");
+                        if (target == null || !posByKey.containsKey(target)) {
+                            continue;   // 目标节点不在定义里（脏配置）——宁缺毋滥，不画悬空分支
+                        }
+                        FlowOutlineNode.Branch bo = new FlowOutlineNode.Branch();
+                        bo.setExpr(JsonColumn.str(b, "expr"));
+                        bo.setDefaultBranch(Boolean.TRUE.equals(JsonColumn.toBool(b, "default")));
+                        bo.setTarget(target);
+                        branches.add(bo);
+                    }
+                }
+                outline.add(FlowOutlineNode.of(n, branches));
+            }
+            return outline;
+        } catch (Exception e) {
+            log.warn("构建流程骨架失败 docFlow={} err={}", flowConfig.getName(), e.getMessage());
+            return List.of();
+        }
     }
 
     private List<String> availableActions(Document doc, String pendingTaskId, LoginUser user) {

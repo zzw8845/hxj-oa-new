@@ -27,6 +27,12 @@ public class DocumentDetailVO {
 
     /** 流转记录（时间线） */
     private List<FlowInstanceNode> flowHistory;
+    /**
+     * 流程定义骨架（整条链的节点顺序，含未走到的节点）。
+     * 前端以它为主轴画「全流程」进度：flowHistory 按 nodeKey 叠上去，
+     * outline 里有而 history 里没有的就是「未来节点」（灰色显示）。
+     */
+    private List<FlowOutlineNode> flowOutline;
     /** 当前用户在该单据上可执行的动作：approve / reject / countersign / supplement / withdraw */
     private List<String> availableActions;
     /** 当前用户待办的任务 ID（若该单据正在等他处理） */
