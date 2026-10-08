@@ -1,26 +1,33 @@
 -- =============================================================================
--- Flowable 7.0.0 官方 MySQL 建表脚本（从 Maven 依赖的 DDL 自动汇总并重排）
+-- Flowable 7.0.0 官方 MySQL 建表脚本（自动汇总并重排，请勿手工编辑）
 --
--- 为什么需要预建表：
---   Flowable 7.0.0 的 eventregistry 改用 Liquibase 管理 schema，其前置检查会读取
---   ACT_GE_PROPERTY 判断 common schema 是否就绪；表不存在时判定逻辑走错分支，
---   执行 'insert into ACT_GE_PROPERTY' 而非建表，导致启动失败：
---     FlowableException: couldn't upgrade db schema: insert into ACT_GE_PROPERTY ...
---   规避方式：先用本脚本预建全部 ACT_* 表，应用即可正常启动。
+-- 由 scripts/gen_flowable_ddl.py 生成。
 --
--- 生成方式：scripts/gen_flowable_ddl.py  （按 建表 → 索引 → 数据 三段式重排，
---           因为官方脚本中索引与建表混排，存在跨文件的前后依赖）
+-- 背景：Flowable 7.0.0 的 eventregistry 用 Liquibase 管理 schema，
+--       其前置检查读取 ACT_GE_PROPERTY 判断 common schema 是否就绪；表不存在时
+--       判定逻辑走错分支，执行 insert 而非建表，导致启动失败：
+--         FlowableException: couldn't upgrade db schema: insert into ACT_GE_PROPERTY ...
+--       因此需先用本脚本预建全部 ACT_* 表。
+--
+-- 幂等（2026-09-29，P1 收口）：建表带 IF NOT EXISTS；官方后置的索引与外键约束
+--       已内联进对应建表语句（表已存在时随之整体跳过）；版本标记为 INSERT IGNORE。
+--       重复执行不会报错、不会动已有数据。MySQL 8 没有 CREATE INDEX IF NOT EXISTS，
+--       内联是纯语句级幂等的唯一干净路径。
+--
 -- 用法：mysql -uroot <库名> < flowable_schema_mysql.sql
 -- =============================================================================
 
--- ========== 第 1 段：建表 ==========
-create table ACT_GE_PROPERTY (
+SET NAMES utf8mb4;
+SET FOREIGN_KEY_CHECKS = 0;
+
+-- ========== 建表（41 张，索引/约束已内联 145 条）==========
+CREATE TABLE IF NOT EXISTS ACT_GE_PROPERTY (
     NAME_ varchar(64),
     VALUE_ varchar(300),
     REV_ integer,
     primary key (NAME_)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_bin;
-create table ACT_GE_BYTEARRAY (
+CREATE TABLE IF NOT EXISTS ACT_GE_BYTEARRAY (
     ID_ varchar(64),
     REV_ integer,
     NAME_ varchar(255),
@@ -28,8 +35,12 @@ create table ACT_GE_BYTEARRAY (
     BYTES_ LONGBLOB,
     GENERATED_ TINYINT,
     primary key (ID_)
+,
+  constraint ACT_FK_BYTEARR_DEPL 
+    foreign key (DEPLOYMENT_ID_) 
+    references ACT_RE_DEPLOYMENT (ID_)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_bin;
-create table ACT_RE_DEPLOYMENT (
+CREATE TABLE IF NOT EXISTS ACT_RE_DEPLOYMENT (
     ID_ varchar(64),
     NAME_ varchar(255),
     CATEGORY_ varchar(255),
@@ -42,7 +53,7 @@ create table ACT_RE_DEPLOYMENT (
     ENGINE_VERSION_ varchar(255),
     primary key (ID_)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_bin;
-create table ACT_RE_MODEL (
+CREATE TABLE IF NOT EXISTS ACT_RE_MODEL (
     ID_ varchar(64) not null,
     REV_ integer,
     NAME_ varchar(255),
@@ -57,8 +68,20 @@ create table ACT_RE_MODEL (
     EDITOR_SOURCE_EXTRA_VALUE_ID_ varchar(64),
     TENANT_ID_ varchar(255) default '',
     primary key (ID_)
+,
+  constraint ACT_FK_MODEL_SOURCE 
+    foreign key (EDITOR_SOURCE_VALUE_ID_) 
+    references ACT_GE_BYTEARRAY (ID_)
+,
+  constraint ACT_FK_MODEL_SOURCE_EXTRA 
+    foreign key (EDITOR_SOURCE_EXTRA_VALUE_ID_) 
+    references ACT_GE_BYTEARRAY (ID_)
+,
+  constraint ACT_FK_MODEL_DEPLOYMENT 
+    foreign key (DEPLOYMENT_ID_) 
+    references ACT_RE_DEPLOYMENT (ID_)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_bin;
-create table ACT_RU_EXECUTION (
+CREATE TABLE IF NOT EXISTS ACT_RU_EXECUTION (
     ID_ varchar(64),
     REV_ integer,
     PROC_INST_ID_ varchar(64),
@@ -99,8 +122,30 @@ create table ACT_RU_EXECUTION (
     PROPAGATED_STAGE_INST_ID_ varchar(255),
     BUSINESS_STATUS_ varchar(255),
     primary key (ID_)
+,
+  INDEX ACT_IDX_EXEC_BUSKEY (BUSINESS_KEY_)
+,
+  INDEX ACT_IDC_EXEC_ROOT (ROOT_PROC_INST_ID_)
+,
+  INDEX ACT_IDX_EXEC_REF_ID_ (REFERENCE_ID_)
+,
+  constraint ACT_FK_EXE_PROCINST 
+    foreign key (PROC_INST_ID_) 
+    references ACT_RU_EXECUTION (ID_) on delete cascade on update cascade
+,
+  constraint ACT_FK_EXE_PARENT 
+    foreign key (PARENT_ID_) 
+    references ACT_RU_EXECUTION (ID_) on delete cascade
+,
+  constraint ACT_FK_EXE_SUPER 
+    foreign key (SUPER_EXEC_) 
+    references ACT_RU_EXECUTION (ID_) on delete cascade
+,
+  constraint ACT_FK_EXE_PROCDEF 
+    foreign key (PROC_DEF_ID_) 
+    references ACT_RE_PROCDEF (ID_)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_bin;
-create table ACT_RE_PROCDEF (
+CREATE TABLE IF NOT EXISTS ACT_RE_PROCDEF (
     ID_ varchar(64) not null,
     REV_ integer,
     CATEGORY_ varchar(255),
@@ -120,8 +165,11 @@ create table ACT_RE_PROCDEF (
     DERIVED_FROM_ROOT_ varchar(64),
     DERIVED_VERSION_ integer not null default 0,
     primary key (ID_)
+,
+  constraint ACT_UNIQ_PROCDEF
+    unique (KEY_,VERSION_, DERIVED_VERSION_, TENANT_ID_)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_bin;
-create table ACT_EVT_LOG (
+CREATE TABLE IF NOT EXISTS ACT_EVT_LOG (
     LOG_NR_ bigint auto_increment,
     TYPE_ varchar(64),
     PROC_DEF_ID_ varchar(64),
@@ -136,14 +184,27 @@ create table ACT_EVT_LOG (
     IS_PROCESSED_ tinyint default 0,
     primary key (LOG_NR_)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_bin;
-create table ACT_PROCDEF_INFO (
+CREATE TABLE IF NOT EXISTS ACT_PROCDEF_INFO (
 	ID_ varchar(64) not null,
     PROC_DEF_ID_ varchar(64) not null,
     REV_ integer,
     INFO_JSON_ID_ varchar(64),
     primary key (ID_)
+,
+  INDEX ACT_IDX_INFO_PROCDEF (PROC_DEF_ID_)
+,
+  constraint ACT_FK_INFO_JSON_BA 
+    foreign key (INFO_JSON_ID_) 
+    references ACT_GE_BYTEARRAY (ID_)
+,
+  constraint ACT_FK_INFO_PROCDEF 
+    foreign key (PROC_DEF_ID_) 
+    references ACT_RE_PROCDEF (ID_)
+,
+  constraint ACT_UNIQ_INFO_PROCDEF
+    unique (PROC_DEF_ID_)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_bin;
-create table ACT_RU_ACTINST (
+CREATE TABLE IF NOT EXISTS ACT_RU_ACTINST (
     ID_ varchar(64) not null,
     REV_ integer default 1,
     PROC_DEF_ID_ varchar(64) not null,
@@ -162,8 +223,22 @@ create table ACT_RU_ACTINST (
     DELETE_REASON_ varchar(4000),
     TENANT_ID_ varchar(255) default '',
     primary key (ID_)
+,
+  INDEX ACT_IDX_RU_ACTI_START (START_TIME_)
+,
+  INDEX ACT_IDX_RU_ACTI_END (END_TIME_)
+,
+  INDEX ACT_IDX_RU_ACTI_PROC (PROC_INST_ID_)
+,
+  INDEX ACT_IDX_RU_ACTI_PROC_ACT (PROC_INST_ID_, ACT_ID_)
+,
+  INDEX ACT_IDX_RU_ACTI_EXEC (EXECUTION_ID_)
+,
+  INDEX ACT_IDX_RU_ACTI_EXEC_ACT (EXECUTION_ID_, ACT_ID_)
+,
+  INDEX ACT_IDX_RU_ACTI_TASK (TASK_ID_)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_bin;
-create table ACT_HI_PROCINST (
+CREATE TABLE IF NOT EXISTS ACT_HI_PROCINST (
     ID_ varchar(64) not null,
     REV_ integer default 1,
     PROC_INST_ID_ varchar(64) not null,
@@ -187,8 +262,14 @@ create table ACT_HI_PROCINST (
     BUSINESS_STATUS_ varchar(255),
     primary key (ID_),
     unique (PROC_INST_ID_)
+,
+  INDEX ACT_IDX_HI_PRO_INST_END (END_TIME_)
+,
+  INDEX ACT_IDX_HI_PRO_I_BUSKEY (BUSINESS_KEY_)
+,
+  INDEX ACT_IDX_HI_PRO_SUPER_PROCINST (SUPER_PROCESS_INSTANCE_ID_)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_bin;
-create table ACT_HI_ACTINST (
+CREATE TABLE IF NOT EXISTS ACT_HI_ACTINST (
     ID_ varchar(64) not null,
     REV_ integer default 1,
     PROC_DEF_ID_ varchar(64) not null,
@@ -207,8 +288,16 @@ create table ACT_HI_ACTINST (
     DELETE_REASON_ varchar(4000),
     TENANT_ID_ varchar(255) default '',
     primary key (ID_)
+,
+  INDEX ACT_IDX_HI_ACT_INST_START (START_TIME_)
+,
+  INDEX ACT_IDX_HI_ACT_INST_END (END_TIME_)
+,
+  INDEX ACT_IDX_HI_ACT_INST_PROCINST (PROC_INST_ID_, ACT_ID_)
+,
+  INDEX ACT_IDX_HI_ACT_INST_EXEC (EXECUTION_ID_, ACT_ID_)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_bin;
-create table ACT_HI_DETAIL (
+CREATE TABLE IF NOT EXISTS ACT_HI_DETAIL (
     ID_ varchar(64) not null,
     TYPE_ varchar(255) not null,
     PROC_INST_ID_ varchar(64),
@@ -225,8 +314,18 @@ create table ACT_HI_DETAIL (
     TEXT_ varchar(4000),
     TEXT2_ varchar(4000),
     primary key (ID_)
+,
+  INDEX ACT_IDX_HI_DETAIL_PROC_INST (PROC_INST_ID_)
+,
+  INDEX ACT_IDX_HI_DETAIL_ACT_INST (ACT_INST_ID_)
+,
+  INDEX ACT_IDX_HI_DETAIL_TIME (TIME_)
+,
+  INDEX ACT_IDX_HI_DETAIL_NAME (NAME_)
+,
+  INDEX ACT_IDX_HI_DETAIL_TASK_ID (TASK_ID_)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_bin;
-create table ACT_HI_COMMENT (
+CREATE TABLE IF NOT EXISTS ACT_HI_COMMENT (
     ID_ varchar(64) not null,
     TYPE_ varchar(255),
     TIME_ datetime(3) not null,
@@ -238,7 +337,7 @@ create table ACT_HI_COMMENT (
     FULL_MSG_ LONGBLOB,
     primary key (ID_)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_bin;
-create table ACT_HI_ATTACHMENT (
+CREATE TABLE IF NOT EXISTS ACT_HI_ATTACHMENT (
     ID_ varchar(64) not null,
     REV_ integer,
     USER_ID_ varchar(255),
@@ -252,32 +351,40 @@ create table ACT_HI_ATTACHMENT (
     TIME_ datetime(3),
     primary key (ID_)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_bin;
-create table ACT_ID_PROPERTY (
+CREATE TABLE IF NOT EXISTS ACT_ID_PROPERTY (
     NAME_ varchar(64),
     VALUE_ varchar(300),
     REV_ integer,
     primary key (NAME_)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_bin;
-create table ACT_ID_BYTEARRAY (
+CREATE TABLE IF NOT EXISTS ACT_ID_BYTEARRAY (
     ID_ varchar(64),
     REV_ integer,
     NAME_ varchar(255),
     BYTES_ LONGBLOB,
     primary key (ID_)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_bin;
-create table ACT_ID_GROUP (
+CREATE TABLE IF NOT EXISTS ACT_ID_GROUP (
     ID_ varchar(64),
     REV_ integer,
     NAME_ varchar(255),
     TYPE_ varchar(255),
     primary key (ID_)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_bin;
-create table ACT_ID_MEMBERSHIP (
+CREATE TABLE IF NOT EXISTS ACT_ID_MEMBERSHIP (
     USER_ID_ varchar(64),
     GROUP_ID_ varchar(64),
     primary key (USER_ID_, GROUP_ID_)
+,
+  constraint ACT_FK_MEMB_GROUP
+    foreign key (GROUP_ID_)
+    references ACT_ID_GROUP (ID_)
+,
+  constraint ACT_FK_MEMB_USER
+    foreign key (USER_ID_)
+    references ACT_ID_USER (ID_)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_bin;
-create table ACT_ID_USER (
+CREATE TABLE IF NOT EXISTS ACT_ID_USER (
     ID_ varchar(64),
     REV_ integer,
     FIRST_ varchar(255),
@@ -289,7 +396,7 @@ create table ACT_ID_USER (
     TENANT_ID_ varchar(255) default '',
     primary key (ID_)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_bin;
-create table ACT_ID_INFO (
+CREATE TABLE IF NOT EXISTS ACT_ID_INFO (
     ID_ varchar(64),
     REV_ integer,
     USER_ID_ varchar(64),
@@ -300,7 +407,7 @@ create table ACT_ID_INFO (
     PARENT_ID_ varchar(255),
     primary key (ID_)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_bin;
-create table ACT_ID_TOKEN (
+CREATE TABLE IF NOT EXISTS ACT_ID_TOKEN (
     ID_ varchar(64) not null,
     REV_ integer,
     TOKEN_VALUE_ varchar(255),
@@ -311,19 +418,30 @@ create table ACT_ID_TOKEN (
     TOKEN_DATA_ varchar(2000),
     primary key (ID_)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_bin;
-create table ACT_ID_PRIV (
+CREATE TABLE IF NOT EXISTS ACT_ID_PRIV (
     ID_ varchar(64) not null,
     NAME_ varchar(255) not null,
     primary key (ID_)
+,
+  constraint ACT_UNIQ_PRIV_NAME
+    unique (NAME_)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_bin;
-create table ACT_ID_PRIV_MAPPING (
+CREATE TABLE IF NOT EXISTS ACT_ID_PRIV_MAPPING (
     ID_ varchar(64) not null,
     PRIV_ID_ varchar(64) not null,
     USER_ID_ varchar(255),
     GROUP_ID_ varchar(255),
     primary key (ID_)
+,
+  INDEX ACT_IDX_PRIV_USER (USER_ID_)
+,
+  INDEX ACT_IDX_PRIV_GROUP (GROUP_ID_)
+,
+  constraint ACT_FK_PRIV_MAPPING
+    foreign key (PRIV_ID_)
+    references ACT_ID_PRIV (ID_)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_bin;
-create table ACT_RU_TASK (
+CREATE TABLE IF NOT EXISTS ACT_RU_TASK (
     ID_ varchar(64),
     REV_ integer,
     EXECUTION_ID_ varchar(64),
@@ -355,8 +473,28 @@ create table ACT_RU_TASK (
     ID_LINK_COUNT_ integer,
     SUB_TASK_COUNT_ integer,
     primary key (ID_)
+,
+  INDEX ACT_IDX_TASK_CREATE (CREATE_TIME_)
+,
+  INDEX ACT_IDX_TASK_SCOPE (SCOPE_ID_, SCOPE_TYPE_)
+,
+  INDEX ACT_IDX_TASK_SUB_SCOPE (SUB_SCOPE_ID_, SCOPE_TYPE_)
+,
+  INDEX ACT_IDX_TASK_SCOPE_DEF (SCOPE_DEFINITION_ID_, SCOPE_TYPE_)
+,
+  constraint ACT_FK_TASK_EXE
+    foreign key (EXECUTION_ID_)
+    references ACT_RU_EXECUTION (ID_)
+,
+  constraint ACT_FK_TASK_PROCINST
+    foreign key (PROC_INST_ID_)
+    references ACT_RU_EXECUTION (ID_)
+,
+  constraint ACT_FK_TASK_PROCDEF
+  	foreign key (PROC_DEF_ID_)
+  	references ACT_RE_PROCDEF (ID_)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_bin;
-create table ACT_RU_VARIABLE (
+CREATE TABLE IF NOT EXISTS ACT_RU_VARIABLE (
     ID_ varchar(64) not null,
     REV_ integer,
     TYPE_ varchar(255) not null,
@@ -374,8 +512,26 @@ create table ACT_RU_VARIABLE (
     TEXT2_ varchar(4000),
     META_INFO_ varchar(4000),
     primary key (ID_)
+,
+  INDEX ACT_IDX_VARIABLE_TASK_ID (TASK_ID_)
+,
+  INDEX ACT_IDX_RU_VAR_SCOPE_ID_TYPE (SCOPE_ID_, SCOPE_TYPE_)
+,
+  INDEX ACT_IDX_RU_VAR_SUB_ID_TYPE (SUB_SCOPE_ID_, SCOPE_TYPE_)
+,
+  constraint ACT_FK_VAR_EXE 
+    foreign key (EXECUTION_ID_) 
+    references ACT_RU_EXECUTION (ID_)
+,
+  constraint ACT_FK_VAR_PROCINST
+    foreign key (PROC_INST_ID_)
+    references ACT_RU_EXECUTION(ID_)
+,
+  constraint ACT_FK_VAR_BYTEARRAY 
+    foreign key (BYTEARRAY_ID_) 
+    references ACT_GE_BYTEARRAY (ID_)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_bin;
-create table ACT_RU_IDENTITYLINK (
+CREATE TABLE IF NOT EXISTS ACT_RU_IDENTITYLINK (
     ID_ varchar(64),
     REV_ integer,
     GROUP_ID_ varchar(255),
@@ -389,8 +545,32 @@ create table ACT_RU_IDENTITYLINK (
     SCOPE_TYPE_ varchar(255),
     SCOPE_DEFINITION_ID_ varchar(255),
     primary key (ID_)
+,
+  INDEX ACT_IDX_ATHRZ_PROCEDEF (PROC_DEF_ID_)
+,
+  INDEX ACT_IDX_IDENT_LNK_USER (USER_ID_)
+,
+  INDEX ACT_IDX_IDENT_LNK_GROUP (GROUP_ID_)
+,
+  INDEX ACT_IDX_IDENT_LNK_SCOPE (SCOPE_ID_, SCOPE_TYPE_)
+,
+  INDEX ACT_IDX_IDENT_LNK_SUB_SCOPE (SUB_SCOPE_ID_, SCOPE_TYPE_)
+,
+  INDEX ACT_IDX_IDENT_LNK_SCOPE_DEF (SCOPE_DEFINITION_ID_, SCOPE_TYPE_)
+,
+  constraint ACT_FK_TSKASS_TASK 
+    foreign key (TASK_ID_) 
+    references ACT_RU_TASK (ID_)
+,
+  constraint ACT_FK_ATHRZ_PROCEDEF 
+    foreign key (PROC_DEF_ID_) 
+    references ACT_RE_PROCDEF(ID_)
+,
+  constraint ACT_FK_IDL_PROCINST
+    foreign key (PROC_INST_ID_) 
+    references ACT_RU_EXECUTION (ID_)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_bin;
-create table ACT_RU_ENTITYLINK (
+CREATE TABLE IF NOT EXISTS ACT_RU_ENTITYLINK (
     ID_ varchar(64),
     REV_ integer,
     CREATE_TIME_ datetime(3),
@@ -407,8 +587,16 @@ create table ACT_RU_ENTITYLINK (
     ROOT_SCOPE_TYPE_ varchar(255),
     HIERARCHY_TYPE_ varchar(255),
     primary key (ID_)
+,
+  INDEX ACT_IDX_ENT_LNK_SCOPE (SCOPE_ID_, SCOPE_TYPE_, LINK_TYPE_)
+,
+  INDEX ACT_IDX_ENT_LNK_REF_SCOPE (REF_SCOPE_ID_, REF_SCOPE_TYPE_, LINK_TYPE_)
+,
+  INDEX ACT_IDX_ENT_LNK_ROOT_SCOPE (ROOT_SCOPE_ID_, ROOT_SCOPE_TYPE_, LINK_TYPE_)
+,
+  INDEX ACT_IDX_ENT_LNK_SCOPE_DEF (SCOPE_DEFINITION_ID_, SCOPE_TYPE_, LINK_TYPE_)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_bin;
-create table ACT_RU_EVENT_SUBSCR (
+CREATE TABLE IF NOT EXISTS ACT_RU_EVENT_SUBSCR (
     ID_ varchar(64) not null,
     REV_ integer,
     EVENT_TYPE_ varchar(255) not null,
@@ -427,8 +615,16 @@ create table ACT_RU_EVENT_SUBSCR (
     LOCK_OWNER_ varchar(255),
     TENANT_ID_ varchar(255) default '',
     primary key (ID_)
+,
+  INDEX ACT_IDX_EVENT_SUBSCR_CONFIG_ (CONFIGURATION_)
+,
+  INDEX ACT_IDX_EVENT_SUBSCR_SCOPEREF_ (SCOPE_ID_, SCOPE_TYPE_)
+,
+  constraint ACT_FK_EVENT_EXEC
+    foreign key (EXECUTION_ID_)
+    references ACT_RU_EXECUTION(ID_)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_bin;
-create table FLW_RU_BATCH (
+CREATE TABLE IF NOT EXISTS FLW_RU_BATCH (
     ID_ varchar(64) not null,
     REV_ integer,
     TYPE_ varchar(64) not null,
@@ -441,7 +637,7 @@ create table FLW_RU_BATCH (
     TENANT_ID_ varchar(255) default '',
     primary key (ID_)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_bin;
-create table FLW_RU_BATCH_PART (
+CREATE TABLE IF NOT EXISTS FLW_RU_BATCH_PART (
     ID_ varchar(64) not null,
     REV_ integer,
     BATCH_ID_ varchar(64),
@@ -457,8 +653,14 @@ create table FLW_RU_BATCH_PART (
     RESULT_DOC_ID_ varchar(64),
     TENANT_ID_ varchar(255) default '',
     primary key (ID_)
+,
+  INDEX FLW_IDX_BATCH_PART (BATCH_ID_)
+,
+  constraint FLW_FK_BATCH_PART_PARENT
+    foreign key (BATCH_ID_)
+    references FLW_RU_BATCH (ID_)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_bin;
-create table ACT_RU_JOB (
+CREATE TABLE IF NOT EXISTS ACT_RU_JOB (
     ID_ varchar(64) NOT NULL,
     REV_ integer,
     CATEGORY_ varchar(255),
@@ -487,8 +689,40 @@ create table ACT_RU_JOB (
     CREATE_TIME_ timestamp(3) NULL,
     TENANT_ID_ varchar(255) default '',
     primary key (ID_)
+,
+  INDEX ACT_IDX_JOB_EXCEPTION_STACK_ID (EXCEPTION_STACK_ID_)
+,
+  INDEX ACT_IDX_JOB_CUSTOM_VALUES_ID (CUSTOM_VALUES_ID_)
+,
+  INDEX ACT_IDX_JOB_CORRELATION_ID (CORRELATION_ID_)
+,
+  INDEX ACT_IDX_JOB_SCOPE (SCOPE_ID_, SCOPE_TYPE_)
+,
+  INDEX ACT_IDX_JOB_SUB_SCOPE (SUB_SCOPE_ID_, SCOPE_TYPE_)
+,
+  INDEX ACT_IDX_JOB_SCOPE_DEF (SCOPE_DEFINITION_ID_, SCOPE_TYPE_)
+,
+  constraint ACT_FK_JOB_EXECUTION 
+    foreign key (EXECUTION_ID_) 
+    references ACT_RU_EXECUTION (ID_)
+,
+  constraint ACT_FK_JOB_PROCESS_INSTANCE 
+    foreign key (PROCESS_INSTANCE_ID_) 
+    references ACT_RU_EXECUTION (ID_)
+,
+  constraint ACT_FK_JOB_PROC_DEF
+    foreign key (PROC_DEF_ID_) 
+    references ACT_RE_PROCDEF (ID_)
+,
+  constraint ACT_FK_JOB_EXCEPTION
+    foreign key (EXCEPTION_STACK_ID_)
+    references ACT_GE_BYTEARRAY (ID_)
+,
+  constraint ACT_FK_JOB_CUSTOM_VALUES
+    foreign key (CUSTOM_VALUES_ID_)
+    references ACT_GE_BYTEARRAY (ID_)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_bin;
-create table ACT_RU_TIMER_JOB (
+CREATE TABLE IF NOT EXISTS ACT_RU_TIMER_JOB (
     ID_ varchar(64) NOT NULL,
     REV_ integer,
     CATEGORY_ varchar(255),
@@ -517,8 +751,42 @@ create table ACT_RU_TIMER_JOB (
     CREATE_TIME_ timestamp(3) NULL,
     TENANT_ID_ varchar(255) default '',
     primary key (ID_)
+,
+  INDEX ACT_IDX_TIMER_JOB_EXCEPTION_STACK_ID (EXCEPTION_STACK_ID_)
+,
+  INDEX ACT_IDX_TIMER_JOB_CUSTOM_VALUES_ID (CUSTOM_VALUES_ID_)
+,
+  INDEX ACT_IDX_TIMER_JOB_CORRELATION_ID (CORRELATION_ID_)
+,
+  INDEX ACT_IDX_TIMER_JOB_DUEDATE (DUEDATE_)
+,
+  INDEX ACT_IDX_TJOB_SCOPE (SCOPE_ID_, SCOPE_TYPE_)
+,
+  INDEX ACT_IDX_TJOB_SUB_SCOPE (SUB_SCOPE_ID_, SCOPE_TYPE_)
+,
+  INDEX ACT_IDX_TJOB_SCOPE_DEF (SCOPE_DEFINITION_ID_, SCOPE_TYPE_)
+,
+  constraint ACT_FK_TIMER_JOB_EXECUTION 
+    foreign key (EXECUTION_ID_) 
+    references ACT_RU_EXECUTION (ID_)
+,
+  constraint ACT_FK_TIMER_JOB_PROCESS_INSTANCE 
+    foreign key (PROCESS_INSTANCE_ID_) 
+    references ACT_RU_EXECUTION (ID_)
+,
+  constraint ACT_FK_TIMER_JOB_PROC_DEF
+    foreign key (PROC_DEF_ID_) 
+    references ACT_RE_PROCDEF (ID_)
+,
+  constraint ACT_FK_TIMER_JOB_EXCEPTION
+    foreign key (EXCEPTION_STACK_ID_)
+    references ACT_GE_BYTEARRAY (ID_)
+,
+  constraint ACT_FK_TIMER_JOB_CUSTOM_VALUES
+    foreign key (CUSTOM_VALUES_ID_)
+    references ACT_GE_BYTEARRAY (ID_)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_bin;
-create table ACT_RU_SUSPENDED_JOB (
+CREATE TABLE IF NOT EXISTS ACT_RU_SUSPENDED_JOB (
     ID_ varchar(64) NOT NULL,
     REV_ integer,
     CATEGORY_ varchar(255),
@@ -545,8 +813,40 @@ create table ACT_RU_SUSPENDED_JOB (
     CREATE_TIME_ timestamp(3) NULL,
     TENANT_ID_ varchar(255) default '',
     primary key (ID_)
+,
+  INDEX ACT_IDX_SUSPENDED_JOB_EXCEPTION_STACK_ID (EXCEPTION_STACK_ID_)
+,
+  INDEX ACT_IDX_SUSPENDED_JOB_CUSTOM_VALUES_ID (CUSTOM_VALUES_ID_)
+,
+  INDEX ACT_IDX_SUSPENDED_JOB_CORRELATION_ID (CORRELATION_ID_)
+,
+  INDEX ACT_IDX_SJOB_SCOPE (SCOPE_ID_, SCOPE_TYPE_)
+,
+  INDEX ACT_IDX_SJOB_SUB_SCOPE (SUB_SCOPE_ID_, SCOPE_TYPE_)
+,
+  INDEX ACT_IDX_SJOB_SCOPE_DEF (SCOPE_DEFINITION_ID_, SCOPE_TYPE_)
+,
+  constraint ACT_FK_SUSPENDED_JOB_EXECUTION 
+    foreign key (EXECUTION_ID_) 
+    references ACT_RU_EXECUTION (ID_)
+,
+  constraint ACT_FK_SUSPENDED_JOB_PROCESS_INSTANCE 
+    foreign key (PROCESS_INSTANCE_ID_) 
+    references ACT_RU_EXECUTION (ID_)
+,
+  constraint ACT_FK_SUSPENDED_JOB_PROC_DEF
+    foreign key (PROC_DEF_ID_) 
+    references ACT_RE_PROCDEF (ID_)
+,
+  constraint ACT_FK_SUSPENDED_JOB_EXCEPTION
+    foreign key (EXCEPTION_STACK_ID_)
+    references ACT_GE_BYTEARRAY (ID_)
+,
+  constraint ACT_FK_SUSPENDED_JOB_CUSTOM_VALUES
+    foreign key (CUSTOM_VALUES_ID_)
+    references ACT_GE_BYTEARRAY (ID_)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_bin;
-create table ACT_RU_DEADLETTER_JOB (
+CREATE TABLE IF NOT EXISTS ACT_RU_DEADLETTER_JOB (
     ID_ varchar(64) NOT NULL,
     REV_ integer,
     CATEGORY_ varchar(255),
@@ -572,8 +872,40 @@ create table ACT_RU_DEADLETTER_JOB (
     CREATE_TIME_ timestamp(3) NULL,
     TENANT_ID_ varchar(255) default '',
     primary key (ID_)
+,
+  INDEX ACT_IDX_DEADLETTER_JOB_EXCEPTION_STACK_ID (EXCEPTION_STACK_ID_)
+,
+  INDEX ACT_IDX_DEADLETTER_JOB_CUSTOM_VALUES_ID (CUSTOM_VALUES_ID_)
+,
+  INDEX ACT_IDX_DEADLETTER_JOB_CORRELATION_ID (CORRELATION_ID_)
+,
+  INDEX ACT_IDX_DJOB_SCOPE (SCOPE_ID_, SCOPE_TYPE_)
+,
+  INDEX ACT_IDX_DJOB_SUB_SCOPE (SUB_SCOPE_ID_, SCOPE_TYPE_)
+,
+  INDEX ACT_IDX_DJOB_SCOPE_DEF (SCOPE_DEFINITION_ID_, SCOPE_TYPE_)
+,
+  constraint ACT_FK_DEADLETTER_JOB_EXECUTION 
+    foreign key (EXECUTION_ID_) 
+    references ACT_RU_EXECUTION (ID_)
+,
+  constraint ACT_FK_DEADLETTER_JOB_PROCESS_INSTANCE 
+    foreign key (PROCESS_INSTANCE_ID_) 
+    references ACT_RU_EXECUTION (ID_)
+,
+  constraint ACT_FK_DEADLETTER_JOB_PROC_DEF
+    foreign key (PROC_DEF_ID_) 
+    references ACT_RE_PROCDEF (ID_)
+,
+  constraint ACT_FK_DEADLETTER_JOB_EXCEPTION
+    foreign key (EXCEPTION_STACK_ID_)
+    references ACT_GE_BYTEARRAY (ID_)
+,
+  constraint ACT_FK_DEADLETTER_JOB_CUSTOM_VALUES
+    foreign key (CUSTOM_VALUES_ID_)
+    references ACT_GE_BYTEARRAY (ID_)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_bin;
-create table ACT_RU_HISTORY_JOB (
+CREATE TABLE IF NOT EXISTS ACT_RU_HISTORY_JOB (
     ID_ varchar(64) NOT NULL,
     REV_ integer,
     LOCK_EXP_TIME_ timestamp(3) NULL,
@@ -590,7 +922,7 @@ create table ACT_RU_HISTORY_JOB (
     TENANT_ID_ varchar(255) default '',
     primary key (ID_)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_bin;
-create table ACT_RU_EXTERNAL_JOB (
+CREATE TABLE IF NOT EXISTS ACT_RU_EXTERNAL_JOB (
     ID_ varchar(64) NOT NULL,
     REV_ integer,
     CATEGORY_ varchar(255),
@@ -619,8 +951,28 @@ create table ACT_RU_EXTERNAL_JOB (
     CREATE_TIME_ timestamp(3) NULL,
     TENANT_ID_ varchar(255) default '',
     primary key (ID_)
+,
+  INDEX ACT_IDX_EXTERNAL_JOB_EXCEPTION_STACK_ID (EXCEPTION_STACK_ID_)
+,
+  INDEX ACT_IDX_EXTERNAL_JOB_CUSTOM_VALUES_ID (CUSTOM_VALUES_ID_)
+,
+  INDEX ACT_IDX_EXTERNAL_JOB_CORRELATION_ID (CORRELATION_ID_)
+,
+  INDEX ACT_IDX_EJOB_SCOPE (SCOPE_ID_, SCOPE_TYPE_)
+,
+  INDEX ACT_IDX_EJOB_SUB_SCOPE (SUB_SCOPE_ID_, SCOPE_TYPE_)
+,
+  INDEX ACT_IDX_EJOB_SCOPE_DEF (SCOPE_DEFINITION_ID_, SCOPE_TYPE_)
+,
+  constraint ACT_FK_EXTERNAL_JOB_EXCEPTION
+    foreign key (EXCEPTION_STACK_ID_)
+    references ACT_GE_BYTEARRAY (ID_)
+,
+  constraint ACT_FK_EXTERNAL_JOB_CUSTOM_VALUES
+    foreign key (CUSTOM_VALUES_ID_)
+    references ACT_GE_BYTEARRAY (ID_)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_bin;
-create table ACT_HI_ENTITYLINK (
+CREATE TABLE IF NOT EXISTS ACT_HI_ENTITYLINK (
     ID_ varchar(64),
     LINK_TYPE_ varchar(255),
     CREATE_TIME_ datetime(3),
@@ -636,8 +988,16 @@ create table ACT_HI_ENTITYLINK (
     ROOT_SCOPE_TYPE_ varchar(255),
     HIERARCHY_TYPE_ varchar(255),
     primary key (ID_)
+,
+  INDEX ACT_IDX_HI_ENT_LNK_SCOPE (SCOPE_ID_, SCOPE_TYPE_, LINK_TYPE_)
+,
+  INDEX ACT_IDX_HI_ENT_LNK_REF_SCOPE (REF_SCOPE_ID_, REF_SCOPE_TYPE_, LINK_TYPE_)
+,
+  INDEX ACT_IDX_HI_ENT_LNK_ROOT_SCOPE (ROOT_SCOPE_ID_, ROOT_SCOPE_TYPE_, LINK_TYPE_)
+,
+  INDEX ACT_IDX_HI_ENT_LNK_SCOPE_DEF (SCOPE_DEFINITION_ID_, SCOPE_TYPE_, LINK_TYPE_)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_bin;
-create table ACT_HI_IDENTITYLINK (
+CREATE TABLE IF NOT EXISTS ACT_HI_IDENTITYLINK (
     ID_ varchar(64),
     GROUP_ID_ varchar(255),
     TYPE_ varchar(255),
@@ -650,8 +1010,20 @@ create table ACT_HI_IDENTITYLINK (
     SCOPE_TYPE_ varchar(255),
     SCOPE_DEFINITION_ID_ varchar(255),
     primary key (ID_)
+,
+  INDEX ACT_IDX_HI_IDENT_LNK_TASK (TASK_ID_)
+,
+  INDEX ACT_IDX_HI_IDENT_LNK_PROCINST (PROC_INST_ID_)
+,
+  INDEX ACT_IDX_HI_IDENT_LNK_USER (USER_ID_)
+,
+  INDEX ACT_IDX_HI_IDENT_LNK_SCOPE (SCOPE_ID_, SCOPE_TYPE_)
+,
+  INDEX ACT_IDX_HI_IDENT_LNK_SUB_SCOPE (SUB_SCOPE_ID_, SCOPE_TYPE_)
+,
+  INDEX ACT_IDX_HI_IDENT_LNK_SCOPE_DEF (SCOPE_DEFINITION_ID_, SCOPE_TYPE_)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_bin;
-create table ACT_HI_TASKINST (
+CREATE TABLE IF NOT EXISTS ACT_HI_TASKINST (
     ID_ varchar(64) not null,
     REV_ integer default 1,
     PROC_DEF_ID_ varchar(64),
@@ -681,8 +1053,16 @@ create table ACT_HI_TASKINST (
     TENANT_ID_ varchar(255) default '',
     LAST_UPDATED_TIME_ datetime(3),
     primary key (ID_)
+,
+  INDEX ACT_IDX_HI_TASK_INST_PROCINST (PROC_INST_ID_)
+,
+  INDEX ACT_IDX_HI_TASK_SCOPE (SCOPE_ID_, SCOPE_TYPE_)
+,
+  INDEX ACT_IDX_HI_TASK_SUB_SCOPE (SUB_SCOPE_ID_, SCOPE_TYPE_)
+,
+  INDEX ACT_IDX_HI_TASK_SCOPE_DEF (SCOPE_DEFINITION_ID_, SCOPE_TYPE_)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_bin;
-create table ACT_HI_TSK_LOG (
+CREATE TABLE IF NOT EXISTS ACT_HI_TSK_LOG (
     ID_ bigint auto_increment,
     TYPE_ varchar(64),
     TASK_ID_ varchar(64) not null,
@@ -699,7 +1079,7 @@ create table ACT_HI_TSK_LOG (
     TENANT_ID_ varchar(255) default '',
     primary key (ID_)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_bin;
-create table ACT_HI_VARINST (
+CREATE TABLE IF NOT EXISTS ACT_HI_VARINST (
     ID_ varchar(64) not null,
     REV_ integer default 1,
     PROC_INST_ID_ varchar(64),
@@ -719,318 +1099,37 @@ create table ACT_HI_VARINST (
     CREATE_TIME_ datetime(3),
     LAST_UPDATED_TIME_ datetime(3),
     primary key (ID_)
+,
+  INDEX ACT_IDX_HI_PROCVAR_PROC_INST (PROC_INST_ID_)
+,
+  INDEX ACT_IDX_HI_PROCVAR_TASK_ID (TASK_ID_)
+,
+  INDEX ACT_IDX_HI_PROCVAR_EXE (EXECUTION_ID_)
+,
+  INDEX ACT_IDX_HI_PROCVAR_NAME_TYPE (NAME_, VAR_TYPE_)
+,
+  INDEX ACT_IDX_HI_VAR_SCOPE_ID_TYPE (SCOPE_ID_, SCOPE_TYPE_)
+,
+  INDEX ACT_IDX_HI_VAR_SUB_ID_TYPE (SUB_SCOPE_ID_, SCOPE_TYPE_)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_bin;
 
--- ========== 第 2 段：索引 ==========
-create index ACT_IDX_EXEC_BUSKEY on ACT_RU_EXECUTION(BUSINESS_KEY_);
-create index ACT_IDC_EXEC_ROOT on ACT_RU_EXECUTION(ROOT_PROC_INST_ID_);
-create index ACT_IDX_EXEC_REF_ID_ on ACT_RU_EXECUTION(REFERENCE_ID_);
-create index ACT_IDX_VARIABLE_TASK_ID on ACT_RU_VARIABLE(TASK_ID_);
-create index ACT_IDX_ATHRZ_PROCEDEF on ACT_RU_IDENTITYLINK(PROC_DEF_ID_);
-create index ACT_IDX_INFO_PROCDEF on ACT_PROCDEF_INFO(PROC_DEF_ID_);
-create index ACT_IDX_RU_ACTI_START on ACT_RU_ACTINST(START_TIME_);
-create index ACT_IDX_RU_ACTI_END on ACT_RU_ACTINST(END_TIME_);
-create index ACT_IDX_RU_ACTI_PROC on ACT_RU_ACTINST(PROC_INST_ID_);
-create index ACT_IDX_RU_ACTI_PROC_ACT on ACT_RU_ACTINST(PROC_INST_ID_, ACT_ID_);
-create index ACT_IDX_RU_ACTI_EXEC on ACT_RU_ACTINST(EXECUTION_ID_);
-create index ACT_IDX_RU_ACTI_EXEC_ACT on ACT_RU_ACTINST(EXECUTION_ID_, ACT_ID_);
-create index ACT_IDX_RU_ACTI_TASK on ACT_RU_ACTINST(TASK_ID_);
-create index ACT_IDX_HI_PRO_INST_END on ACT_HI_PROCINST(END_TIME_);
-create index ACT_IDX_HI_PRO_I_BUSKEY on ACT_HI_PROCINST(BUSINESS_KEY_);
-create index ACT_IDX_HI_PRO_SUPER_PROCINST on ACT_HI_PROCINST(SUPER_PROCESS_INSTANCE_ID_);
-create index ACT_IDX_HI_ACT_INST_START on ACT_HI_ACTINST(START_TIME_);
-create index ACT_IDX_HI_ACT_INST_END on ACT_HI_ACTINST(END_TIME_);
-create index ACT_IDX_HI_DETAIL_PROC_INST on ACT_HI_DETAIL(PROC_INST_ID_);
-create index ACT_IDX_HI_DETAIL_ACT_INST on ACT_HI_DETAIL(ACT_INST_ID_);
-create index ACT_IDX_HI_DETAIL_TIME on ACT_HI_DETAIL(TIME_);
-create index ACT_IDX_HI_DETAIL_NAME on ACT_HI_DETAIL(NAME_);
-create index ACT_IDX_HI_DETAIL_TASK_ID on ACT_HI_DETAIL(TASK_ID_);
-create index ACT_IDX_HI_PROCVAR_PROC_INST on ACT_HI_VARINST(PROC_INST_ID_);
-create index ACT_IDX_HI_PROCVAR_TASK_ID on ACT_HI_VARINST(TASK_ID_);
-create index ACT_IDX_HI_PROCVAR_EXE on ACT_HI_VARINST(EXECUTION_ID_);
-create index ACT_IDX_HI_ACT_INST_PROCINST on ACT_HI_ACTINST(PROC_INST_ID_, ACT_ID_);
-create index ACT_IDX_HI_ACT_INST_EXEC on ACT_HI_ACTINST(EXECUTION_ID_, ACT_ID_);
-create index ACT_IDX_HI_IDENT_LNK_TASK on ACT_HI_IDENTITYLINK(TASK_ID_);
-create index ACT_IDX_HI_IDENT_LNK_PROCINST on ACT_HI_IDENTITYLINK(PROC_INST_ID_);
-create index ACT_IDX_HI_TASK_INST_PROCINST on ACT_HI_TASKINST(PROC_INST_ID_);
-create index ACT_IDX_PRIV_USER on ACT_ID_PRIV_MAPPING(USER_ID_);
-create index ACT_IDX_PRIV_GROUP on ACT_ID_PRIV_MAPPING(GROUP_ID_);
-create index ACT_IDX_TASK_CREATE on ACT_RU_TASK(CREATE_TIME_);
-create index ACT_IDX_TASK_SCOPE on ACT_RU_TASK(SCOPE_ID_, SCOPE_TYPE_);
-create index ACT_IDX_TASK_SUB_SCOPE on ACT_RU_TASK(SUB_SCOPE_ID_, SCOPE_TYPE_);
-create index ACT_IDX_TASK_SCOPE_DEF on ACT_RU_TASK(SCOPE_DEFINITION_ID_, SCOPE_TYPE_);
-create index ACT_IDX_RU_VAR_SCOPE_ID_TYPE on ACT_RU_VARIABLE(SCOPE_ID_, SCOPE_TYPE_);
-create index ACT_IDX_RU_VAR_SUB_ID_TYPE on ACT_RU_VARIABLE(SUB_SCOPE_ID_, SCOPE_TYPE_);
-create index ACT_IDX_IDENT_LNK_USER on ACT_RU_IDENTITYLINK(USER_ID_);
-create index ACT_IDX_IDENT_LNK_GROUP on ACT_RU_IDENTITYLINK(GROUP_ID_);
-create index ACT_IDX_IDENT_LNK_SCOPE on ACT_RU_IDENTITYLINK(SCOPE_ID_, SCOPE_TYPE_);
-create index ACT_IDX_IDENT_LNK_SUB_SCOPE on ACT_RU_IDENTITYLINK(SUB_SCOPE_ID_, SCOPE_TYPE_);
-create index ACT_IDX_IDENT_LNK_SCOPE_DEF on ACT_RU_IDENTITYLINK(SCOPE_DEFINITION_ID_, SCOPE_TYPE_);
-create index ACT_IDX_ENT_LNK_SCOPE on ACT_RU_ENTITYLINK(SCOPE_ID_, SCOPE_TYPE_, LINK_TYPE_);
-create index ACT_IDX_ENT_LNK_REF_SCOPE on ACT_RU_ENTITYLINK(REF_SCOPE_ID_, REF_SCOPE_TYPE_, LINK_TYPE_);
-create index ACT_IDX_ENT_LNK_ROOT_SCOPE on ACT_RU_ENTITYLINK(ROOT_SCOPE_ID_, ROOT_SCOPE_TYPE_, LINK_TYPE_);
-create index ACT_IDX_ENT_LNK_SCOPE_DEF on ACT_RU_ENTITYLINK(SCOPE_DEFINITION_ID_, SCOPE_TYPE_, LINK_TYPE_);
-create index ACT_IDX_EVENT_SUBSCR_CONFIG_ on ACT_RU_EVENT_SUBSCR(CONFIGURATION_);
-create index ACT_IDX_EVENT_SUBSCR_SCOPEREF_ on ACT_RU_EVENT_SUBSCR(SCOPE_ID_, SCOPE_TYPE_);
-create index FLW_IDX_BATCH_PART on FLW_RU_BATCH_PART(BATCH_ID_);
-create index ACT_IDX_JOB_EXCEPTION_STACK_ID on ACT_RU_JOB(EXCEPTION_STACK_ID_);
-create index ACT_IDX_JOB_CUSTOM_VALUES_ID on ACT_RU_JOB(CUSTOM_VALUES_ID_);
-create index ACT_IDX_JOB_CORRELATION_ID on ACT_RU_JOB(CORRELATION_ID_);
-create index ACT_IDX_TIMER_JOB_EXCEPTION_STACK_ID on ACT_RU_TIMER_JOB(EXCEPTION_STACK_ID_);
-create index ACT_IDX_TIMER_JOB_CUSTOM_VALUES_ID on ACT_RU_TIMER_JOB(CUSTOM_VALUES_ID_);
-create index ACT_IDX_TIMER_JOB_CORRELATION_ID on ACT_RU_TIMER_JOB(CORRELATION_ID_);
-create index ACT_IDX_TIMER_JOB_DUEDATE on ACT_RU_TIMER_JOB(DUEDATE_);
-create index ACT_IDX_SUSPENDED_JOB_EXCEPTION_STACK_ID on ACT_RU_SUSPENDED_JOB(EXCEPTION_STACK_ID_);
-create index ACT_IDX_SUSPENDED_JOB_CUSTOM_VALUES_ID on ACT_RU_SUSPENDED_JOB(CUSTOM_VALUES_ID_);
-create index ACT_IDX_SUSPENDED_JOB_CORRELATION_ID on ACT_RU_SUSPENDED_JOB(CORRELATION_ID_);
-create index ACT_IDX_DEADLETTER_JOB_EXCEPTION_STACK_ID on ACT_RU_DEADLETTER_JOB(EXCEPTION_STACK_ID_);
-create index ACT_IDX_DEADLETTER_JOB_CUSTOM_VALUES_ID on ACT_RU_DEADLETTER_JOB(CUSTOM_VALUES_ID_);
-create index ACT_IDX_DEADLETTER_JOB_CORRELATION_ID on ACT_RU_DEADLETTER_JOB(CORRELATION_ID_);
-create index ACT_IDX_EXTERNAL_JOB_EXCEPTION_STACK_ID on ACT_RU_EXTERNAL_JOB(EXCEPTION_STACK_ID_);
-create index ACT_IDX_EXTERNAL_JOB_CUSTOM_VALUES_ID on ACT_RU_EXTERNAL_JOB(CUSTOM_VALUES_ID_);
-create index ACT_IDX_EXTERNAL_JOB_CORRELATION_ID on ACT_RU_EXTERNAL_JOB(CORRELATION_ID_);
-create index ACT_IDX_JOB_SCOPE on ACT_RU_JOB(SCOPE_ID_, SCOPE_TYPE_);
-create index ACT_IDX_JOB_SUB_SCOPE on ACT_RU_JOB(SUB_SCOPE_ID_, SCOPE_TYPE_);
-create index ACT_IDX_JOB_SCOPE_DEF on ACT_RU_JOB(SCOPE_DEFINITION_ID_, SCOPE_TYPE_);
-create index ACT_IDX_TJOB_SCOPE on ACT_RU_TIMER_JOB(SCOPE_ID_, SCOPE_TYPE_);
-create index ACT_IDX_TJOB_SUB_SCOPE on ACT_RU_TIMER_JOB(SUB_SCOPE_ID_, SCOPE_TYPE_);
-create index ACT_IDX_TJOB_SCOPE_DEF on ACT_RU_TIMER_JOB(SCOPE_DEFINITION_ID_, SCOPE_TYPE_);
-create index ACT_IDX_SJOB_SCOPE on ACT_RU_SUSPENDED_JOB(SCOPE_ID_, SCOPE_TYPE_);
-create index ACT_IDX_SJOB_SUB_SCOPE on ACT_RU_SUSPENDED_JOB(SUB_SCOPE_ID_, SCOPE_TYPE_);
-create index ACT_IDX_SJOB_SCOPE_DEF on ACT_RU_SUSPENDED_JOB(SCOPE_DEFINITION_ID_, SCOPE_TYPE_);
-create index ACT_IDX_DJOB_SCOPE on ACT_RU_DEADLETTER_JOB(SCOPE_ID_, SCOPE_TYPE_);
-create index ACT_IDX_DJOB_SUB_SCOPE on ACT_RU_DEADLETTER_JOB(SUB_SCOPE_ID_, SCOPE_TYPE_);
-create index ACT_IDX_DJOB_SCOPE_DEF on ACT_RU_DEADLETTER_JOB(SCOPE_DEFINITION_ID_, SCOPE_TYPE_);
-create index ACT_IDX_EJOB_SCOPE on ACT_RU_EXTERNAL_JOB(SCOPE_ID_, SCOPE_TYPE_);
-create index ACT_IDX_EJOB_SUB_SCOPE on ACT_RU_EXTERNAL_JOB(SUB_SCOPE_ID_, SCOPE_TYPE_);
-create index ACT_IDX_EJOB_SCOPE_DEF on ACT_RU_EXTERNAL_JOB(SCOPE_DEFINITION_ID_, SCOPE_TYPE_);
-create index ACT_IDX_HI_ENT_LNK_SCOPE on ACT_HI_ENTITYLINK(SCOPE_ID_, SCOPE_TYPE_, LINK_TYPE_);
-create index ACT_IDX_HI_ENT_LNK_REF_SCOPE on ACT_HI_ENTITYLINK(REF_SCOPE_ID_, REF_SCOPE_TYPE_, LINK_TYPE_);
-create index ACT_IDX_HI_ENT_LNK_ROOT_SCOPE on ACT_HI_ENTITYLINK(ROOT_SCOPE_ID_, ROOT_SCOPE_TYPE_, LINK_TYPE_);
-create index ACT_IDX_HI_ENT_LNK_SCOPE_DEF on ACT_HI_ENTITYLINK(SCOPE_DEFINITION_ID_, SCOPE_TYPE_, LINK_TYPE_);
-create index ACT_IDX_HI_IDENT_LNK_USER on ACT_HI_IDENTITYLINK(USER_ID_);
-create index ACT_IDX_HI_IDENT_LNK_SCOPE on ACT_HI_IDENTITYLINK(SCOPE_ID_, SCOPE_TYPE_);
-create index ACT_IDX_HI_IDENT_LNK_SUB_SCOPE on ACT_HI_IDENTITYLINK(SUB_SCOPE_ID_, SCOPE_TYPE_);
-create index ACT_IDX_HI_IDENT_LNK_SCOPE_DEF on ACT_HI_IDENTITYLINK(SCOPE_DEFINITION_ID_, SCOPE_TYPE_);
-create index ACT_IDX_HI_TASK_SCOPE on ACT_HI_TASKINST(SCOPE_ID_, SCOPE_TYPE_);
-create index ACT_IDX_HI_TASK_SUB_SCOPE on ACT_HI_TASKINST(SUB_SCOPE_ID_, SCOPE_TYPE_);
-create index ACT_IDX_HI_TASK_SCOPE_DEF on ACT_HI_TASKINST(SCOPE_DEFINITION_ID_, SCOPE_TYPE_);
-create index ACT_IDX_HI_PROCVAR_NAME_TYPE on ACT_HI_VARINST(NAME_, VAR_TYPE_);
-create index ACT_IDX_HI_VAR_SCOPE_ID_TYPE on ACT_HI_VARINST(SCOPE_ID_, SCOPE_TYPE_);
-create index ACT_IDX_HI_VAR_SUB_ID_TYPE on ACT_HI_VARINST(SUB_SCOPE_ID_, SCOPE_TYPE_);
-
--- ========== 第 3 段：版本与初始化数据 ==========
-insert into ACT_GE_PROPERTY
+-- ========== 版本与初始化数据（INSERT IGNORE，12 条）==========
+INSERT IGNORE INTO ACT_GE_PROPERTY
 values ('common.schema.version', '7.0.0.0', 1);
-insert into ACT_GE_PROPERTY
+INSERT IGNORE INTO ACT_GE_PROPERTY
 values ('next.dbid', '1', 1);
-insert into ACT_GE_PROPERTY
+INSERT IGNORE INTO ACT_GE_PROPERTY
 values ('schema.version', '7.0.0.0', 1);
-insert into ACT_GE_PROPERTY
+INSERT IGNORE INTO ACT_GE_PROPERTY
 values ('schema.history', 'create(7.0.0.0)', 1);
-insert into ACT_ID_PROPERTY
+INSERT IGNORE INTO ACT_ID_PROPERTY
 values ('schema.version', '7.0.0.0', 1);
-insert into ACT_GE_PROPERTY values ('task.schema.version', '7.0.0.0', 1);
-insert into ACT_GE_PROPERTY values ('variable.schema.version', '7.0.0.0', 1);
-insert into ACT_GE_PROPERTY values ('identitylink.schema.version', '7.0.0.0', 1);
-insert into ACT_GE_PROPERTY values ('entitylink.schema.version', '7.0.0.0', 1);
-insert into ACT_GE_PROPERTY values ('eventsubscription.schema.version', '7.0.0.0', 1);
-insert into ACT_GE_PROPERTY values ('batch.schema.version', '7.0.0.0', 1);
-insert into ACT_GE_PROPERTY values ('job.schema.version', '7.0.0.0', 1);
-
--- ========== 其他语句 ==========
-alter table ACT_GE_BYTEARRAY
-    add constraint ACT_FK_BYTEARR_DEPL 
-    foreign key (DEPLOYMENT_ID_) 
-    references ACT_RE_DEPLOYMENT (ID_);
-alter table ACT_RE_PROCDEF
-    add constraint ACT_UNIQ_PROCDEF
-    unique (KEY_,VERSION_, DERIVED_VERSION_, TENANT_ID_);
-alter table ACT_RU_EXECUTION
-    add constraint ACT_FK_EXE_PROCINST 
-    foreign key (PROC_INST_ID_) 
-    references ACT_RU_EXECUTION (ID_) on delete cascade on update cascade;
-alter table ACT_RU_EXECUTION
-    add constraint ACT_FK_EXE_PARENT 
-    foreign key (PARENT_ID_) 
-    references ACT_RU_EXECUTION (ID_) on delete cascade;
-alter table ACT_RU_EXECUTION
-    add constraint ACT_FK_EXE_SUPER 
-    foreign key (SUPER_EXEC_) 
-    references ACT_RU_EXECUTION (ID_) on delete cascade;
-alter table ACT_RU_EXECUTION
-    add constraint ACT_FK_EXE_PROCDEF 
-    foreign key (PROC_DEF_ID_) 
-    references ACT_RE_PROCDEF (ID_);
-alter table ACT_RU_IDENTITYLINK
-    add constraint ACT_FK_TSKASS_TASK 
-    foreign key (TASK_ID_) 
-    references ACT_RU_TASK (ID_);
-alter table ACT_RU_IDENTITYLINK
-    add constraint ACT_FK_ATHRZ_PROCEDEF 
-    foreign key (PROC_DEF_ID_) 
-    references ACT_RE_PROCDEF(ID_);
-alter table ACT_RU_IDENTITYLINK
-    add constraint ACT_FK_IDL_PROCINST
-    foreign key (PROC_INST_ID_) 
-    references ACT_RU_EXECUTION (ID_);
-alter table ACT_RU_TASK
-    add constraint ACT_FK_TASK_EXE
-    foreign key (EXECUTION_ID_)
-    references ACT_RU_EXECUTION (ID_);
-alter table ACT_RU_TASK
-    add constraint ACT_FK_TASK_PROCINST
-    foreign key (PROC_INST_ID_)
-    references ACT_RU_EXECUTION (ID_);
-alter table ACT_RU_TASK
-  	add constraint ACT_FK_TASK_PROCDEF
-  	foreign key (PROC_DEF_ID_)
-  	references ACT_RE_PROCDEF (ID_);
-alter table ACT_RU_VARIABLE 
-    add constraint ACT_FK_VAR_EXE 
-    foreign key (EXECUTION_ID_) 
-    references ACT_RU_EXECUTION (ID_);
-alter table ACT_RU_VARIABLE
-    add constraint ACT_FK_VAR_PROCINST
-    foreign key (PROC_INST_ID_)
-    references ACT_RU_EXECUTION(ID_);
-alter table ACT_RU_JOB 
-    add constraint ACT_FK_JOB_EXECUTION 
-    foreign key (EXECUTION_ID_) 
-    references ACT_RU_EXECUTION (ID_);
-alter table ACT_RU_JOB 
-    add constraint ACT_FK_JOB_PROCESS_INSTANCE 
-    foreign key (PROCESS_INSTANCE_ID_) 
-    references ACT_RU_EXECUTION (ID_);
-alter table ACT_RU_JOB 
-    add constraint ACT_FK_JOB_PROC_DEF
-    foreign key (PROC_DEF_ID_) 
-    references ACT_RE_PROCDEF (ID_);
-alter table ACT_RU_TIMER_JOB 
-    add constraint ACT_FK_TIMER_JOB_EXECUTION 
-    foreign key (EXECUTION_ID_) 
-    references ACT_RU_EXECUTION (ID_);
-alter table ACT_RU_TIMER_JOB 
-    add constraint ACT_FK_TIMER_JOB_PROCESS_INSTANCE 
-    foreign key (PROCESS_INSTANCE_ID_) 
-    references ACT_RU_EXECUTION (ID_);
-alter table ACT_RU_TIMER_JOB 
-    add constraint ACT_FK_TIMER_JOB_PROC_DEF
-    foreign key (PROC_DEF_ID_) 
-    references ACT_RE_PROCDEF (ID_);
-alter table ACT_RU_SUSPENDED_JOB 
-    add constraint ACT_FK_SUSPENDED_JOB_EXECUTION 
-    foreign key (EXECUTION_ID_) 
-    references ACT_RU_EXECUTION (ID_);
-alter table ACT_RU_SUSPENDED_JOB 
-    add constraint ACT_FK_SUSPENDED_JOB_PROCESS_INSTANCE 
-    foreign key (PROCESS_INSTANCE_ID_) 
-    references ACT_RU_EXECUTION (ID_);
-alter table ACT_RU_SUSPENDED_JOB 
-    add constraint ACT_FK_SUSPENDED_JOB_PROC_DEF
-    foreign key (PROC_DEF_ID_) 
-    references ACT_RE_PROCDEF (ID_);
-alter table ACT_RU_DEADLETTER_JOB 
-    add constraint ACT_FK_DEADLETTER_JOB_EXECUTION 
-    foreign key (EXECUTION_ID_) 
-    references ACT_RU_EXECUTION (ID_);
-alter table ACT_RU_DEADLETTER_JOB 
-    add constraint ACT_FK_DEADLETTER_JOB_PROCESS_INSTANCE 
-    foreign key (PROCESS_INSTANCE_ID_) 
-    references ACT_RU_EXECUTION (ID_);
-alter table ACT_RU_DEADLETTER_JOB 
-    add constraint ACT_FK_DEADLETTER_JOB_PROC_DEF
-    foreign key (PROC_DEF_ID_) 
-    references ACT_RE_PROCDEF (ID_);
-alter table ACT_RU_EVENT_SUBSCR
-    add constraint ACT_FK_EVENT_EXEC
-    foreign key (EXECUTION_ID_)
-    references ACT_RU_EXECUTION(ID_);
-alter table ACT_RE_MODEL 
-    add constraint ACT_FK_MODEL_SOURCE 
-    foreign key (EDITOR_SOURCE_VALUE_ID_) 
-    references ACT_GE_BYTEARRAY (ID_);
-alter table ACT_RE_MODEL 
-    add constraint ACT_FK_MODEL_SOURCE_EXTRA 
-    foreign key (EDITOR_SOURCE_EXTRA_VALUE_ID_) 
-    references ACT_GE_BYTEARRAY (ID_);
-alter table ACT_RE_MODEL 
-    add constraint ACT_FK_MODEL_DEPLOYMENT 
-    foreign key (DEPLOYMENT_ID_) 
-    references ACT_RE_DEPLOYMENT (ID_);
-alter table ACT_PROCDEF_INFO 
-    add constraint ACT_FK_INFO_JSON_BA 
-    foreign key (INFO_JSON_ID_) 
-    references ACT_GE_BYTEARRAY (ID_);
-alter table ACT_PROCDEF_INFO 
-    add constraint ACT_FK_INFO_PROCDEF 
-    foreign key (PROC_DEF_ID_) 
-    references ACT_RE_PROCDEF (ID_);
-alter table ACT_PROCDEF_INFO
-    add constraint ACT_UNIQ_INFO_PROCDEF
-    unique (PROC_DEF_ID_);
-alter table ACT_ID_MEMBERSHIP
-    add constraint ACT_FK_MEMB_GROUP
-    foreign key (GROUP_ID_)
-    references ACT_ID_GROUP (ID_);
-alter table ACT_ID_MEMBERSHIP
-    add constraint ACT_FK_MEMB_USER
-    foreign key (USER_ID_)
-    references ACT_ID_USER (ID_);
-alter table ACT_ID_PRIV_MAPPING
-    add constraint ACT_FK_PRIV_MAPPING
-    foreign key (PRIV_ID_)
-    references ACT_ID_PRIV (ID_);
-alter table ACT_ID_PRIV
-    add constraint ACT_UNIQ_PRIV_NAME
-    unique (NAME_);
-alter table ACT_RU_VARIABLE 
-    add constraint ACT_FK_VAR_BYTEARRAY 
-    foreign key (BYTEARRAY_ID_) 
-    references ACT_GE_BYTEARRAY (ID_);
-alter table FLW_RU_BATCH_PART
-    add constraint FLW_FK_BATCH_PART_PARENT
-    foreign key (BATCH_ID_)
-    references FLW_RU_BATCH (ID_);
-alter table ACT_RU_JOB
-    add constraint ACT_FK_JOB_EXCEPTION
-    foreign key (EXCEPTION_STACK_ID_)
-    references ACT_GE_BYTEARRAY (ID_);
-alter table ACT_RU_JOB
-    add constraint ACT_FK_JOB_CUSTOM_VALUES
-    foreign key (CUSTOM_VALUES_ID_)
-    references ACT_GE_BYTEARRAY (ID_);
-alter table ACT_RU_TIMER_JOB
-    add constraint ACT_FK_TIMER_JOB_EXCEPTION
-    foreign key (EXCEPTION_STACK_ID_)
-    references ACT_GE_BYTEARRAY (ID_);
-alter table ACT_RU_TIMER_JOB
-    add constraint ACT_FK_TIMER_JOB_CUSTOM_VALUES
-    foreign key (CUSTOM_VALUES_ID_)
-    references ACT_GE_BYTEARRAY (ID_);
-alter table ACT_RU_SUSPENDED_JOB
-    add constraint ACT_FK_SUSPENDED_JOB_EXCEPTION
-    foreign key (EXCEPTION_STACK_ID_)
-    references ACT_GE_BYTEARRAY (ID_);
-alter table ACT_RU_SUSPENDED_JOB
-    add constraint ACT_FK_SUSPENDED_JOB_CUSTOM_VALUES
-    foreign key (CUSTOM_VALUES_ID_)
-    references ACT_GE_BYTEARRAY (ID_);
-alter table ACT_RU_DEADLETTER_JOB
-    add constraint ACT_FK_DEADLETTER_JOB_EXCEPTION
-    foreign key (EXCEPTION_STACK_ID_)
-    references ACT_GE_BYTEARRAY (ID_);
-alter table ACT_RU_DEADLETTER_JOB
-    add constraint ACT_FK_DEADLETTER_JOB_CUSTOM_VALUES
-    foreign key (CUSTOM_VALUES_ID_)
-    references ACT_GE_BYTEARRAY (ID_);
-alter table ACT_RU_EXTERNAL_JOB
-    add constraint ACT_FK_EXTERNAL_JOB_EXCEPTION
-    foreign key (EXCEPTION_STACK_ID_)
-    references ACT_GE_BYTEARRAY (ID_);
-alter table ACT_RU_EXTERNAL_JOB
-    add constraint ACT_FK_EXTERNAL_JOB_CUSTOM_VALUES
-    foreign key (CUSTOM_VALUES_ID_)
-    references ACT_GE_BYTEARRAY (ID_);
+INSERT IGNORE INTO ACT_GE_PROPERTY values ('task.schema.version', '7.0.0.0', 1);
+INSERT IGNORE INTO ACT_GE_PROPERTY values ('variable.schema.version', '7.0.0.0', 1);
+INSERT IGNORE INTO ACT_GE_PROPERTY values ('identitylink.schema.version', '7.0.0.0', 1);
+INSERT IGNORE INTO ACT_GE_PROPERTY values ('entitylink.schema.version', '7.0.0.0', 1);
+INSERT IGNORE INTO ACT_GE_PROPERTY values ('eventsubscription.schema.version', '7.0.0.0', 1);
+INSERT IGNORE INTO ACT_GE_PROPERTY values ('batch.schema.version', '7.0.0.0', 1);
+INSERT IGNORE INTO ACT_GE_PROPERTY values ('job.schema.version', '7.0.0.0', 1);
 
 SET FOREIGN_KEY_CHECKS = 1;

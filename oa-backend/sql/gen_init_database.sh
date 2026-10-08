@@ -119,11 +119,26 @@ legacy_count=$(grep -c 'haixiajin_oa' "$TMP" || true)
 # 若来源文件里的续行没删干净，这里会变成 2 —— 那条孤立语句正是上一版生成器的真实故障。
 charset_count=$(grep -cE '^ +DEFAULT CHARACTER SET utf8mb4 COLLATE' "$TMP" || true)
 table_count=$(grep -ciE '^create table' "$TMP" || true)
+# ---- 幂等断言（P1 收口，2026-09-29）----
+# 头部承诺"重复执行不报错"，这里的职责就是把这个承诺变成可校验的事实：
+# 71/71 建表必须带 IF NOT EXISTS；MySQL 8 没有 CREATE INDEX IF NOT EXISTS，
+# 索引/约束必须已内联进建表语句（产物中不允许再有独立的 create index）；
+# 版本标记必须是 INSERT IGNORE（重复执行撞主键 = 假幂等）。
+ifnot_count=$(grep -ciE '^create table if not exists' "$TMP" || true)
+idx_count=$(grep -ciE '^create (unique |fulltext )?index' "$TMP" || true)
+# BSD grep 没有 -P（负向预查不可用），直接数两种形态：
+# 产物里的 insert 只可能有引擎的 12 条版本标记，且必须全部是 INSERT IGNORE。
+insert_total=$(grep -ciE '^insert' "$TMP" || true)
+insert_ignore=$(grep -ciE '^insert ignore' "$TMP" || true)
 
 check "CREATE DATABASE 语句数" "1" "$db_count"
 check "遗留的旧库名 haixiajin_oa" "0" "$legacy_count"
 check "DEFAULT CHARACTER SET 行数（只应有本脚本自己的一行）" "1" "$charset_count"
 check "CREATE TABLE 总数（应为 30 业务 + 41 引擎 = 71）" "71" "$table_count"
+check "带 IF NOT EXISTS 的建表（必须 71/71）" "71" "$ifnot_count"
+check "独立的 CREATE INDEX（必须 0，应已内联进建表）" "0" "$idx_count"
+check "INSERT 总数（只有引擎版本标记 12 条，业务零种子）" "12" "$insert_total"
+check "其中 INSERT IGNORE（必须 12/12，重复执行不撞主键）" "12" "$insert_ignore"
 
 # ---- 通用守卫：schema.sql 里的每一张表都必须出现在产出中 --------------------
 # 这条是为一次真实事故加的：flow_delegation / flow_escalation 当初是**手工补进
