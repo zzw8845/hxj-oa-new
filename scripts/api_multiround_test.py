@@ -90,9 +90,11 @@ def purge_doc(doc_id):
 
 def build_round_fixtures(tk, ns, with_branch):
     ids = cs.build_skeleton(tk, ns, n_top=2, n_sub=0, with_branch=with_branch, threshold=5000)
-    # 「出纳付款」节点命中内置模板 role{CASHIER}，必须有人持 code=CASHIER 的角色
+    # 「出纳付款」节点命中内置模板 role{CASHIER}，必须有人持 code=CASHIER 的角色。
+    # name 不能带轮次前缀（R01-出纳）：code 固定为 CASHIER，全轮次共用这一条角色，
+    # 第一轮起的名会一直留在名上 —— R02 的出纳在界面上就"串号"成了 R01-出纳。
     st, r = cs.call('POST', '/api/roles', token=tk, body={
-        'name': '%s-出纳' % ns, 'code': 'CASHIER',
+        'name': '出纳付款审批（回归夹具）', 'code': 'CASHIER',
         'permCodes': ['document:approve', 'todo:menu'], 'scopeType': 'company',
         'remark': '多轮回归夹具'})
     cash_role = (r.get('data') or {}).get('id')

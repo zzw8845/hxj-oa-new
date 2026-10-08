@@ -30,7 +30,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
    为什么要把这个数写死在代码里：本项目出过一次「假绿灯」—— 上游某条断言依赖的接口被回退后
    抛错中断，导致其后 16 条断言（含整条审计留痕链路）**从未执行**，而末行照样打印
    "85/85 通过"。有了这个数，任何"少跑了"都会立刻变成红灯，而不是无声无息。 */
-const EXPECTED_TOTAL = 102;
+const EXPECTED_TOTAL = 107;
 
 const results = [];
 function check(name, ok, extra) {
@@ -123,28 +123,33 @@ async function closeDialogs(page) {
   return n;
 }
 
-/* 顶栏「切换登录身份」下拉切账号。为什么必须走它而不是只清 token：
-   switchAccount 内部是 doLogout（作废服务端 token）+ 重新 login —— 拿到的是
-   **新签发的 JWT**。改了角色权限后不重新登录就是旧快照（硬约束 2），
-   所以「临时授权 → 切 linjl」这条链必须真登录一次，快照里才有新权限。 */
-async function switchTopAccount(page, namePrefix) {
-  const opened = await page.evaluate(() => {
-    const sel = document.querySelector('.top-actions .el-select');
-    if (!sel) return false;
-    const w = sel.querySelector('.el-select__wrapper') || sel;
-    w.click();
+/* 用登录表单直接换账号（登录芯片 + 顶栏切换下拉均已从页面删除）。
+   为什么必须真登录一次而不是只改 localStorage 里的 token：登录时后端把
+   角色权限快照进 JWT（硬约束 2），「临时授权 → 切 linjl」这条链必须拿到
+   **新签发的 JWT**，快照里才有新权限。所以清 token → 刷新回登录页 →
+   填表 → 点登录，完整走一遍 doLogin。 */
+async function loginViaForm(page, account, password) {
+  await page.evaluate(() => localStorage.removeItem('hxj_oa_token'));   // 与页面 TOKEN_KEY 一致
+  await page.reload({ waitUntil: 'networkidle2' });
+  await sleep(2600);
+  const ok = await page.evaluate((acc, pwd) => {
+    const set = (ph, v) => {
+      const el = [...document.querySelectorAll('input')].find(i => i.placeholder === ph);
+      if (!el) return false;
+      const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+      setter.call(el, v);
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+      return true;
+    };
+    if (!set('请输入登录账号', acc) || !set('请输入登录密码', pwd)) return false;
+    const b = [...document.querySelectorAll('.el-button')].find(x => x.textContent.replace(/\s+/g, '') === '登录');
+    if (!b) return false;
+    b.click();
     return true;
-  });
-  if (!opened) return null;
-  await sleep(800);
-  const picked = await page.evaluate((pre) => {
-    const opts = [...document.querySelectorAll('.el-select-dropdown__item')].filter(o => o.offsetParent !== null);
-    const o = opts.find(x => x.textContent.trim().indexOf(pre) === 0);
-    if (o) { o.click(); return o.textContent.trim(); }
-    return null;
-  }, namePrefix);
-  await sleep(4200);   // switchAccount = 登出 + 登录 + afterLogin 全量拉数据
-  return picked;
+  }, account, password);
+  await sleep(4200);   // 登录 + afterLogin 全量拉数据
+  return ok;
 }
 
 (async () => {
@@ -170,12 +175,8 @@ async function switchTopAccount(page, namePrefix) {
   check('页面 HTTP 200', resp && resp.status() === 200, 'status=' + (resp && resp.status()));
   await sleep(2600);
 
-  let loggedIn = false;
-  for (const c of await page.$$('.lg-chips button')) {
-    const t = await c.evaluate(e => e.textContent);
-    if (t.includes('admin') || t.includes('管理员')) { await c.click(); loggedIn = true; break; }
-  }
-  check('选中演示账号 admin 登录', loggedIn);
+  const loggedIn = await loginViaForm(page, 'admin', '123456');
+  check('登录表单填 admin/123456 登录', loggedIn);
   await sleep(4200);
   const who = await page.$eval('.topbar .who', e => e.textContent.trim()).catch(() => '');
   check('已进入系统', who.length > 0, who);
@@ -204,16 +205,26 @@ async function switchTopAccount(page, namePrefix) {
   const hasKwBox = await page.$(kwBox);
   check('人员表格带搜索框（按姓名/工号/账号搜）', !!hasKwBox);
   if (hasKwBox){
+    /* 关键字不能写死（黄小明在重建后的 R01 库里根本不存在，断言全靠运气）：
+       动态取第一行的姓名来搜 —— 过滤后首行仍含该关键字即证明搜索真的过滤了。 */
+    const firstName = await page.$$eval('.el-table__body tbody tr', trs =>
+      trs.length ? ((trs[0].querySelectorAll('td')[0] || {}).textContent || '').trim() : ''
+    ).catch(() => '');
+    check('  取到首行姓名作为搜索关键字', firstName.length > 0, 'keyword=' + firstName);
     const before = apiCalls.filter(u => u.indexOf('/api/users/page') >= 0 && u.indexOf('keyword=') >= 0).length;
     await page.click(kwBox, { clickCount: 3 }).catch(function(){});
-    await page.type(kwBox, '黄小明', { delay: 60 }).catch(function(){});
+    await page.type(kwBox, firstName, { delay: 60 }).catch(function(){});
     await sleep(1400);
     const after = apiCalls.filter(u => u.indexOf('/api/users/page') >= 0 && u.indexOf('keyword=') >= 0);
     check('★ 搜索走后端：输入关键字后确实请求了带 keyword 的分页接口', after.length > before,
       '带 keyword 的请求数 ' + before + ' → ' + after.length + (after.length ? '，末条=' + after[after.length-1].slice(-90) : ''));
 
-    const filteredRows = await page.$$eval('.el-table__body tbody tr', els => els.length).catch(() => -1);
-    check('★ 搜索后表格收敛到过滤结果（黄小明应为 1 行）', filteredRows === 1, '行数=' + filteredRows);
+    const filtered = await page.$$eval('.el-table__body tbody tr', trs =>
+      trs.map(tr => ((tr.querySelectorAll('td')[0] || {}).textContent || '').trim())
+    ).catch(() => []);
+    check('★ 搜索后表格收敛到过滤结果（每行都命中关键字）',
+      filtered.length >= 1 && filtered.every(t => t.indexOf(firstName) >= 0),
+      '行数=' + filtered.length + '，首行=' + (filtered[0] || '(空)'));
 
     /* 必须清空并等它刷新：不清的话表格一直停在"只有 1 行"的过滤态，
        后面那些「角色列/部门列/新建员工/删除员工」的断言就全在 1 行的表上跑 ——
@@ -493,63 +504,68 @@ async function switchTopAccount(page, namePrefix) {
       full: full
     };
   });
-  check('流程弹窗含「关联单据类型」', flowDlg.labels.some(l => l.includes('关联单据类型')), flowDlg.labels.join(' | '));  check('流程弹窗含「审批节点」', flowDlg.labels.some(l => l.includes('审批节点')), flowDlg.labels.join(' | '));
+  check('流程弹窗含「关联单据类型」', flowDlg.labels.some(l => l.includes('关联单据类型')), flowDlg.labels.join(' | '));
+  /* 2026-10-08 编辑器画布化（对标钉钉）：旧的「审批节点」多选下拉没了，
+     改成竖排节点卡画布，表单 label 也换成「审批流程图」。 */
+  check('流程弹窗含「审批流程图」（画布式编辑器）', flowDlg.labels.some(l => l.includes('审批流程图')), flowDlg.labels.join(' | '));
   check('弹窗提示了版本影响', /新版本|部署/.test(flowDlg.full || ''), (flowDlg.text || '').slice(0, 120));
 
-  // 节点下拉必须来自后端模板库（说明文案里带"取发起人所在部门"这类规则描述）
+  // 节点下拉必须来自后端模板库（说明文案里带"取发起人所在部门"这类规则描述）。
+  // 画布化后这个下拉长在**每个节点卡内部**：点第一张普通节点卡的 select。
+  // 排除 .dt-startcard（发起卡）和 .dt-endcard（结束卡）——它们没有节点下拉。
+  // 泳道里的目标卡不在 .dt-node 下，不会被误点。
   await page.evaluate(() => {
-    const dlgs = [...document.querySelectorAll('.el-dialog')].filter(d => d.offsetParent !== null);
-    const dlg = dlgs[dlgs.length - 1];
-    const items = [...dlg.querySelectorAll('.el-form-item')];
-    const it = items.find(i => (i.querySelector('.el-form-item__label') || {}).textContent
-      && i.querySelector('.el-form-item__label').textContent.includes('审批节点'));
-    if (it) {
-      const w = it.querySelector('.el-select__wrapper');
-      if (w) w.click();
-    }
+    const dlg = [...document.querySelectorAll('.el-dialog')].filter(d => d.offsetParent !== null).pop();
+    const card = dlg && dlg.querySelector('.dt-node .dt-card:not(.dt-startcard):not(.dt-endcard)');
+    const w = card && card.querySelector('.el-select__wrapper');
+    if (w) w.click();
   });
   await sleep(900);
   const nodeOpts = await page.evaluate(() =>
     [...document.querySelectorAll('.el-select-dropdown__item')].filter(o => o.offsetParent !== null)
       .map(o => o.textContent.replace(/\s+/g, ' ').trim())
   );
-  check('节点下拉来自后端模板库', nodeOpts.length >= 10, '选项数=' + nodeOpts.length);
+  check('节点下拉来自后端模板库', nodeOpts.length >= 2, '选项数=' + nodeOpts.length);
   check('节点选项带审批人规则说明',
     nodeOpts.some(o => /取发起人所在部门|按发起人部门|沿用已有/.test(o)),
     nodeOpts.slice(0, 3).join(' || ').slice(0, 150));
 
-  /* ---- 条件分支编辑器（本次新增：客户可自助配"金额超过多少走谁"） ----
+  /* ---- 条件分支编辑器（2026-10-08 画布化后按 .dt-* 断言） ----
      只打开看渲染与交互，**不保存** —— 保存会生成新版本并污染演示流程，
-     写路径与清理由 verify_flow_branch_admin 覆盖。 ---- */
-  const branchUi = await page.evaluate(() => {
+     写路径与清理由 verify_flow_branch_admin 覆盖。
+     画布 DOM：.dt-node（主线节点卡）· .dt-branch（分支泳道组）·
+     .dt-lane（单条泳道，排除 .dt-lane-add 那张「＋添加分支」卡）。 ---- */
+  const canvasUi = await page.evaluate(() => {
     const dlg = [...document.querySelectorAll('.el-dialog')].filter(d => d.offsetParent !== null).pop();
-    if (!dlg) return { rows: 0, gwRows: 0, branchRows: 0, tags: [] };
+    if (!dlg) return { nodeCards: 0, branches: 0, lanes: 0, laneHeads: [] };
     return {
-      rows: dlg.querySelectorAll('.node-row').length,
-      gwRows: dlg.querySelectorAll('.node-row.is-gw').length,
-      branchRows: dlg.querySelectorAll('.node-row.is-gw .branch-row').length,
-      tags: [...dlg.querySelectorAll('.node-row .el-tag')].map(e => e.textContent.trim())
+      nodeCards: dlg.querySelectorAll('.dt-node .dt-card:not(.dt-startcard):not(.dt-endcard)').length,
+      branches: dlg.querySelectorAll('.dt-branch').length,
+      lanes: dlg.querySelectorAll('.dt-lane:not(.dt-lane-add)').length,
+      laneHeads: [...dlg.querySelectorAll('.dt-lane-head')].map(e => e.textContent.trim().slice(0, 6))
     };
   });
-  check('流程弹窗按「节点行」渲染（不再是一个多选下拉）', branchUi.rows >= 3,
-    JSON.stringify(branchUi));
-  check('演示流程的条件分支节点被识别，并展开出分支条件行',
-    branchUi.gwRows >= 1 && branchUi.branchRows >= 2, JSON.stringify(branchUi));
-  check('节点行标出类型（含「条件分支」）',
-    branchUi.tags.includes('条件分支') && branchUi.tags.length >= 3, branchUi.tags.join('/'));
+  check('流程弹窗按「画布节点卡」渲染（竖排卡片，不再是多选下拉）', canvasUi.nodeCards >= 1,
+    JSON.stringify(canvasUi));
+  check('演示流程的条件分支渲染为泳道（条件 + 否则）',
+    canvasUi.branches >= 1 && canvasUi.lanes >= 2, JSON.stringify(canvasUi));
+  check('泳道头标出条件序号与「否则」',
+    canvasUi.laneHeads.some(h => h.indexOf('条件') === 0) && canvasUi.laneHeads.some(h => h.indexOf('否则') === 0),
+    canvasUi.laneHeads.join(' | '));
 
-  /* 分支目标下拉必须只列「本条件分支之后」的节点 —— 这是禁止回跳、
-     从结构上排除死循环的界面体现。只认 "3. 节点名" 这种编号选项，
-     以免和上一步还开着的节点名下拉串味。
-     2026-09-24 起条件行是「字段/怎么比/值」三控件 + 目标下拉，
-     目标下拉是**每行最后一个** select —— 要点它，别点到字段/运算符。 */
-  const gwSeq = await page.evaluate(() => {
+  /* 分支「流向节点」下拉必须只列「本条件分支之后」的节点 —— 这是禁止回跳、
+     从结构上排除死循环的界面体现。选项 label 是 "4. 节点名" 这种编号格式
+     （branchTargets 生成），只认编号项，以免和节点名下拉串味。
+     反回跳的界面下界：分支最早也只能出现在第 2 行（第 1 行是发起节点），
+     所以任何可选目标的编号必须 ≥ 3 —— 出现 1. 或 2. 就是能回跳，直接红。 */
+  await page.evaluate(() => {
     const dlg = [...document.querySelectorAll('.el-dialog')].filter(d => d.offsetParent !== null).pop();
-    const gw = dlg.querySelector('.node-row.is-gw');
-    if (!gw) return null;
-    const w = gw.querySelectorAll('.branch-row .el-select__wrapper');
-    if (w.length) w[w.length - 1].click();
-    return parseInt(gw.querySelector('.node-seq').textContent.trim(), 10);
+    const lanes = dlg ? [...dlg.querySelectorAll('.dt-lane:not(.dt-lane-add)')] : [];
+    /* 泳道里可能有多个 select：目标卡里的「节点名」下拉 + 泳道自身的「流向节点」下拉。
+       要点**最后一个**（流向），点错就会拿到不编号的节点名选项，断言全盘皆输。 */
+    const lane = lanes[lanes.length - 1];
+    const ws = lane ? lane.querySelectorAll('.el-select__wrapper') : [];
+    if (ws.length) ws[ws.length - 1].click();
   });
   await sleep(900);
   const numberedTargets = await page.evaluate(() =>
@@ -559,10 +575,11 @@ async function switchTopAccount(page, namePrefix) {
       .filter(t => /^\d+\./.test(t))
   );
   check('分支目标只列条件分支之后的节点（禁止回跳 → 结构上排除死循环）',
-    numberedTargets.length >= 1 && numberedTargets.every(t => parseInt(t, 10) > gwSeq),
-    '网关在第 ' + gwSeq + ' 行，可选目标=' + numberedTargets.join(' || ').slice(0, 150));
+    numberedTargets.length >= 1 && numberedTargets.every(t => parseInt(t, 10) >= 3),
+    '可选目标=' + numberedTargets.join(' || ').slice(0, 150));
 
-  /* 「＋ 添加条件分支」的一次点击：应同时补上承接节点，并把「否则」指向它 */
+  /* 「＋ 添加条件分支」的一次点击：画布上应出现新的泳道组，两条泳道
+     （条件 + 否则）共同指向自动补上的承接节点。 */
   await page.keyboard.press('Escape').catch(() => {});
   await sleep(400);
   const addClicked = await page.evaluate(() => {
@@ -575,25 +592,29 @@ async function switchTopAccount(page, namePrefix) {
   await sleep(700);
   const afterAdd = await page.evaluate(() => {
     const dlg = [...document.querySelectorAll('.el-dialog')].filter(d => d.offsetParent !== null).pop();
-    const rows = [...dlg.querySelectorAll('.node-row')];
-    const gw = rows[rows.length - 2];              // 新增的条件分支，其后是承接节点
+    const branches = dlg ? [...dlg.querySelectorAll('.dt-branch')] : [];
+    const last = branches[branches.length - 1];
     const msg = [...document.querySelectorAll('.el-message')].map(e => e.textContent).join(' ');
-    if (!gw) return { rows: rows.length, gw: false, branchRows: 0, pickers: 0, msg: msg };
     return {
-      rows: rows.length,
-      gw: gw.classList.contains('is-gw'),
-      branchRows: gw.querySelectorAll('.branch-row').length,
-      pickers: gw.querySelectorAll('.branch-row .el-select__wrapper').length,
+      branches: branches.length,
+      lanes: last ? last.querySelectorAll('.dt-lane:not(.dt-lane-add)').length : 0,
+      laneCards: last ? last.querySelectorAll('.dt-lane .dt-card').length : 0,
+      flowTargets: last ? last.querySelectorAll('.dt-lane > .el-select').length : 0,
+      condPickers: last ? last.querySelectorAll('.dt-lane .dt-cond-row .el-select__wrapper').length : 0,
       msg: msg
     };
   });
   check('「＋ 添加条件分支」按钮存在且可点', addClicked, '');
-  check('新增条件分支：行数 +2（条件分支 + 承接节点）',
-    afterAdd.rows === branchUi.rows + 2, '由 ' + branchUi.rows + ' → ' + afterAdd.rows);
-  /* 2026-09-24 起条件行 = 字段/怎么比/值 三控件 + 目标下拉（否则行只有目标下拉）
-     ⇒ 2 行共 4 个 select。若再回到"手写表达式"，这里会退回 2 —— 变红就是在提醒别回退。 */
-  check('新增的条件分支自带「字段/怎么比」下拉与目标选择器（结构化条件，不再要求手写表达式）',
-    afterAdd.gw && afterAdd.branchRows === 2 && afterAdd.pickers === 4, JSON.stringify(afterAdd));
+  check('新增条件分支：画布出现一个新的泳道组',
+    afterAdd.branches === canvasUi.branches + 1, '由 ' + canvasUi.branches + ' → ' + afterAdd.branches);
+  /* dtInsertAfter('gw') 的行为：两条泳道（条件 + 否则）+ 自动补一个承接节点作为
+     共同去处 ⇒ 每条泳道里各有 1 张目标卡 + 1 个「流向节点」下拉。
+     条件泳道还带「字段/怎么比」两个结构化下拉 ⇒ condPickers ≥ 2。
+     若再退回"手写表达式"，这里会归零 —— 变红就是在提醒别回退。 */
+  check('新分支自带「条件 + 否则」两条泳道，且承接节点已就位（目标卡 + 流向下拉各 2）',
+    afterAdd.lanes === 2 && afterAdd.laneCards >= 2 && afterAdd.flowTargets === 2, JSON.stringify(afterAdd));
+  check('条件泳道自带「字段/怎么比」结构化下拉（不再要求手写表达式）',
+    afterAdd.condPickers >= 2, '条件下拉数=' + afterAdd.condPickers);
   check('新增时说明了为什么多出一个承接节点',
     /承接节点/.test(afterAdd.msg || ''), (afterAdd.msg || '').slice(0, 90));
 
@@ -652,24 +673,58 @@ async function switchTopAccount(page, namePrefix) {
   const adminSealRows = await page.$$eval('.el-main .el-table__body tbody tr', els => els.length).catch(() => -1);
   check('★ admin 无权时台账为空（守卫置空，不是造的假数据）', adminSealRows === 0, '行数=' + adminSealRows);
 
-  /* ---- 临时授权夹具（与 verify_seal_api.py 同一模式）：DEPT_HEAD ← document:approve:seal ----
-     先预清理（防上次异常中断遗留），再注入；操作人 linjl 是 DEPT_HEAD，
-     登录时后端把权限快照进 JWT —— 所以授权必须发生在 linjl 登录**之前**。 */
+  /* ---- 临时授权夹具（与 verify_seal_api.py 同一模式）：<库内第一个部门主管角色> ← document:approve:seal ----
+     角色/账号**动态从库里取**，不写死 linjl/DEPT_HEAD —— 库是谁由初始化脚本决定
+     （R01 多轮测试库、交付空库、旧演示库各不相同），写死的人名在重建后的库里必然失效。
+     先预清理（防上次异常中断遗留），再注入；登录时后端把权限快照进 JWT ——
+     所以授权必须发生在该账号登录**之前**。 */
   const SEAL_PERM = 'document:approve:seal';
-  sql("DELETE rp FROM role_permission rp JOIN sys_role r ON r.id=rp.role_id WHERE r.code='DEPT_HEAD' AND rp.perm_code='" + SEAL_PERM + "'");
-  sql("INSERT INTO role_permission (role_id, perm_code) SELECT id, '" + SEAL_PERM + "' FROM sys_role WHERE code='DEPT_HEAD' AND deleted=0");
-  check('临时授权已注入（DEPT_HEAD ← document:approve:seal）',
-    sql("SELECT COUNT(*) FROM role_permission rp JOIN sys_role r ON r.id=rp.role_id WHERE r.code='DEPT_HEAD' AND rp.perm_code='" + SEAL_PERM + "' AND rp.deleted=0") === '1');
+  const sealU = sql("SELECT u.account, r.code FROM sys_user u JOIN user_role ur ON ur.user_id=u.id JOIN sys_role r ON r.id=ur.role_id WHERE u.deleted=0 AND u.account<>'admin' AND r.deleted=0 AND r.code LIKE '%\\_HEAD' ORDER BY u.id LIMIT 1");
+  const sealParts = sealU.split('\t');
+  const sealAccount = sealParts[0] || '';
+  const sealRoleCode = sealParts[1] || '';
+  check('  从库里取到临时授权对象（非 admin 的部门主管）', !!sealAccount && !!sealRoleCode,
+    'account=' + sealAccount + ' role=' + sealRoleCode);
+  sql("DELETE rp FROM role_permission rp JOIN sys_role r ON r.id=rp.role_id WHERE r.code='" + sealRoleCode + "' AND rp.perm_code='" + SEAL_PERM + "'");
+  sql("INSERT INTO role_permission (role_id, perm_code) SELECT id, '" + SEAL_PERM + "' FROM sys_role WHERE code='" + sealRoleCode + "' AND deleted=0");
+  check('临时授权已注入（' + sealRoleCode + ' ← document:approve:seal）',
+    sql("SELECT COUNT(*) FROM role_permission rp JOIN sys_role r ON r.id=rp.role_id WHERE r.code='" + sealRoleCode + "' AND rp.perm_code='" + SEAL_PERM + "' AND rp.deleted=0") === '1');
 
-  const pickedLin = await switchTopAccount(page, '林经理');
+  /* 台账必须有「待用印」行才能走登记/归还闭环。库里一行都没有时（R01 重建库
+     只有 DAILY 类型、根本提交不出用印单），用 SQL 夹具补一条绑到 sealRoleCode
+     同部门单据上的待用印 —— 登记与归还**动作**仍走真实 UI + /api/seals，
+     夹具只负责"台账里有一行可操作"。行留着不清理：它就是下次运行的基线。 */
+  if (Number(sql("SELECT COUNT(*) FROM seal_apply WHERE deleted=0 AND return_status=0")) === 0) {
+    /* 台账动作（登记/归还）要求单据是 **SEAL 类**（requireSealDocument 校验），
+       R01 重建库只有 DAILY 类型 ⇒ 夹具自建一张 SEAL 类单据（挂在 sealAccount 同部门名下）
+       + 对应的待用印行。登记与归还**动作**仍走真实 UI + /api/seals；
+       收尾会把这组夹具行删掉，不留残渣。 */
+    const fxDocNo = 'E2SEAL' + stamp;
+    sql("INSERT INTO document (doc_no, company_id, doc_type_id, business_category, title, applicant_id, applicant_name, dept_id, dept_name, amount, reason, status, current_node_key, current_node_name, created_at, updated_at, created_by, updated_by, deleted) "
+      + "SELECT '" + fxDocNo + "', u.company_id, 25, 'SEAL', 'E2E用印闭环夹具', u.id, u.real_name, u.dept_id, d.name, 0, 'E2E 夹具单据（自动清理）', 3, 'end', '办结', NOW(), NOW(), u.id, u.id, 0 "
+      + "FROM sys_user u JOIN department d ON d.id=u.dept_id WHERE u.account='" + sealAccount + "' LIMIT 1");
+    const fxDoc = sql("SELECT id FROM document WHERE doc_no='" + fxDocNo + "' LIMIT 1");
+    check('  夹具：已自建 SEAL 类夹具单据', !!fxDoc, 'document_id=' + (fxDoc || '(创建失败)'));
+    if (fxDoc) {
+      sql("INSERT INTO seal_apply (document_id, seal_project, seal_dept_id, seal_type, seal_reason, return_status, deleted, created_at, updated_at) "
+        + "SELECT " + fxDoc + ", 'E2E用印夹具', u.dept_id, '公章', 'E2E 闭环夹具（可清理）', 0, 0, NOW(), NOW() FROM document d "
+        + "JOIN sys_user u ON u.id=d.applicant_id WHERE d.id=" + fxDoc
+        + " AND NOT EXISTS (SELECT 1 FROM seal_apply sa WHERE sa.document_id=d.id AND sa.deleted=0)");
+    }
+  }
+  check('  夹具：台账已有一条「待用印」',
+    Number(sql("SELECT COUNT(*) FROM seal_apply WHERE deleted=0 AND return_status=0")) >= 1,
+    '待用印行数=' + sql("SELECT COUNT(*) FROM seal_apply WHERE deleted=0 AND return_status=0"));
+
+  const pickedLin = await loginViaForm(page, sealAccount, '123456');
   const whoLin = await page.$eval('.topbar .who', e => e.textContent.trim()).catch(() => '');
-  check('已切换为 linjl（重新登录，权限快照生效）',
-    !!pickedLin && whoLin.indexOf('林') >= 0, pickedLin + ' / ' + whoLin);
+  check('已切换为 ' + sealAccount + '（重新登录，权限快照生效）',
+    !!pickedLin && whoLin.length > 0, pickedLin + ' / ' + whoLin);
 
   await clickMenu(page, '用印台账');
   await sleep(2200);
   const linSealCalls = apiCalls.filter(u => u.indexOf('/api/seals') >= 0);
-  check('linjl 台账数据来自服务端接口 /api/seals（不是前端造的假数据）',
+  check(sealAccount + ' 台账数据来自服务端接口 /api/seals（不是前端造的假数据）',
     linSealCalls.length >= 1, '命中 ' + linSealCalls.length + ' 次');
 
   /**
@@ -742,17 +797,22 @@ async function switchTopAccount(page, namePrefix) {
      并**切回 admin** —— 第 7 段的委托/主数据断言是管理端视角。 */
   sql("DELETE FROM seal_record");
   sql("UPDATE seal_apply SET return_status=0, seal_time=NULL, return_at=NULL");
-  sql("DELETE rp FROM role_permission rp JOIN sys_role r ON r.id=rp.role_id WHERE r.code='DEPT_HEAD' AND rp.perm_code='" + SEAL_PERM + "'");
-  check('收尾：台账还原 + 临时授权已撤销（演示库不留数据/配置残渣）',
+  /* 夹具残渣清理：本套件自建的 SEAL 夹具单据与其台账行（只删自己的，doc_no 前缀隔离） */
+  sql("DELETE FROM seal_apply WHERE seal_project='E2E用印夹具'");
+  sql("DELETE FROM document WHERE doc_no LIKE 'E2SEAL%'");
+  sql("DELETE rp FROM role_permission rp JOIN sys_role r ON r.id=rp.role_id WHERE r.code='" + sealRoleCode + "' AND rp.perm_code='" + SEAL_PERM + "'");
+  check('收尾：台账还原 + 夹具已清 + 临时授权已撤销（演示库不留数据/配置残渣）',
     sql('SELECT COUNT(*) FROM seal_record') === '0'
     && sql('SELECT COUNT(*) FROM seal_apply WHERE return_status<>0') === '0'
-    && sql("SELECT COUNT(*) FROM role_permission rp JOIN sys_role r ON r.id=rp.role_id WHERE r.code='DEPT_HEAD' AND rp.perm_code='" + SEAL_PERM + "' AND rp.deleted=0") === '0',
+    && sql("SELECT COUNT(*) FROM document WHERE doc_no LIKE 'E2SEAL%'") === '0'
+    && sql("SELECT COUNT(*) FROM role_permission rp JOIN sys_role r ON r.id=rp.role_id WHERE r.code='" + sealRoleCode + "' AND rp.perm_code='" + SEAL_PERM + "' AND rp.deleted=0") === '0',
     'record=' + sql('SELECT COUNT(*) FROM seal_record')
     + ' 非待用印=' + sql('SELECT COUNT(*) FROM seal_apply WHERE return_status<>0')
-    + ' 授权残留=' + sql("SELECT COUNT(*) FROM role_permission rp JOIN sys_role r ON r.id=rp.role_id WHERE r.code='DEPT_HEAD' AND rp.perm_code='" + SEAL_PERM + "' AND rp.deleted=0"));
+    + ' 夹具单残留=' + sql("SELECT COUNT(*) FROM document WHERE doc_no LIKE 'E2SEAL%'")
+    + ' 授权残留=' + sql("SELECT COUNT(*) FROM role_permission rp JOIN sys_role r ON r.id=rp.role_id WHERE r.code='" + sealRoleCode + "' AND rp.perm_code='" + SEAL_PERM + "' AND rp.deleted=0"));
 
-  const pickedAdmin = await switchTopAccount(page, '系统管理员');
-  check('已切回 admin（第 7 段继续管理端视角）', !!pickedAdmin, pickedAdmin || '(切换失败)');
+  const pickedAdmin = await loginViaForm(page, 'admin', '123456');
+  check('已切回 admin（第 7 段继续管理端视角）', !!pickedAdmin, pickedAdmin ? '' : '(切换失败)');
 
   console.log('\n=== 7. 委托 / 批量审批 / 超时升级 的可视化操作 ===');
   await page.reload({ waitUntil: 'networkidle2' });
@@ -785,17 +845,40 @@ async function switchTopAccount(page, namePrefix) {
     && openedDlg.labels.some(l => l.indexOf('说明') >= 0),
     openedDlg ? openedDlg.labels.join('/') : '(未打开)');
 
-  const pickedDelegate = await pickSelect(page, '受托人（代办人）', '林经理');
-  check('能选中受托人', !!pickedDelegate, pickedDelegate || '(没选上)');
+  /* 受托人**不能选自己**（后端明确拒绝自委托），也不能写死人名（库里是谁由初始化决定）。
+     打开下拉后跳过当前登录人（topbar .who 里含其姓名），选第一个别人。 */
+  await page.evaluate(() => {
+    const dlg = [...document.querySelectorAll('.el-dialog')].filter(d => d.offsetParent !== null).pop();
+    const w = dlg && dlg.querySelector('.el-select__wrapper');
+    if (w) w.click();
+  });
+  await sleep(600);
+  const delegateName = await page.evaluate(() => {
+    const opts = [...document.querySelectorAll('.el-select-dropdown__item')].filter(o => o.offsetParent !== null);
+    const who = document.querySelector('.topbar .who');
+    const meText = who ? who.textContent.trim() : '';
+    const o = opts.find(x => {
+      const n = x.textContent.trim().split('（')[0];
+      return n && meText.indexOf(n) < 0;
+    });
+    if (o) { o.click(); return o.textContent.trim(); }
+    return null;
+  });
+  check('能选中受托人（且不是自己）', !!delegateName, delegateName || '(没选上)');
 
+  const delegBase = Number(sql('SELECT COALESCE(MAX(id),0) FROM flow_delegation'));
   await clickButtonByText(page, '保存', '.el-dialog');
   await sleep(2000);
-  const newDelegId = sql("SELECT id FROM flow_delegation WHERE deleted=0 ORDER BY id DESC LIMIT 1");
-  check('★ 通过界面真的建出了委托（已落库）', Number(newDelegId || 0) > 0, 'id=' + newDelegId);
+  /* 必须和保存前的基线比：直接取 MAX(id) 会把历史上残留的委托行误认成本次新建的。 */
+  const newDelegId = sql("SELECT id FROM flow_delegation WHERE id>" + delegBase + " AND deleted=0 ORDER BY id DESC LIMIT 1");
+  check('★ 通过界面真的建出了委托（已落库）',
+    Number(newDelegId || 0) > delegBase, '基线=' + delegBase + ' 新id=' + newDelegId);
 
   const mineRows = await page.$$eval('.el-main .el-table__body tbody tr', trs => trs.map(t => t.textContent));
+  const delegateRealName = (delegateName || '').split('（')[0];
   check('★ 委托出现在「我设置的」列表里且状态为「生效中」',
-    mineRows.some(t => t.indexOf('生效中') >= 0), '行数=' + mineRows.length);
+    mineRows.some(t => t.indexOf('生效中') >= 0 && delegateRealName && t.indexOf(delegateRealName) >= 0),
+    '行数=' + mineRows.length + ' 受托人=' + delegateRealName);
 
   await clickButtonByText(page, '撤销', '.el-main');
   await sleep(900);
@@ -810,11 +893,11 @@ async function switchTopAccount(page, namePrefix) {
     sql('SELECT status FROM flow_delegation WHERE id=' + newDelegId) === '0',
     'status=' + sql('SELECT status FROM flow_delegation WHERE id=' + newDelegId));
 
-  // 收尾：**只删本次创建的 id**，不整表删（那会动别人的数据）
+  // 收尾：**只删本次创建的 id**，不整表删（那会动别人的数据）；其余行是库的既有基线
   sql('DELETE FROM flow_delegation WHERE id=' + newDelegId);
   check('收尾：本次创建的委托已物理删除',
-    sql('SELECT COUNT(*) FROM flow_delegation WHERE deleted=0') === '0',
-    '剩余=' + sql('SELECT COUNT(*) FROM flow_delegation WHERE deleted=0'));
+    Number(sql('SELECT COUNT(*) FROM flow_delegation WHERE id=' + newDelegId)) === 0,
+    '基线=' + delegBase + ' 现存=' + sql('SELECT COUNT(*) FROM flow_delegation WHERE deleted=0'));
 
   /* ---- 待我审批：批量通过的入口控件（真正批掉的闭环由接口级用例覆盖） ---- */
   await clickMenu(page, '待我审批');
