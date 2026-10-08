@@ -45,7 +45,7 @@ DB = 'hxj-oa'                      # init_database.sql 的目标库（本机原�
 ATT_ROOT = '/tmp/coldstart_att'
 LOG = '/tmp/coldstart_backend.log'
 
-EXPECTED_TOTAL = 40 * 13 + 128 * 6 + 32 * 3   # 1384：B5 按模式只发 3 条（模式专属 1 条+共享 2 条）
+EXPECTED_TOTAL = 40 * 13 + 128 * 6 + 32 * 3 + 32 * 2   # 1448：B4 每轮补 2 条范围收窄断言；B5 按模式只发 3 条（模式专属 1 条+共享 2 条）
 PASS, FAIL = [], []
 boot_times = []                      # 每轮启动耗时（秒）
 b_registry = {'docs': [], 'dts': [], 'fcs': [], 'deps': [], 'roles': [], 'users': [], 'tpls': []}
@@ -706,10 +706,32 @@ def round_B4(i, pool, admin_tk):
     emp_sees = visible(pool['emp_tk'])
     head_sees = visible(pool['head_tk'])
     other_sees = visible(pool['emp2_tk'])
-    # 公共池角色都是 company 范围 —— 三人都能看到。把断言对准「范围配置真的生效」：
-    # 用角色接口把 e2 的角色数据范围改成 self，再看它是否看不到。
+    # 公共池角色都是 company 范围 —— 三人都能看到。「能看见」侧的断言：
     check('B4%02d-2 发起人可见（self 基线）' % i, emp_sees)
     check('B4%02d-3 同部门负责人可见（company 范围）' % i, head_sees)
+    # ★「看不见」侧（2026-10-08 补欠账：此前注释声称验证范围收窄但断言未落地）：
+    #   把公共池 EMP 角色数据范围改成 self → e2 重新登录（范围是登录时快照）→
+    #   跨部门列表必须看不到 → 改回 company → 再重登 → 必须又能看到。
+    #   finally 保证失败也不把角色留在 self 状态污染后续轮次。
+    emp_role = pool['role_map']['EMP']
+    st_ds, r_ds = call('PUT', '/api/roles/%s/data-scope' % emp_role, token=admin_tk,
+                       body={'scopeType': 'self', 'scopeDeptIds': []})
+    try:
+        if st_ds == 200 and r_ds.get('code') == 0:
+            hidden = not visible(login('poole2'))
+            check('B4%02d-3a ★ 数据范围改 self 后跨部门列表看不到' % i, hidden)
+            call('PUT', '/api/roles/%s/data-scope' % emp_role, token=admin_tk,
+                 body={'scopeType': 'company', 'scopeDeptIds': []})
+            back = bool(visible(login('poole2')))
+            check('B4%02d-3b ★ 改回 company 后重新可见' % i, back)
+        else:
+            check('B4%02d-3a ★ 数据范围改 self 后跨部门列表看不到' % i, False,
+                  'data-scope HTTP=%s code=%s msg=%s' % (st_ds, r_ds.get('code'), (r_ds.get('msg') or '')[:40]))
+            check('B4%02d-3b ★ 改回 company 后重新可见' % i, False, '前置失败跳过')
+    finally:
+        # 无论断言成败，把公共池 EMP 角色恢复 company（幂等：已是 company 再改一次无副作用）
+        call('PUT', '/api/roles/%s/data-scope' % emp_role, token=admin_tk,
+             body={'scopeType': 'company', 'scopeDeptIds': []})
     # 越权办理：e2 直接批 e1 单据的待办 → 必须拒绝
     nk, nn, tid = active_node(doc_id) if doc_id else ('', '', '')
     stc, rc_ = approve(pool['emp2_tk'], tid) if tid else (None, None)
