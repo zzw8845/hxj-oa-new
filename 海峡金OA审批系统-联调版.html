@@ -457,13 +457,6 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .lg-logo span{display:block;font-size:12px;color:#7892a8}
 .lg-card h2{font-size:19px;font-weight:500;color:#17334d;margin:0 0 4px}
 .lg-tip{font-size:13px;color:#7892a8;margin:0 0 16px;line-height:1.6}
-.lg-accounts{margin-top:18px;border-top:1px solid #eaf3fa;padding-top:14px}
-.lg-accounts>b{font-size:12px;font-weight:500;color:#7892a8;display:block;margin-bottom:9px}
-.lg-chips{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.lg-chips button{display:flex;flex-direction:column;gap:2px;align-items:flex-start;padding:9px 11px;border:1px solid #dcebf6;border-radius:10px;background:#f9fcff;cursor:pointer;text-align:left;transition:.15s}
-.lg-chips button:hover{border-color:#77bdf0;background:#eef7ff}
-.lg-chips button b{font-size:13px;font-weight:500;color:#26364d}
-.lg-chips button span{font-size:11px;color:#8a98aa}
 .lg-backend{margin:16px 0 0;font-size:11px;color:#8a98aa;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 .lg-backend code{background:#f2f7fb;border-radius:4px;padding:1px 5px;color:#52728d}
 .dot{width:7px;height:7px;border-radius:50%;display:inline-block}
@@ -491,15 +484,6 @@ document.querySelector('#app').insertAdjacentHTML('beforeend', `<div class="logi
     </el-form>
     <el-button type="primary" style="width:100%" :loading="logging" @click="doLogin">{{logging?'登录中…':'登 录'}}</el-button>
     <el-alert v-if="loginError" :title="loginError" type="error" :closable="false" show-icon style="margin-top:12px"></el-alert>
-    <div class="lg-accounts" v-if="demoChipsVisible">
-      <b>演示账号（密码统一 123456，点选即切换身份体验完整审批链）</b>
-      <span style="display:block;font-size:12px;color:var(--muted);margin-top:3px">⚠ 这些账号只存在于本机演示库。换成客户库 / 空库后请用你自己建的账号登录，此处点选会提示账号不存在。</span>
-      <div class="lg-chips">
-        <button v-for="a in demoAccounts" :key="a.account" @click="fillLogin(a)">
-          <b>{{a.name}}</b><span>{{a.title}}</span>
-        </button>
-      </div>
-    </div>
     <p class="lg-backend">
       后端 <code>{{apiBase}}</code>
       <span class="dot" :class="pingOk?'ok':'bad'"></span>{{pingText}}
@@ -670,19 +654,9 @@ createApp({setup(){
   const loginForm = reactive({account:'admin', password:DEMO_PASSWORD});
   const currentAccount = ref('admin');
   const demoAccounts = DEMO_ACCOUNTS;
-  /* 演示账号快捷登录块只在"本机联调"时显示。
-     为什么不能一刀切删掉：全部 E2E 套件靠 .lg-chips 点选登录（127.0.0.1/file://），
-     而交付到客户服务器时它就是事故级信息（把 9 个账号+密码印在登录页）。
-     判据 = 访问来源：本机（127.0.0.1 / localhost / file://）显示；
-     部署到任何真实域名都不显示，确需演示可加 ?demo=1 显式打开。 */
-  const demoChipsVisible = (function(){
-    try {
-      const h = window.location.hostname;
-      return h === '127.0.0.1' || h === 'localhost' || h === ''
-        || window.location.protocol === 'file:'
-        || window.location.search.indexOf('demo=1') >= 0;
-    } catch(e){ return false; }
-  })();
+  /* 演示账号快捷登录块已删除（2026-10-08 用户拍板）：交付库重建后 8 个演示账号
+     均不存在，点选必报错，且把账号+密码印在登录页本身是事故级信息。
+     DEMO_ACCOUNTS 仍保留 —— 顶栏「切换登录身份」下拉还在消费它。 */
 
   const page = ref('home'), role = ref(''), keyword = ref(''), statusFilter = ref('全部');
   const businessTypeFilter = ref(''), docTypeFilter = ref(''), applicantFilter = ref('');
@@ -1439,7 +1413,6 @@ const nodeTemplateList = ref([]);       // 流程节点模板库（含各自的�
       loginError.value = e.message;
     } finally { logging.value = false; }
   };
-  const fillLogin = function(a){ loginForm.account = a.account; loginForm.password = DEMO_PASSWORD; doLogin(); };
   const switchAccount = async function(account){
     if (!account) return;
     logging.value = true;
@@ -3454,8 +3427,8 @@ const nodeTemplateList = ref([]);       // 流程节点模板库（含各自的�
   });
 
   return {
-    apiBase, me, logging, loginError, loginForm, currentAccount, demoAccounts, demoChipsVisible,
-    doLogin, fillLogin, switchAccount, logout, doLogout, adminPeople, peoplePage, peoplePageSize, peopleTotal, peopleKeyword,
+    apiBase, me, logging, loginError, loginForm, currentAccount, demoAccounts,
+    doLogin, switchAccount, logout, doLogout, adminPeople, peoplePage, peoplePageSize, peopleTotal, peopleKeyword,
            onPeopleKeywordInput, changePeoplePage, changePeopleSize, refreshAdminPeople, onDocsKeywordInput,
            sealRows, sealTotal, sealTypeFilter, sealStatusFilter, refreshSeals, sealUse, sealReturn,
            batchSelected, batchApproving, onTodoSelect, batchApprove,
