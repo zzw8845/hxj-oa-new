@@ -142,7 +142,7 @@ def tokens(ids):
 
 def run_round(i):
     scen = i % 8
-    ns = 'R%02d' % i
+    ns = 'R%02d' % (i + int(os.environ.get('NS_OFFSET', '0')))
     t1 = time.time()
     with_branch = scen in (1, 2)
     ids = build_round_fixtures(cs.login('admin'), ns, with_branch)
@@ -235,6 +235,7 @@ def run_round(i):
                       'code=%s' % rd.get('code'))
 
         elif scen == 6:                                   # 无权操作拒绝
+            doc_base = q('SELECT COUNT(*) FROM document')  # 轮内基线（兼容保留数据模式）
             stc, rc = cs.call('POST', '/api/documents', token=pool['cash_tk'],
                               body={'docTypeId': dt, 'title': '无权单', 'amount': 100,
                                     'formData': {'amount': 100}})
@@ -245,7 +246,8 @@ def run_round(i):
                   'HTTP=%s code=%s' % (stc, rc.get('code')))
             check('%s-2 ★ 无审批权 → HTTP 403' % ns, sta == 403,
                   'HTTP=%s code=%s' % (sta, ra.get('code')))
-            check('%s-3 未产生任何单据' % ns, q('SELECT COUNT(*) FROM document') == '0')
+            check('%s-3 越权探针未产生任何新单据' % ns,
+                  q('SELECT COUNT(*) FROM document') == doc_base)
 
         elif scen == 7:                                   # 重复提交 + 自审留痕
             d, doc_no, err = cs.submit_doc(pool['emp_tk'], dt, '%s重复单' % ns, 800)
@@ -273,7 +275,10 @@ def run_round(i):
         print('R%02d %-14s docNo=%-15s %d/%d 通过  %.1fs'
               % (i, SCEN_NAMES[scen], doc_no or '-', npass, npass + nfail, time.time() - t1))
     finally:
-        cleanup_round(ids, doc_ids, deleg_ids)
+        if os.environ.get('KEEP_DATA') == '1':
+            print('  （KEEP_DATA=1：本轮测试数据保留在库，不清理）')
+        else:
+            cleanup_round(ids, doc_ids, deleg_ids)
 
 
 print('═' * 74)
@@ -292,7 +297,6 @@ for i in range(1, ROUNDS + 1):
         print('R%02d 轮级异常: %s: %s' % (i, type(e).__name__, str(e)[:150]))
 
 print('\n' + '═' * 74)
-print('终态完整性对账（应全部归零 / 仅剩 admin 与 2 个内置角色）')
 INTEGRITY = [
     ('sys_user（仅 admin）', 'sys_user', '1'),
     ('sys_role（仅 2 内置）', 'sys_role', '2'),
@@ -312,12 +316,19 @@ INTEGRITY = [
     ('ACT_RU_EXECUTION', 'ACT_RU_EXECUTION', '0'),
     ('ACT_HI_PROCINST', 'ACT_HI_PROCINST', '0'),
 ]
-bad = 0
-for label, tbl, want in INTEGRITY:
-    got = q('SELECT COUNT(*) FROM `%s`' % tbl)
-    ok = got == want
-    bad += (not ok)
-    print('  %s %-26s 期望=%s 实际=%s' % ('✓' if ok else '✗', label, want, got))
+if os.environ.get('KEEP_DATA') == '1':
+    print('终态数据留存统计（KEEP_DATA=1，不做归零对账）')
+    for label, tbl, _ in INTEGRITY:
+        print('  %-30s 实际=%s' % (label, q('SELECT COUNT(*) FROM `%s`' % tbl)))
+    bad = 0
+else:
+    print('终态完整性对账（应全部归零 / 仅剩 admin 与 2 个内置角色）')
+    bad = 0
+    for label, tbl, want in INTEGRITY:
+        got = q('SELECT COUNT(*) FROM `%s`' % tbl)
+        ok = got == want
+        bad += (not ok)
+        print('  %s %-26s 期望=%s 实际=%s' % ('✓' if ok else '✗', label, want, got))
 
 total = len(PASS) + len(FAILS)
 mins = (time.time() - T0) / 60
