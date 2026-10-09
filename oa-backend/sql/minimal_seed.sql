@@ -120,7 +120,7 @@ INSERT INTO `sys_permission` (`code`,`name`,`perm_type`,`parent_code`,`sort_no`)
 ('system:flow',             '流程配置',       2, 'admin:menu',      94),
 ('system:form',             '表单配置',       2, 'admin:menu',      95),
 ('system:dict',             '字典管理',       2, 'admin:menu',      96),
-('system:audit',            '审计日志',       2, 'admin:menu',      97),
+('system:audit',            '审计日志查看',   2, 'admin:menu',      97),
 ('system:docType',          '单据类型管理',   2, 'admin:menu',      98),
 ('system:company',          '公司信息管理',   2, 'admin:menu',      99),
 ('flow:intervene:transfer', '转办（流程干预）', 2, 'admin:menu',     100);
