@@ -1057,7 +1057,8 @@ async function loginViaForm(page, account, password) {
   check('★ 审计日志渲染出真实记录（后端强制分页）', audit1.rows > 0 && audit1.total > 0,
     '本页=' + audit1.rows + ' 总数=' + audit1.total);
 
-  // 选模块 auth → 查询 → 本页所有行的模块列都应为 auth（验证服务端筛选真的下推了）
+  // 选模块「认证」(auth) → 查询 → 本页所有行的模块列都应为「认证」
+  //（2026-10-09 起模块/动作列与筛选下拉均为中文显示，值仍是英文编码 auth）
   await page.evaluate(() => {
     const sel = [...document.querySelectorAll('.el-main .filters .el-select')][0];
     const w = sel && (sel.querySelector('.el-select__wrapper') || sel);
@@ -1067,7 +1068,7 @@ async function loginViaForm(page, account, password) {
   await page.evaluate(() => {
     const opt = [...document.querySelectorAll('.el-select-dropdown__item')]
       .filter(x => x.offsetParent !== null)
-      .find(x => x.textContent.trim() === 'auth');
+      .find(x => x.textContent.trim() === '认证');
     if (opt) opt.click();
   });
   await sleep(500);
@@ -1079,9 +1080,9 @@ async function loginViaForm(page, account, password) {
       const tag = r.querySelector('.el-tag');
       return tag ? tag.textContent.trim() : '';
     });
-    return { rows: rows.length, allAuth: mods.length > 0 && mods.every(m => m === 'auth'), sample: mods.slice(0, 3) };
+    return { rows: rows.length, allAuth: mods.length > 0 && mods.every(m => m === '认证'), sample: mods.slice(0, 3) };
   });
-  check('★ 审计模块筛选下推到服务端（选 auth 后本页行全部为 auth）',
+  check('★ 审计模块筛选下推到服务端（选「认证」后本页行全部为「认证」）',
     audit2.rows > 0 && audit2.allAuth, '样例=' + audit2.sample.join('/'));
 
   console.log('\n=== 7. 控制台 ===');
