@@ -20,6 +20,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
 import java.util.Collections;
@@ -219,18 +220,63 @@ public class AuthService {
                 adminScope);
     }
 
+    /**
+     * 当前用户可见的菜单项全集（数据源 = sys_permission 的 perm_type=1 菜单项行，
+     * 见 minimal_seed.sql 第 4 段的「perm_type=1 两层语义」）。
+     *
+     * <p>2026-10-09 菜单可配化：角色在权限管理界面勾选哪个**菜单项**（perm_type=1
+     * 且 parent_code 非空，code = 前端页面 key），该角色登录后侧边栏就显示哪个菜单
+     * —— 菜单可见性的唯一事实源是 role_permission 绑定结果，界面上直接可配。
+     * 组点（perm_type=1 且 parent_code 为空，5 个 *:menu）是**纯目录节点**：不参与绑定，
+     * 只在其下有可见菜单项时作为分组标题随菜单下发（前端按「被引用」识别为分组标题）。
+     * home（首页）是登录落地页，不入库，固定注入，人人可见。
+     *
+     * <p>下发结构为平铺列表：先组点行（有可见子项的）、再 home、再菜单项行；
+     * 前端按 parentCode 组树渲染，权限判断不落到前端。
+     * 权限与 deptId 一样是登录时刻快照，改角色权限后须重新登录才生效。
+     */
     public List<LoginResp.MenuItem> loadMenus(Long userId) {
-        return permissionMapper.selectByUserId(userId).stream()
-                .filter(p -> p.getPermType() != null && p.getPermType() == 1)
-                .map(p -> {
-                    LoginResp.MenuItem m = new LoginResp.MenuItem();
-                    m.setCode(p.getCode());
-                    m.setName(p.getName());
-                    m.setParentCode(p.getParentCode());
-                    m.setSortNo(p.getSortNo());
-                    return m;
-                })
+        List<SysPermission> held = permissionMapper.selectByUserId(userId);
+        // 菜单项 = 角色绑定的 perm_type=1 且有父级的行
+        List<SysPermission> items = held.stream()
+                .filter(p -> p.getPermType() != null && p.getPermType() == 1
+                        && StringUtils.hasText(p.getParentCode()))
+                .sorted(java.util.Comparator.comparingInt(p -> p.getSortNo() == null ? 0 : p.getSortNo()))
                 .toList();
+
+        List<LoginResp.MenuItem> out = new java.util.ArrayList<>();
+        if (!items.isEmpty()) {
+            // 分组标题 = 子项 parentCode 指向的组点行（目录数据按 code 直查，不看绑定）
+            Set<String> groupCodes = new HashSet<>();
+            for (SysPermission p : items) {
+                groupCodes.add(p.getParentCode());
+            }
+            List<SysPermission> groups = permissionMapper.selectList(Wrappers.<SysPermission>lambdaQuery()
+                            .in(SysPermission::getCode, groupCodes)).stream()
+                    .sorted(java.util.Comparator.comparingInt(p -> p.getSortNo() == null ? 0 : p.getSortNo()))
+                    .toList();
+            for (SysPermission g : groups) {
+                out.add(toMenuItem(g));
+            }
+        }
+        out.add(toMenuItem("home", "首页", null, 0));
+        for (SysPermission p : items) {
+            out.add(toMenuItem(p));
+        }
+        return out;
+    }
+
+    private static LoginResp.MenuItem toMenuItem(SysPermission p) {
+        return toMenuItem(p.getCode(), p.getName(), p.getParentCode(), p.getSortNo() == null ? 0 : p.getSortNo());
+    }
+
+    private static LoginResp.MenuItem toMenuItem(String code, String name, String parentCode, int sortNo) {
+        LoginResp.MenuItem m = new LoginResp.MenuItem();
+        m.setCode(code);
+        m.setName(name);
+        m.setParentCode(parentCode);
+        m.setSortNo(sortNo);
+        return m;
     }
 
     /** 权限点全量（供前端按钮级控制） */

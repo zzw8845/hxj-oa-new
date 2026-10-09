@@ -18,7 +18,7 @@ public class LoginResp {
     /** 当前登录用户（含 roleCodes、permCodes、deptId 等；⚠ 这些是登录时刻的快照，改完角色/部门要重新登录才生效） */
     private LoginUser user;
 
-    /** 可见菜单（permType=1 的权限点，平铺列表，前端按 parentCode 组树） */
+    /** 可见菜单（sys_permission 菜单树驱动：组点行=分组标题、页面项行=菜单项，平铺下发；前端按 parentCode 组树纯渲染，可见性由角色绑定决定） */
     private List<MenuItem> menus;
 
     /** true=管理员创建账号/重置口令后的首次登录，前端必须先强制改密（见 AuthService#changePassword） */
@@ -27,11 +27,11 @@ public class LoginResp {
     /** 菜单项 */
     @Data
     public static class MenuItem {
-        /** 菜单权限点编码，如 document:menu */
+        /** 组点行 = 权限点编码（document:menu 等，仅作分组标题）；页面项行 = 前端页面 key（work/approve 等），也即权限点编码本身 */
         private String code;
-        /** 菜单名称，如「单据中心」 */
+        /** 菜单名称，如「工作台」「单据中心」 */
         private String name;
-        /** 上级菜单编码，顶级为 null */
+        /** 页面项 = 所属组点编码；组点行 = null */
         private String parentCode;
         /** 排序号，小的在前 */
         private Integer sortNo;

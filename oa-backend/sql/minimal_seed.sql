@@ -73,12 +73,35 @@ INSERT INTO `sys_role` (`id`,`company_id`,`code`,`name`,`post_name`,`is_builtin`
 --    本身不产生任何审批结论（P3：审批决定权永不授予管理员）。
 --    它挂在 admin:menu 下而不是 todo:menu 下，是为了让"这是管理动作、不是日常审批动作"
 --    在角色配置界面上直接可见 —— 混在待办组里容易被顺手勾给业务角色。
+--
+--    【perm_type=1 的两层语义（2026-10-09 菜单可配化）】
+--    · 组点（parent_code=NULL，5 个 *:menu）：**纯目录节点**，只用来给权限集界面
+--      提供分组标题、给菜单项当父级 —— 不参与角色绑定，绑定与否不产生任何效果；
+--    · 菜单项（parent_code=组点 code，12 个）：**可绑定**。角色勾了哪个菜单项，
+--      该角色登录后侧边栏就显示哪个菜单（菜单可见性的唯一事实源，后端
+--      AuthService#loadMenus 直接查这里的绑定结果下发）。
+--      code = 前端页面 key（如 work / approve），前端据此路由与打图标。
+--    · home（首页）不入库：登录落地页人人可见，由 loadMenus 固定注入。
+--    迁移口径：旧「组点控入口」语义作废 —— 原来绑了组点的角色，其可见菜单 =
+--    该组点下全部菜单项（迁移脚本等价展开，见 sql/migration_20261009_menu_items.sql）。
 INSERT INTO `sys_permission` (`code`,`name`,`perm_type`,`parent_code`,`sort_no`) VALUES
 ('document:menu',           '单据中心',       1, NULL,              10),
 ('todo:menu',               '我的待办',       1, NULL,              20),
 ('ledger:menu',             '表单台账',       1, NULL,              30),
 ('dashboard:menu',          '数据看板',       1, NULL,              40),
 ('admin:menu',              '系统管理',       1, NULL,              90),
+('work',                    '工作台',         1, 'document:menu',   1),
+('forms',                   '全部表单',       1, 'document:menu',   2),
+('delegation',              '我的委托',       1, 'document:menu',   3),
+('approve',                 '待我审批',       1, 'todo:menu',       1),
+('archive',                 '台账档案',       1, 'ledger:menu',     1),
+('seal',                    '用印台账',       1, 'ledger:menu',     2),
+('risk',                    '风险预警',       1, 'ledger:menu',     3),
+('board',                   '工作看板',       1, 'dashboard:menu',  1),
+('permission',              '权限管理',       1, 'admin:menu',      1),
+('bizconfig',               '审批配置',       1, 'admin:menu',      2),
+('masterdata',              '主数据',         1, 'admin:menu',      3),
+('audit',                   '审计日志',       1, 'admin:menu',      4),
 ('document:create',         '发起单据',       2, 'document:menu',   11),
 ('document:view:self',      '查看本人单据',   3, 'document:menu',   12),
 ('document:view:dept',      '查看本部门单据', 3, 'document:menu',   13),
@@ -109,21 +132,24 @@ INSERT INTO `sys_permission` (`code`,`name`,`perm_type`,`parent_code`,`sort_no`)
 --    管理员排查问题时**看得见**单据，但动不了它。
 --    ⚠ 与 DocumentController 的 @RequirePerm("document:create") 门控是一对：
 --    只摘配置不补门控 = 账面收权（权限点拦不住请求）；只补门控不摘配置 = 账面合规。
+--    ⚠ 组点（perm_type=1 且 parent_code 为空）不参与绑定（纯目录，2026-10-09）：
+--    绑了也没有任何语义，绑上反而制造「绑了组点没绑菜单项」的歧义状态。
 INSERT INTO `role_permission` (`role_id`,`perm_code`)
 SELECT 1, `code` FROM `sys_permission`
 WHERE `deleted` = 0
+  AND NOT (`perm_type` = 1 AND `parent_code` IS NULL)
   AND `code` NOT IN ('document:create','document:approve','document:approve:leader',
                      'document:approve:accountant','document:approve:cashier',
                      'document:approve:seal','document:countersign','document:supplement');
 
--- 5b. AUDIT_ADMIN 只绑两个点：审计日志 + 它的父菜单
---     为什么连 admin:menu 一起给 —— 它是**菜单分组权限点**（perm_type=1，菜单可见性由
---     登录响应的 menus 驱动，前端菜单按它裁剪，2026-10-09 起有引用）；不给会让审计日志
---     成为孤儿子节点，且审计员登录后连「系统管理」组都不显示。
+-- 5b. AUDIT_ADMIN 只绑两个点：审计日志菜单项 + 它的页内操作点
+--     菜单可见性 = 绑定的**菜单项**（perm_type=1 且 parent_code 非空，2026-10-09 起）；
+--     组点 admin:menu 不再参与绑定（纯目录节点）—— 审计员登录后侧边栏显示
+--     「首页 + 系统管理 → 审计日志」，分组标题「系统管理」由 loadMenus 按其子项可见自动带出。
 --     ⚠ 绝不给 document:approve* / system:user / system:role / system:flow：
 --     审计员只**审阅**，既不产生审批结论、也不改变任何定义（三员分立的第一条）。
 INSERT INTO `role_permission` (`role_id`,`perm_code`)
-SELECT 2, `code` FROM `sys_permission` WHERE `code` IN ('admin:menu', 'system:audit');
+SELECT 2, `code` FROM `sys_permission` WHERE `code` IN ('system:audit', 'audit');
 
 -- 6. 数据范围
 --    ADMIN       = 全公司（缺这条会静默降级为 self，见开头说明）
@@ -153,9 +179,10 @@ INSERT INTO `user_role` (`user_id`,`role_id`) VALUES (1,1);
 
 -- =============================================================================
 -- 灌完后数据库状态（用于核对）
---   company=1  sys_user=1  sys_role=2  sys_permission=27  role_permission=21
+--   company=1  sys_user=1  sys_role=2  sys_permission=39  role_permission=28
 --   role_data_scope=2  role_admin_scope=2  user_role=1
---   （role_permission = 19 给 ADMIN（系统层+只读，见第 5 段）+ 2 给 AUDIT_ADMIN）
+--   （sys_permission = 5 组点 + 12 菜单项 + 22 操作点；
+--     role_permission = ADMIN 26（39 − 5 组点不绑 − 8 业务动作）+ AUDIT_ADMIN 2）
 --   department=0  post=0  sys_dict=0  document_type=0  form_template=0
 --   flow_config=0  document=0
 -- =============================================================================

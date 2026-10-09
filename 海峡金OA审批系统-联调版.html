@@ -31,7 +31,7 @@ body{background:linear-gradient(135deg,#f4faff 0,#edf7fe 45%,#f8fbff 100%);color
 @media(min-width:1001px){.el-main:has(>.hero)>.grid2{height:100%;align-self:stretch}.el-main:has(>.hero)>.grid2>.el-card:first-child{height:100%;display:flex;flex-direction:column}.el-main:has(>.hero)>.grid2>.el-card:first-child>.el-card__body{flex:1}.work-zones>.zone.stamp{grid-column:1/-1}}
 
 </style></head><body><div id="app">
-<el-container class="shell"><el-aside width="228px" class="aside"><div class="logo"><i>{{companyShortName.charAt(0)}}</i><div><b>{{companyShortName}}</b><span>OA 内控审批中心</span></div></div><el-menu :default-active="page" background-color="#172036" text-color="#aeb8cf" active-text-color="#fff" @select="page=$event"><el-menu-item index="home"><span class="mi">⌂</span>首页</el-menu-item><el-menu-item v-if="canMenu('document:menu')" index="work"><span class="mi">▦</span>工作台<el-badge :value="unreadCount" :max="99" :hidden="!unreadCount" class="menu-badge"></el-badge></el-menu-item><el-menu-item v-if="canMenu('dashboard:menu')" index="board"><span class="mi">▥</span>工作看板</el-menu-item><div class="menu-label">业务管理</div><el-menu-item v-if="canMenu('document:menu')" index="forms"><span class="mi">▤</span>全部表单</el-menu-item><el-menu-item v-if="canMenu('todo:menu')" index="approve"><span class="mi">✓</span>审批中心<el-badge :value="todos.length" :max="99" :hidden="!todos.length" class="menu-badge"></el-badge></el-menu-item><el-menu-item v-if="canMenu('ledger:menu')" index="archive"><span class="mi">≡</span>台账档案</el-menu-item><el-menu-item v-if="canMenu('ledger:menu')" index="seal"><span class="mi">▣</span>用印台账</el-menu-item><el-menu-item v-if="canMenu('document:menu')" index="delegation"><span class="mi">⇄</span>我的委托</el-menu-item><div class="menu-label">系统管理</div><el-menu-item index="permission" v-if="canMenu('admin:menu') && (can('system:user') || can('system:role') || can('system:dept'))"><span class="mi">♙</span>权限管理</el-menu-item><el-menu-item index="bizconfig" v-if="canMenu('admin:menu') && (can('system:flow') || can('system:form') || can('system:docType'))"><span class="mi">✎</span>审批配置</el-menu-item><el-menu-item v-if="canMenu('ledger:menu')" index="risk"><span class="mi">△</span>风险预警</el-menu-item><el-menu-item index="masterdata" v-if="canMenu('admin:menu') && (can('system:dept') || can('system:dict') || can('system:company'))"><span class="mi">⌗</span>主数据</el-menu-item><el-menu-item index="audit" v-if="canMenu('admin:menu') && can('system:audit')"><span class="mi">☰</span>审计日志</el-menu-item></el-menu><div class="aside-foot"><i></i>系统运行正常<span>{{syncTimeText ? '数据更新于 ' + syncTimeText : '数据加载中…'}}</span></div></el-aside>
+<el-container class="shell"><el-aside width="228px" class="aside"><div class="logo"><i>{{companyShortName.charAt(0)}}</i><div><b>{{companyShortName}}</b><span>OA 内控审批中心</span></div></div><el-menu :default-active="page" background-color="#172036" text-color="#aeb8cf" active-text-color="#fff" @select="page=$event"><template v-for="grp in menuGroups" :key="grp.key || '__top'"><div class="menu-label" v-if="grp.key">{{grp.key}}</div><el-menu-item v-for="m in grp.items" :key="m.code" :index="m.code"><span class="mi">{{menuIcon(m.code)}}</span>{{m.name}}<el-badge v-if="menuBadge(m.code)" :value="menuBadge(m.code)" :max="99" class="menu-badge"></el-badge></el-menu-item></template></el-menu><div class="aside-foot"><i></i>系统运行正常<span>{{syncTimeText ? '数据更新于 ' + syncTimeText : '数据加载中…'}}</span></div></el-aside>
 <el-container><el-header class="topbar"><div><h1>{{pageNames[page]}}</h1><el-breadcrumb separator="/"><el-breadcrumb-item>审批中心</el-breadcrumb-item><el-breadcrumb-item>{{pageNames[page]}}</el-breadcrumb-item></el-breadcrumb></div><div class="top-actions"><el-button circle>⌕</el-button><el-badge :value="unreadCount" :max="99" :hidden="!unreadCount" @click="openNotify" style="cursor:pointer"><el-button circle title="通知中心">♧</el-button></el-badge><el-tooltip content="修改密码" placement="bottom"><el-button circle @click="openPwd(false)">钥</el-button></el-tooltip><el-avatar shape="square">林</el-avatar><div class="who"><b>林安然</b><span>{{role}}</span></div></div></el-header><el-main>
 <template v-if="page==='home'"><section class="hero"><div><span>{{todayText}}</span><h2>{{greeting}}，{{me && me.realName ? me.realName : currentAccount}}</h2><p>今日有 <b>{{todoCount}} 项审批</b>待处理，{{riskOverview.overdue}} 项风险预警需要关注。</p><el-button type="primary" plain @click="openSubmit('员工报销')">＋ 发起报销</el-button><el-button class="glass" @click="openSubmit('日常付款')">＋ 付款申请</el-button></div><el-progress type="circle" :percentage="completionRate" color="#fff"><template #default><b class="percent">{{completionRate}}%</b><small>办结率</small></template></el-progress></section><div class="stats"><el-card v-for="s in stats" :key="s.name" shadow="never"><i :class="s.color">{{s.icon}}</i><div><span>{{s.name}}</span><b>{{s.value}}</b><small>{{s.note}}</small></div></el-card></div><div class="grid2"><el-card shadow="never"><template #header><div class="card-title"><div><b>待办审批</b><span>优先处理临近超时的申请</span></div><el-button link type="primary" @click="page='approve'">查看全部 →</el-button></div></template><div class="todo" v-for="t in homeTodos" :key="t.taskId" @click="openDetail({docId:t.documentId})"><i>{{(t.docTypeName||t.title||'单')[0]}}</i><div><b>{{t.title}}</b><span>{{t.applicantName}} · {{t.deptName}} · {{t.nodeName}}</span></div><strong>{{money(t.amount)}}<small>{{t.overdue ? '已超时' : '待处理'}}</small></strong></div><div class="todo-empty" v-if="!homeTodos.length">当前没有待你处理的单据</div></el-card><el-card shadow="never"><template #header><div class="card-title"><div><b>流程透明度</b><span>所有节点均可穿透查看前置资料</span></div><el-tag type="success">100% 留痕</el-tag></div></template><div class="transparency"><div class="shield">✓</div><h3>前置流程完整可见</h3><p>审批人可查看申请表、历史附件、全部前置节点意见和操作时间。</p><el-button type="primary" plain @click="page='approve'">进入审批中心</el-button></div></el-card></div></template>
 <template v-else-if="page==='work'"><div class="page-head"><div><h2>工作台</h2><p>按业务区域发起申请，常用单据一键提交</p></div></div><div class="work-zones"><el-card v-if="can('document:create')" shadow="never" class="zone daily"><template #header><div class="zone-title"><i>日</i><div><b>日常提交</b><span>个人日常费用与行政类申请</span></div><el-button type="primary" @click="openSubmit('员工报销')">新建报销</el-button></div></template><div class="quick-docs"><span v-if="!dailyQuick.length" class="quick-empty">还没有「日常」类的单据类型<br>请到 <b>审批配置</b> 新增</span><button v-for="q in dailyQuick" @click="quickSubmit(q)"><i>{{q[0]}}</i><b>{{q}}</b><span>快捷提交 →</span></button></div></el-card><el-card v-if="can('document:create')" shadow="never" class="zone business"><template #header><div class="zone-title"><i>业</i><div><b>业务单据提交</b><span>付款、供应商及经营业务申请</span></div><el-button type="primary" @click="openSubmit('日常付款')">新建付款</el-button></div></template><div class="quick-docs"><span v-if="!businessQuick.length" class="quick-empty">还没有「报销」类的单据类型<br>请到 <b>审批配置</b> 新增</span><button v-for="q in businessQuick" @click="quickSubmit(q)"><i>{{q[0]}}</i><b>{{q}}</b><span>快捷提交 →</span></button></div></el-card></div><el-card shadow="never"><template #header><div class="card-title"><div><b>我已发起的单据</b><span>点击查看全流程，或复制历史单据再次提交</span></div><el-input v-model="keyword" clearable placeholder="搜索单号或事项" style="width:260px" @input="onDocsKeywordInput" @clear="onDocsKeywordInput"></el-input></div></template><el-table :data="myDocuments" @row-click="openDetail" class="click-table" empty-text="你还没有发起过单据 —— 到「工作台」的快捷卡区开始第一笔申请"><el-table-column prop="id" label="单据编号" width="165"></el-table-column><el-table-column prop="title" label="申请事项" min-width="210"></el-table-column><el-table-column prop="type" label="类型" width="110"></el-table-column><el-table-column label="金额" width="130"><template #default="s">{{money(s.row.amount)}}</template></el-table-column><el-table-column prop="current" label="当前节点" width="130"></el-table-column><el-table-column label="状态" width="110"><template #default="s"><el-tag :type="tagType(s.row.status)">{{s.row.status}}</el-tag></template></el-table-column><el-table-column label="操作" width="180"><template #default="s"><el-button link type="primary" @click.stop="openDetail(s.row)">查看全流程</el-button><el-button link @click.stop="repeatSubmit(s.row)">再次提交</el-button></template></el-table-column></el-table><el-pagination style="margin-top:14px;display:flex;justify-content:flex-end" background layout="total, sizes, prev, pager, next" :total="myTotal" :current-page="myPage" :page-size="myPageSize" :page-sizes="[10,20,50]" @current-change="myPageChange" @size-change="mySizeChange"></el-pagination></el-card></template>
@@ -1119,11 +1119,36 @@ const nodeTemplateList = ref([]);       // 流程节点模板库（含各自的�
     const p = me.value && me.value.permCodes;
     return Array.isArray(p) && p.indexOf(code) >= 0;
   };
-  /* 菜单可见性：由后端返回的菜单权限点（permType=1）驱动，前端只管渲染。
-     home 是登录落地页不设权限；管理类菜单还要同时满足细粒度 can()（组点控入口、细点控页内）。
+  /* 菜单整体由后端 /api/auth/menus 下发（sys_permission 菜单树驱动）：
+     组点（parentCode=null，如 document:menu）= 分组标题；页面项（parentCode=组点）= 可点菜单；
+     home 首页后端固定注入，顶部展示。角色勾了哪个菜单项就显示哪个 —— 界面上直接可配。
      菜单来自登录时刻快照，改角色权限后须重新登录才刷新。 */
-  const menuCodes = ref([]);
-  const canMenu = function(code){ return menuCodes.value.indexOf(code) >= 0; };
+  const menuItems = ref([]);   /* 后端下发的菜单树平铺行：{code,name,parentCode,sortNo} */
+  const canMenu = function(code){ return menuItems.value.some(function(m){ return m.code === code; }); };
+  /* 侧边栏纯渲染：分组 = parentCode 为 null 且被其他行引用的行（组点）；
+     顶部项 = parentCode 为 null 且无子引用（home）。前端只保留图标映射与徽标挂点两份 UI 资产。 */
+  const menuGroups = computed(function(){
+    const list = (menuItems.value || []).slice().sort(function(a,b){ return (a.sortNo||0) - (b.sortNo||0); });
+    const referenced = {};
+    list.forEach(function(m){ if (m.parentCode) referenced[m.parentCode] = true; });
+    const buckets = [], map = {};
+    list.forEach(function(m){
+      if (!m.parentCode && referenced[m.code]) {          /* 组点 → 分组标题 */
+        map[m.code] = { key: m.name, items: [] };
+        buckets.push(map[m.code]);
+      }
+    });
+    list.forEach(function(m){
+      if (m.parentCode && map[m.parentCode]) map[m.parentCode].items.push(m);
+      else if (!m.parentCode && !referenced[m.code]) {    /* home 等顶级页面项 */
+        buckets.unshift({ key: '', items: [m] });
+      }
+    });
+    return buckets;
+  });
+  const MENU_ICONS = { home:'⌂', work:'▦', board:'▥', forms:'▤', approve:'✓', archive:'≡', seal:'▣', delegation:'⇄', permission:'♙', bizconfig:'✎', risk:'△', masterdata:'⌗', audit:'☰' };
+  const menuIcon = function(c){ return MENU_ICONS[c] || '□'; };
+  const menuBadge = function(c){ if (c === 'work') return unreadCount.value; if (c === 'approve') return todos.value.length; return null; };
   /* 权限不足的提示。
      为什么提示里不写 `system:dept` 这类权限点编码：客户（乃至实施）看不懂，
      "无主数据维护权限（system:dept）"这半句对他只是噪音。
@@ -1494,7 +1519,7 @@ const nodeTemplateList = ref([]);       // 流程节点模板库（含各自的�
       const r = await api.login(loginForm.account, loginForm.password);
       setToken(r.token);
       me.value = r.user;
-      menuCodes.value = (r.menus || []).map(function(m){ return m.code; });
+      menuItems.value = r.menus || [];
       currentAccount.value = loginForm.account;
       await afterLogin();
       ElementPlus.ElMessage.success('欢迎回来，' + (me.value.realName || ''));
@@ -1506,7 +1531,7 @@ const nodeTemplateList = ref([]);       // 流程节点模板库（含各自的�
     } finally { logging.value = false; }
   };
   const logout = function(){
-    setToken(''); me.value = null; menuCodes.value = []; documents.value = []; todos.value = [];
+    setToken(''); me.value = null; menuItems.value = []; documents.value = []; todos.value = [];
     loginError.value = ''; detailVisible.value = false;
   };
   /* 显式登出：先让服务端把**当前这一张** token 作废，再清本地。
@@ -3530,7 +3555,7 @@ const addBranch = function(row, ri, asDefault){
       try {
         me.value = await api.me();
         if (me.value && me.value.account){ currentAccount.value = me.value.account; loginForm.account = me.value.account; }
-        api.menus().then(function(list){ menuCodes.value = (list || []).map(function(m){ return m.code; }); }).catch(function(){ menuCodes.value = []; });
+        api.menus().then(function(list){ menuItems.value = list || []; }).catch(function(){ menuItems.value = []; });
         await afterLogin();
       } catch(e){
         setToken(''); me.value = null;
@@ -3661,7 +3686,7 @@ const addBranch = function(row, ri, asDefault){
     notifyVisible, notifyList, notifyTotal, notifyLoading, openNotify, markNotifyRead,
     markAllNotifyRead, changeNotifyPage,
     bizTypeOptions, docTypeOptions, sealTypeChoices,
-    riskOverview, riskStats, riskRows, refreshRisks, can, canMenu, exporting, exportLedger,
+    riskOverview, riskStats, riskRows, refreshRisks, can, canMenu, menuGroups, menuIcon, menuBadge, exporting, exportLedger,
     money, tagType, documentType, docTitle, docSubtitle, runQuery, openSubmit, quickSubmit, repeatSubmit,
     openStat, addPerson, openLink, chooseLink, editFlow, newFlow, saveFlow, editRole, newRole, saveRole,
     nodeRowTypeLabel, nodeRowChanged, moveNodeRow, removeNodeRow,

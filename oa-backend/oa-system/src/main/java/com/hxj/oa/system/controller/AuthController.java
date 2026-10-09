@@ -56,7 +56,7 @@ public class AuthController {
         return R.ok(null, "密码已修改");
     }
 
-    /** 当前用户拥有的菜单权限点（permType=1，平铺列表，前端按 parentCode 自行组树） */
+    /** 当前用户可见的菜单树（sys_permission 菜单树驱动：组点=分组标题、页面项=菜单，角色在权限管理界面可勾选；可见性已由后端算好，前端纯渲染） */
     @GetMapping("/menus")
     public R<List<LoginResp.MenuItem>> menus() {
         return R.ok(authService.loadMenus(UserContext.require().getUserId()));
