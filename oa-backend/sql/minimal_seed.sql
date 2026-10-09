@@ -117,8 +117,9 @@ WHERE `deleted` = 0
                      'document:approve:seal','document:countersign','document:supplement');
 
 -- 5b. AUDIT_ADMIN 只绑两个点：审计日志 + 它的父菜单
---     为什么连 admin:menu 一起给 —— 它是**菜单分组点**（perm_type=1，后端 0 引用），
---     只决定「系统管理」分组在角色配置树上是否成组；不给会让审计日志成为孤儿子节点。
+--     为什么连 admin:menu 一起给 —— 它是**菜单分组权限点**（perm_type=1，菜单可见性由
+--     登录响应的 menus 驱动，前端菜单按它裁剪，2026-10-09 起有引用）；不给会让审计日志
+--     成为孤儿子节点，且审计员登录后连「系统管理」组都不显示。
 --     ⚠ 绝不给 document:approve* / system:user / system:role / system:flow：
 --     审计员只**审阅**，既不产生审批结论、也不改变任何定义（三员分立的第一条）。
 INSERT INTO `role_permission` (`role_id`,`perm_code`)

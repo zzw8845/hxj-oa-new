@@ -225,10 +225,11 @@ def build_skeleton(tk, ns, n_top=2, n_sub=1, with_branch=True, threshold=20000):
     # 与其 document:view:self 一致 —— 之前一律 company，员工能看到全公司单据，自相矛盾）
     # + 出纳（办理，company：出纳要处理全公司付款单）
     role_map = {}
+    menus = ['document:menu', 'todo:menu', 'ledger:menu', 'dashboard:menu']  # 菜单可见性由后端 menus 驱动，业务角色给全部业务组
     for rc, perms, sc in (('HEAD', ['document:create', 'document:approve', 'todo:menu',
-                                    'document:view:company'], 'company'),
-                          ('EMP', ['document:create', 'document:view:self', 'todo:menu'], 'self'),
-                          ('CASH', ['document:approve', 'todo:menu'], 'company')):
+                                    'document:view:company'] + menus, 'company'),
+                          ('EMP', ['document:create', 'document:view:self'] + menus, 'self'),
+                          ('CASH', ['document:approve'] + menus, 'company')):
         st, r = call('POST', '/api/roles', token=tk, body={
             'name': '%s-%s' % (ns, rc), 'code': '%s_%s' % (ns, rc),
             'permCodes': perms, 'scopeType': sc, 'remark': '冷启动夹具'})
@@ -477,7 +478,8 @@ def build_common_pool(tk, ns='POOL'):
     # 否则该节点 auto_skip、分支单会静默办结，B1 的默认分支办结断言就测不到真人办理。
     st, r = call('POST', '/api/roles', token=tk, body={
         'name': '%s-CASHIER' % ns, 'code': 'CASHIER',
-        'permCodes': ['document:approve', 'todo:menu'], 'scopeType': 'company',
+        'permCodes': ['document:approve', 'todo:menu', 'document:menu', 'ledger:menu', 'dashboard:menu'],
+        'scopeType': 'company',
         'remark': '冷启动夹具（出纳节点模板命中内置角色 code）'})
     cash_role = (r.get('data') or {}).get('id')
     if cash_role:
