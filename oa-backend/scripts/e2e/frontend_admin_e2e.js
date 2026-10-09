@@ -472,21 +472,29 @@ async function loginViaForm(page, account, password) {
     adminScope.disabled === true && /收窄/.test(adminScope.hint || ''),
     'disabled=' + adminScope.disabled + '，说明=' + (adminScope.hint || '(无)').slice(0, 110));
 
-  console.log('\n=== 5. 流程管理 ===');
+  console.log('\n=== 5. 审批配置（2026-10-09 方案A：流程管理+表单模板+节点指派 三合一） ===');
   await closeDialogs(page);
-  // 菜单项文案就是「流程管理」（此前误写成「风险预警」，用户根本找不到入口）
-  await clickMenu(page, '流程管理');
+  await clickMenu(page, '审批配置');
   await sleep(1500);
+  // 默认页签是「表单模板」，流程断言前先切到「审批流程」页签
+  await page.evaluate(() => {
+    const t = [...document.querySelectorAll('.el-tabs__item')].find(x => x.textContent.trim() === '审批流程');
+    if (t) t.click();
+  });
+  await sleep(1200);
   const flowCards = await page.evaluate(() =>
-    [...document.querySelectorAll('.flow-config-grid .el-card')].map(c => c.textContent.replace(/\s+/g, ' '))
+    [...document.querySelectorAll('.bizcfg-flow')].map(c => c.textContent.replace(/\s+/g, ' '))
   );
-  check('流程卡片渲染', flowCards.length >= 3, '卡片数=' + flowCards.length);
-  check('流程卡片显示审批链路', flowCards.some(c => c.includes('→')),
-    (flowCards[0] || '').slice(0, 110));
+  check('流程卡片渲染（按单据类型过滤）', flowCards.length >= 1, '卡片数=' + flowCards.length);
+  const chainNodes = await page.evaluate(() =>
+    [...document.querySelectorAll('.bizcfg-chain-node')].map(c => c.textContent.replace(/\s+/g, ' ').trim())
+  );
+  check('流程卡片显示审批链路（节点 + 每节点审批人摘要）', chainNodes.length >= 3,
+    (chainNodes.slice(0, 3).join(' | ')).slice(0, 150));
 
-  // 菜单文案必须和页面标题一致，否则「要找流程管理」的人会找不到入口
+  // 菜单文案必须和页面标题一致，否则「要找审批配置」的人会找不到入口
   const flowTitle = await page.$eval('.topbar h1', e => e.textContent.trim()).catch(() => '');
-  check('流程管理页标题与菜单文案一致', flowTitle === '流程管理', 'topbar h1=' + flowTitle);
+  check('审批配置页标题与菜单文案一致', flowTitle === '审批配置', 'topbar h1=' + flowTitle);
 
   await clickButtonByText(page, '修改流程');
   await sleep(1200);
@@ -620,28 +628,30 @@ async function loginViaForm(page, account, password) {
 
   await page.screenshot({ path: SHOTS + '/admin-flow.png' });
 
-  /* ---- 节点指派界面（本次新增：接现成的 PUT /configs/{id}/assignees） ----
+  /* ---- 审批人页签（2026-10-09 方案A：原「节点指派」对话框内嵌为页签） ----
      只打开看渲染，**不保存** —— 改审批人的写路径由 verify_flow_assignee_admin 覆盖
      （那条脚本自己会还原演示库规则，UI 这里点保存会污染演示数据）。 ---- */
   await closeDialogs(page);
   const asgEntry = await page.evaluate(() => {
-    const b = [...document.querySelectorAll('.el-main button')].find(x => x.textContent.includes('节点指派'));
-    if (b) { b.click(); return true; }
+    const t = [...document.querySelectorAll('.el-tabs__item')].find(x => x.textContent.trim() === '审批人');
+    if (t) { t.click(); return true; }
     return false;
   });
-  await sleep(2200);
-  check('流程卡片有「节点指派」入口', asgEntry, '');
-  const asgDlg = await page.evaluate(() => {
-    const dlgs = [...document.querySelectorAll('.el-dialog')].filter(d => d.offsetParent !== null);
-    const dlg = dlgs.find(d => d.textContent.includes('节点指派'));
-    if (!dlg) return { open: false, blocks: 0, types: 0 };
+  await sleep(2500);
+  check('审批配置有「审批人」页签入口', asgEntry, '');
+  const asgPanel = await page.evaluate(() => {
+    /* el-tabs 不懒渲染：非当前页签的 pane 在 DOM 里但不可见，必须按可见过滤，
+       再用面板特征文案（alert 里的「审批人规则是运行时按节点查的」）锁定审批人 pane */
+    const panes = [...document.querySelectorAll('.el-tab-pane')].filter(p => p.offsetParent !== null);
+    const pane = panes.find(p => p.textContent.includes('审批人规则是运行时按节点查的'));
+    if (!pane) return { open: false, blocks: 0, types: 0 };
     return {
       open: true,
-      blocks: [...dlg.querySelectorAll('.el-table')].length,
-      types: [...dlg.querySelectorAll('.el-select')].length
+      blocks: [...pane.querySelectorAll('.el-table')].length,
+      types: [...pane.querySelectorAll('.el-select')].length
     };
   });
-  check('节点指派弹窗按节点列出规则编辑器', asgDlg.open && asgDlg.blocks >= 3, JSON.stringify(asgDlg));
+  check('审批人页签按节点列出规则编辑器（内嵌页签，不再弹窗）', asgPanel.open && asgPanel.blocks >= 3, JSON.stringify(asgPanel));
   await closeDialogs(page);
 
   console.log('\n=== 6. 用印台账与归还闭环（C4/D8 后：admin 无权 → 临时授权 DEPT_HEAD → linjl 跑闭环） ===');
@@ -910,12 +920,12 @@ async function loginViaForm(page, account, password) {
   check('待我审批页有「批量通过」按钮',
     approveCtl.headBtns.some(t => t.indexOf('批量通过') >= 0), approveCtl.headBtns.join('/'));
 
-  /* ---- 流程管理：超时升级入口（**不点**，它会全公司扫描） ---- */
-  await clickMenu(page, '流程管理');
+  /* ---- 风险预警：超时升级入口（2026-10-09 从流程管理页迁来，**不点**，它会全公司扫描） ---- */
+  await clickMenu(page, '风险预警');
   await sleep(1800);
-  const flowBtns = await page.$$eval('.page-head button', bs => bs.map(b => b.textContent.trim()));
-  check('流程管理页有「执行超时升级盘点」按钮',
-    flowBtns.some(t => t.indexOf('超时升级') >= 0), flowBtns.join('/'));
+  const riskHeadBtns = await page.$$eval('.page-head button', bs => bs.map(b => b.textContent.trim()));
+  check('风险预警页有「立即处理超时单据」按钮',
+    riskHeadBtns.some(t => t.indexOf('超时') >= 0), riskHeadBtns.join('/'));
 
   console.log('\n=== 7. 主数据 / 表单模板 / 审计日志（三块补齐的可视化界面） ===');
   await page.reload({ waitUntil: 'networkidle2' });
@@ -957,8 +967,8 @@ async function loginViaForm(page, account, password) {
     tabs: [...document.querySelectorAll('.el-tabs__item')].map(t => t.textContent.trim()),
     treeNodes: [...document.querySelectorAll('.el-tree .el-tree-node__content')].length
   }));
-  check('「主数据」页可进入（含 部门/岗位/数据字典/单据类型/公司信息 五个 tab）',
-    mdHead.h2 === '主数据' && mdHead.tabs.length === 5 && mdHead.tabs.includes('单据类型')
+  check('「主数据」页可进入（含 部门/岗位/数据字典/公司信息 四个 tab；单据类型已并入审批配置）',
+    mdHead.h2 === '主数据' && mdHead.tabs.length === 4 && !mdHead.tabs.includes('单据类型')
       && mdHead.tabs.includes('公司信息'), 'tabs=' + mdHead.tabs.join('/'));
   check('★ 部门树渲染出真实节点', mdHead.treeNodes > 0, '节点数=' + mdHead.treeNodes);
   check('主数据页有「新增一级部门」入口（admin 有 system:dept）',
@@ -995,11 +1005,11 @@ async function loginViaForm(page, account, password) {
   const dictRows = await page.$$eval('.el-main .el-table__body tbody tr', trs => trs.length);
   check('★ 数据字典 tab 有数据行', dictRows > 0, '行数=' + dictRows);
 
-  /* ---- 表单模板：版本列表（只看，不启用/不删除 —— 状态变更由接口用例覆盖） ---- */
-  await clickMenu(page, '表单模板');
+  /* ---- 审批配置 → 表单模板页签：版本列表（只看，不启用/不删除 —— 状态变更由接口用例覆盖） ---- */
+  await clickMenu(page, '审批配置');
   await sleep(2000);
   const tplHead = await page.evaluate(() => (document.querySelector('.el-main h2') || {}).textContent || '');
-  check('「表单模板」页可进入且自动选中第一个单据类型', tplHead.trim() === '表单模板', tplHead);
+  check('「审批配置」页可进入且默认页签为表单模板（自动选中第一个单据类型）', tplHead.trim() === '审批配置', tplHead);
   await sleep(600);
   const tplInfo = await page.evaluate(() => ({
     rows: [...document.querySelectorAll('.el-main .el-table__body tbody tr')].length,
