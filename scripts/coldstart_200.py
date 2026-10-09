@@ -221,15 +221,17 @@ def build_skeleton(tk, ns, n_top=2, n_sub=1, with_branch=True, threshold=20000):
     # 字典（付款方式）
     call('POST', '/api/dicts', token=tk,
          body={'dictType': ns + '_type', 'dictCode': 'GOODS', 'dictLabel': '物品采购'})
-    # 角色：负责人（审批）+ 员工（发单）+ 出纳（办理），数据范围 company
+    # 角色：负责人（审批，company 与其 document:view:company 一致）+ 员工（发单，self
+    # 与其 document:view:self 一致 —— 之前一律 company，员工能看到全公司单据，自相矛盾）
+    # + 出纳（办理，company：出纳要处理全公司付款单）
     role_map = {}
-    for rc, perms in (('HEAD', ['document:create', 'document:approve', 'todo:menu',
-                                'document:view:company']),
-                      ('EMP', ['document:create', 'document:view:self', 'todo:menu']),
-                      ('CASH', ['document:approve', 'todo:menu'])):
+    for rc, perms, sc in (('HEAD', ['document:create', 'document:approve', 'todo:menu',
+                                    'document:view:company'], 'company'),
+                          ('EMP', ['document:create', 'document:view:self', 'todo:menu'], 'self'),
+                          ('CASH', ['document:approve', 'todo:menu'], 'company')):
         st, r = call('POST', '/api/roles', token=tk, body={
             'name': '%s-%s' % (ns, rc), 'code': '%s_%s' % (ns, rc),
-            'permCodes': perms, 'scopeType': 'company', 'remark': '冷启动夹具'})
+            'permCodes': perms, 'scopeType': sc, 'remark': '冷启动夹具'})
         d = (r.get('data') or {})
         if st == 200 and d.get('id'):
             role_map[rc] = d['id']
