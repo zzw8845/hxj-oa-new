@@ -30,7 +30,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
    为什么要把这个数写死在代码里：本项目出过一次「假绿灯」—— 上游某条断言依赖的接口被回退后
    抛错中断，导致其后 16 条断言（含整条审计留痕链路）**从未执行**，而末行照样打印
    "85/85 通过"。有了这个数，任何"少跑了"都会立刻变成红灯，而不是无声无息。 */
-const EXPECTED_TOTAL = 107;
+const EXPECTED_TOTAL = 108;
 
 const results = [];
 function check(name, ok, extra) {
@@ -628,30 +628,32 @@ async function loginViaForm(page, account, password) {
 
   await page.screenshot({ path: SHOTS + '/admin-flow.png' });
 
-  /* ---- 审批人页签（2026-10-09 方案A：原「节点指派」对话框内嵌为页签） ----
+  /* ---- 审批人内嵌编辑器（2026-10-09 二次收敛：对齐钉钉，点流程节点卡直接展开，无独立页签） ----
      只打开看渲染，**不保存** —— 改审批人的写路径由 verify_flow_assignee_admin 覆盖
      （那条脚本自己会还原演示库规则，UI 这里点保存会污染演示数据）。 ---- */
   await closeDialogs(page);
   const asgEntry = await page.evaluate(() => {
-    const t = [...document.querySelectorAll('.el-tabs__item')].find(x => x.textContent.trim() === '审批人');
-    if (t) { t.click(); return true; }
+    const node = [...document.querySelectorAll('.bizcfg-chain-node')]
+      .filter(e => e.offsetParent !== null)
+      .find(e => !e.className.includes('is-static'));
+    if (node) { node.click(); return true; }
     return false;
   });
   await sleep(2500);
-  check('审批配置有「审批人」页签入口', asgEntry, '');
+  check('点流程节点卡可展开审批人编辑器', asgEntry, '');
   const asgPanel = await page.evaluate(() => {
-    /* el-tabs 不懒渲染：非当前页签的 pane 在 DOM 里但不可见，必须按可见过滤，
-       再用面板特征文案（alert 里的「审批人规则是运行时按节点查的」）锁定审批人 pane */
-    const panes = [...document.querySelectorAll('.el-tab-pane')].filter(p => p.offsetParent !== null);
-    const pane = panes.find(p => p.textContent.includes('审批人规则是运行时按节点查的'));
-    if (!pane) return { open: false, blocks: 0, types: 0 };
+    const editor = [...document.querySelectorAll('.bizcfg-node-editor')].find(e => e.offsetParent !== null);
+    if (!editor) return { open: false, blocks: 0, types: 0 };
     return {
       open: true,
-      blocks: [...pane.querySelectorAll('.el-table')].length,
-      types: [...pane.querySelectorAll('.el-select')].length
+      blocks: [...editor.querySelectorAll('.el-table')].length,
+      types: [...editor.querySelectorAll('.el-select')].length
     };
   });
-  check('审批人页签按节点列出规则编辑器（内嵌页签，不再弹窗）', asgPanel.open && asgPanel.blocks >= 3, JSON.stringify(asgPanel));
+  check('审批人编辑器内嵌在流程块里且按节点列出规则（不再弹窗/页签）', asgPanel.open && asgPanel.blocks >= 3, JSON.stringify(asgPanel));
+  const noAsgTab = await page.evaluate(() =>
+    ![...document.querySelectorAll('.el-tabs__item')].some(x => x.textContent.trim() === '审批人'));
+  check('独立「审批人」页签已移除（钉钉式节点即配置）', noAsgTab, '');
   await closeDialogs(page);
 
   console.log('\n=== 6. 用印台账与归还闭环（C4/D8 后：admin 无权 → 临时授权 DEPT_HEAD → linjl 跑闭环） ===');
