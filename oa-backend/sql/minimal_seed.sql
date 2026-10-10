@@ -58,7 +58,7 @@ INSERT INTO `sys_user` (`id`,`company_id`,`job_no`,`account`,`password`,`real_na
 -- 3. 内置角色（产品自带，is_builtin=1）
 --    ADMIN —— 超级管理员，绑全部权限点（见第 5 段）。
 --    ⚠ 它不是「业务角色」。业务角色（含审计等专项角色）由 admin 在界面上新建。
---    注：审计职能没有独立内置角色 —— 审计日志的操作点 system:audit 与菜单项 audit
+--    注：审计职能没有独立内置角色 —— 审计日志的操作点 system:audit 与菜单项 admin:audit
 --    都在权限点全量里，客户想要专职审计岗时，界面建角色勾上这两个点即可。
 INSERT INTO `sys_role` (`id`,`company_id`,`code`,`name`,`post_name`,`is_builtin`,`remark`) VALUES
 (1,1,'ADMIN','超级管理员','系统管理员',1,'拥有全部权限');
@@ -69,7 +69,9 @@ INSERT INTO `sys_role` (`id`,`company_id`,`code`,`name`,`post_name`,`is_builtin`
 --      只用来给权限集界面提供一级分组、给菜单项当父级 —— 不参与角色绑定；
 --    · 菜单项（perm_type=1，parent_code=组点，12 个）：**可绑定**。角色勾了哪个菜单项，
 --      该角色登录后侧边栏就显示哪个菜单（可见性唯一事实源，AuthService#loadMenus
---      直接查绑定结果下发）。code = 前端页面 key（如 work / approve）。
+--      直接查绑定结果下发）。编码全冒号统一（2026-10-10 对齐若依）：菜单项 =
+--      模块:页面（document:work / admin:audit），操作点 = 模块:动作（document:create，
+--      可三级 document:approve:cashier）；前端在菜单边界把 code 映射到自己的页面路由。
 --      home（首页）不入库：登录落地页人人可见，由 loadMenus 固定注入。
 --    · 操作点（perm_type=2/3，22 个）：**可绑定**，parent_code = 所属**菜单项**
 --      （不是组点）—— 每个操作点归到它实际被使用的页面下，权限集界面按
@@ -82,44 +84,44 @@ INSERT INTO `sys_permission` (`code`,`name`,`perm_type`,`parent_code`,`sort_no`)
 ('ledger:menu',             '表单台账',       1, NULL,              30),
 ('dashboard:menu',          '数据看板',       1, NULL,              40),
 ('admin:menu',              '系统管理',       1, NULL,              90),
-('work',                    '工作台',         1, 'document:menu',   1),
-('forms',                   '全部表单',       1, 'document:menu',   2),
-('delegation',              '我的委托',       1, 'document:menu',   3),
-('approve',                 '待我审批',       1, 'todo:menu',       1),
-('archive',                 '台账档案',       1, 'ledger:menu',     1),
-('seal',                    '用印台账',       1, 'ledger:menu',     2),
-('risk',                    '风险预警',       1, 'ledger:menu',     3),
-('board',                   '工作看板',       1, 'dashboard:menu',  1),
-('permission',              '权限管理',       1, 'admin:menu',      1),
-('bizconfig',               '审批配置',       1, 'admin:menu',      2),
-('masterdata',              '主数据',         1, 'admin:menu',      3),
-('audit',                   '审计日志',       1, 'admin:menu',      4),
+('document:work',           '工作台',         1, 'document:menu',   1),
+('document:forms',          '全部表单',       1, 'document:menu',   2),
+('document:delegation',     '我的委托',       1, 'document:menu',   3),
+('todo:approve',            '待我审批',       1, 'todo:menu',       1),
+('ledger:archive',          '台账档案',       1, 'ledger:menu',     1),
+('ledger:seal',             '用印台账',       1, 'ledger:menu',     2),
+('ledger:risk',             '风险预警',       1, 'ledger:menu',     3),
+('dashboard:board',         '工作看板',       1, 'dashboard:menu',  1),
+('admin:permission',        '权限管理',       1, 'admin:menu',      1),
+('admin:bizconfig',         '审批配置',       1, 'admin:menu',      2),
+('admin:masterdata',        '主数据',         1, 'admin:menu',      3),
+('admin:audit',             '审计日志',       1, 'admin:menu',      4),
 -- 单据中心 → 工作台/全部表单
-('document:create',         '发起单据',       2, 'work',            1),
-('document:view:self',      '查看本人单据',   3, 'forms',           1),
-('document:view:dept',      '查看本部门单据', 3, 'forms',           2),
-('document:view:company',   '查看全公司单据', 3, 'forms',           3),
+('document:create',         '发起单据',       2, 'document:work',   1),
+('document:view:self',      '查看本人单据',   3, 'document:forms',  1),
+('document:view:dept',      '查看本部门单据', 3, 'document:forms',  2),
+('document:view:company',   '查看全公司单据', 3, 'document:forms',  3),
 -- 表单台账 → 台账档案/风险预警
-('document:export',         '导出台账',       2, 'archive',         1),
-('flow:intervene:transfer', '转办（流程干预）', 2, 'risk',           1),
+('document:export',         '导出台账',       2, 'ledger:archive',  1),
+('flow:intervene:transfer', '转办（流程干预）', 2, 'ledger:risk',   1),
 -- 我的待办 → 待我审批
-('document:approve',        '审批单据',       3, 'approve',         1),
-('document:approve:leader', '领导审批',       3, 'approve',         2),
-('document:approve:accountant','会计审批',     3, 'approve',        3),
-('document:approve:cashier','出纳付款办理',   3, 'approve',         4),
-('document:approve:seal',   '用印办理',       3, 'approve',         5),
-('document:supplement',     '要求补充材料',   2, 'approve',         6),
-('document:countersign',    '加签',           2, 'approve',         7),
+('document:approve',        '审批单据',       3, 'todo:approve',    1),
+('document:approve:leader', '领导审批',       3, 'todo:approve',    2),
+('document:approve:accountant','会计审批',     3, 'todo:approve',   3),
+('document:approve:cashier','出纳付款办理',   3, 'todo:approve',    4),
+('document:approve:seal',   '用印办理',       3, 'todo:approve',    5),
+('document:supplement',     '要求补充材料',   2, 'todo:approve',    6),
+('document:countersign',    '加签',           2, 'todo:approve',    7),
 -- 系统管理 → 权限管理/审批配置/主数据/审计日志
-('system:user',             '用户管理',       2, 'permission',      1),
-('system:role',             '角色管理',       2, 'permission',      2),
-('system:dept',             '部门管理',       2, 'permission',      3),
-('system:flow',             '流程配置',       2, 'bizconfig',       1),
-('system:form',             '表单配置',       2, 'bizconfig',       2),
-('system:docType',          '单据类型管理',   2, 'bizconfig',       3),
-('system:dict',             '字典管理',       2, 'masterdata',      1),
-('system:company',          '公司信息管理',   2, 'masterdata',      2),
-('system:audit',            '审计日志查看',   2, 'audit',           1);
+('system:user',             '用户管理',       2, 'admin:permission', 1),
+('system:role',             '角色管理',       2, 'admin:permission', 2),
+('system:dept',             '部门管理',       2, 'admin:permission', 3),
+('system:flow',             '流程配置',       2, 'admin:bizconfig',  1),
+('system:form',             '表单配置',       2, 'admin:bizconfig',  2),
+('system:docType',          '单据类型管理',   2, 'admin:bizconfig',  3),
+('system:dict',             '字典管理',       2, 'admin:masterdata', 1),
+('system:company',          '公司信息管理',   2, 'admin:masterdata', 2),
+('system:audit',            '审计日志查看',   2, 'admin:audit',      1);
 
 -- 5. ADMIN 角色绑定权限点 —— **系统层 + 只读**，不含业务动作（C4/D8 出口 B，2026-09-28）
 --    管理员是纯管理账号：不发起、不审批任何单据（P3：审批决定权永不给管理员）。

@@ -95,8 +95,9 @@ def build_round_fixtures(tk, ns, with_branch):
     # 第一轮起的名会一直留在名上 —— R02 的出纳在界面上就"串号"成了 R01-出纳。
     st, r = cs.call('POST', '/api/roles', token=tk, body={
         'name': '出纳付款审批（回归夹具）', 'code': 'CASHIER',
-        'permCodes': ['document:approve', 'work', 'forms', 'delegation', 'approve',
-                      'archive', 'seal', 'risk', 'board'],
+        'permCodes': ['document:approve', 'document:work', 'document:forms',
+                      'document:delegation', 'todo:approve', 'ledger:archive',
+                      'ledger:seal', 'ledger:risk', 'dashboard:board'],
         'scopeType': 'company',
         'remark': '多轮回归夹具'})
     cash_role = (r.get('data') or {}).get('id')

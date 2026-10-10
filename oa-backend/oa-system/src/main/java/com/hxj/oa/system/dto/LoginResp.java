@@ -27,7 +27,7 @@ public class LoginResp {
     /** 菜单项 */
     @Data
     public static class MenuItem {
-        /** 组点行 = 权限点编码（document:menu 等，仅作分组标题）；页面项行 = 前端页面 key（work/approve 等），也即权限点编码本身 */
+        /** 组点行 = 权限点编码（document:menu 等，仅作分组标题）；页面项行 = 菜单项编码（全冒号：模块:页面，如 document:work / admin:audit），前端自映射到页面路由 */
         private String code;
         /** 菜单名称，如「工作台」「单据中心」 */
         private String name;
