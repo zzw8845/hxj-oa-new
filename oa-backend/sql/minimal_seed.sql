@@ -116,6 +116,7 @@ INSERT INTO `sys_permission` (`code`,`name`,`perm_type`,`parent_code`,`sort_no`)
 ('system:user',             '用户管理',       2, 'admin:permission', 1),
 ('system:role',             '角色管理',       2, 'admin:permission', 2),
 ('system:dept',             '部门管理',       2, 'admin:permission', 3),
+('system:perm',             '权限点管理',     2, 'admin:permission', 4),
 ('system:flow',             '流程配置',       2, 'admin:bizconfig',  1),
 ('system:form',             '表单配置',       2, 'admin:bizconfig',  2),
 ('system:docType',          '单据类型管理',   2, 'admin:bizconfig',  3),
@@ -160,10 +161,10 @@ INSERT INTO `user_role` (`user_id`,`role_id`) VALUES (1,1);
 
 -- =============================================================================
 -- 灌完后数据库状态（用于核对）
---   company=1  sys_user=1  sys_role=1  sys_permission=39  role_permission=26
+--   company=1  sys_user=1  sys_role=1  sys_permission=40  role_permission=27
 --   role_data_scope=1  role_admin_scope=1  user_role=1
---   （sys_permission = 5 组点 + 12 菜单项 + 22 操作点；
---     role_permission = ADMIN 26（39 − 5 组点不绑 − 8 业务动作））
+--   （sys_permission = 5 组点 + 12 菜单项 + 23 操作点；
+--     role_permission = ADMIN 27（40 − 5 组点不绑 − 8 业务动作））
 --   department=0  post=0  sys_dict=0  document_type=0  form_template=0
 --   flow_config=0  document=0
 -- =============================================================================

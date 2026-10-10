@@ -170,9 +170,10 @@ def rebuild_db():
 
 
 SEED_BASELINE = [('company', '1'), ('sys_user', '1'), ('sys_role', '1'),
-                 # 权限终态（2026-10-10 全冒号统一 + 删 AUDIT_ADMIN 后）：
-                 # 39 权限点 = 5 组点 + 12 菜单项 + 22 操作点；26 绑定 = ADMIN 39 − 5 组点不绑 − 8 业务动作
-                 ('sys_permission', '39'), ('role_permission', '26'),
+                 # 权限终态（2026-10-10 权限点管理功能后）：
+                 # 40 权限点 = 5 组点 + 12 菜单项 + 23 操作点（新增 system:perm 权限点管理）；
+                 # 27 绑定 = ADMIN 40 − 5 组点不绑 − 8 业务动作
+                 ('sys_permission', '40'), ('role_permission', '27'),
                  ('role_data_scope', '1'), ('role_admin_scope', '1'), ('user_role', '1'),
                  # 业务零种子表（minimal_seed.sql 尾注声明）。⚠ department=0 这条是真实教训：
                  # DROP 反引号坑曾让旧库残留 W01/POOL 部门，而 8 表基线恰好全过 → 脏库静默通过。
@@ -414,7 +415,7 @@ def round_A(i):
     check('A%02d-2 ★ P1 幂等：第二遍也不报错' % i, rc2 == 0, 'rc=%s' % rc2)
     check('A%02d-3 种子灌入成功' % i, rcs == 0, 'rc=%s' % rcs)
     ok, detail = seed_baseline_ok()
-    check('A%02d-4 种子 8 表基线（权限终态 39/26）' % i, ok, detail)
+    check('A%02d-4 种子 8 表基线（权限终态 40/27）' % i, ok, detail)
     try:
         proc, secs = start_backend()
     except RuntimeError as e:
@@ -430,8 +431,8 @@ def round_A(i):
           '实际 %s' % me.get('dataScope'))
     check('A%02d-8 管理范围=ALL（坑④不复发）' % i, me.get('adminScope') == 'ALL',
           '实际 %s' % me.get('adminScope'))
-    check('A%02d-9 权限点快照=26（菜单可配化+纯管理：12 菜单项+14 操作点）' % i,
-          len(me.get('permCodes') or []) == 26, '实际 %d' % len(me.get('permCodes') or []))
+    check('A%02d-9 权限点快照=27（纯管理：12 菜单项+15 操作点，含 system:perm）' % i,
+          len(me.get('permCodes') or []) == 27, '实际 %d' % len(me.get('permCodes') or []))
     shape = i % 4
     n_top, n_sub = [(1, 0), (2, 1), (3, 1), (2, 2)][shape]
     ns = 'W%02d' % i
