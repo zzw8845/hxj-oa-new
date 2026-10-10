@@ -224,6 +224,7 @@ CREATE TABLE IF NOT EXISTS `sys_permission` (
   `name`        VARCHAR(64)  NOT NULL                   COMMENT '权限点名称，如 查看全部表单',
   `perm_type`   TINYINT      NOT NULL DEFAULT 3         COMMENT '类型 1菜单(组点+页面项,可否绑定看parent_code) 2操作-写 3操作-查询/审批',
   `parent_code` VARCHAR(128) NULL                       COMMENT '父权限点编码（菜单树用）',
+  `component`   VARCHAR(64)  NULL                       COMMENT '前端页面标识（仅菜单项有值）：前端据此挂载页面组件，加一行=点亮一个已有页面',
   `sort_no`     INT          NOT NULL DEFAULT 0         COMMENT '排序号',
   `created_at`  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `updated_at`  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',

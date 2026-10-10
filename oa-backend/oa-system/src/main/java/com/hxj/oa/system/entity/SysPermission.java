@@ -19,6 +19,8 @@ public class SysPermission extends BaseEntity {
     private Integer permType;
     /** 父权限点编码，用于构建菜单树 */
     private String parentCode;
+    /** 前端页面标识（仅菜单项有值）：前端据此挂载页面组件——「加一行=点亮一个已有页面」；页面代码本身仍随前端发版 */
+    private String component;
     /** 同级排序号 */
     private Integer sortNo;
 }

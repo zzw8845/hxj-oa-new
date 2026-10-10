@@ -33,6 +33,8 @@ public class LoginResp {
         private String name;
         /** 页面项 = 所属组点编码；组点行 = null */
         private String parentCode;
+        /** 前端页面标识（页面项才有值）：前端据此挂载页面组件（动态路由），如 work / forms */
+        private String component;
         /** 排序号，小的在前 */
         private Integer sortNo;
     }

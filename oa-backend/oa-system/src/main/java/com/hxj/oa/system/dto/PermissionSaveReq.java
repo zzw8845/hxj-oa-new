@@ -43,6 +43,15 @@ public class PermissionSaveReq {
     @Size(max = 128, message = "父级编码不能超过 128 字")
     private String parentCode;
 
+    /**
+     * 前端页面标识（仅菜单项必填，如 work）：前端据此挂载页面组件，「加一行=点亮一个已有页面」。
+     * 页面代码本身随前端发版——这里配的是门牌，造不出门牌后面的房间（与若依 component 字段同义）。
+     */
+    @Size(max = 64, message = "页面标识不能超过 64 字")
+    @Pattern(regexp = "^$|^[a-z][a-z0-9]*$",
+            message = "页面标识须为小写字母开头的标识符，如 work / forms")
+    private String component;
+
     /** 同级排序号，越小越靠前 */
     @Min(value = 0, message = "排序号不能为负")
     private Integer sortNo;

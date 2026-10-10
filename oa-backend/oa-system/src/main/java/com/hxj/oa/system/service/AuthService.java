@@ -267,7 +267,10 @@ public class AuthService {
     }
 
     private static LoginResp.MenuItem toMenuItem(SysPermission p) {
-        return toMenuItem(p.getCode(), p.getName(), p.getParentCode(), p.getSortNo() == null ? 0 : p.getSortNo());
+        LoginResp.MenuItem m = toMenuItem(p.getCode(), p.getName(), p.getParentCode(),
+                p.getSortNo() == null ? 0 : p.getSortNo());
+        m.setComponent(p.getComponent());
+        return m;
     }
 
     private static LoginResp.MenuItem toMenuItem(String code, String name, String parentCode, int sortNo) {
