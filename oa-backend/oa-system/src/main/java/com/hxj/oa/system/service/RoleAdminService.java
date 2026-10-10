@@ -348,7 +348,15 @@ public class RoleAdminService {
         }
     }
 
-    /** 全量覆盖权限点；空列表 = 收回该角色全部权限 */
+    /**
+     * 全量覆盖权限点；空列表 = 收回该角色全部权限。
+     *
+     * <p>两层合法性校验（新建/编辑/配权限三个入口共用本方法，守卫只此一份）：
+     * ① 编码必须存在于 sys_permission —— 库里没有的编码写进去等于永不生效的"假权限"；
+     * ② 组点（perm_type=1 且无父级，5 个 *:menu）不参与绑定 —— 它是纯目录节点，
+     *    只给权限集界面当分组标题、给 loadMenus 当分组数据，绑了没有任何语义，
+     *    只会制造「绑了组点没绑菜单项」的歧义状态（与 minimal_seed.sql「组点不绑」口径配对）。
+     */
     private void overwritePermissions(Long roleId, List<String> permCodes) {
         rolePermissionMapper.physicalDeleteByRoleId(roleId);
         if (permCodes == null || permCodes.isEmpty()) {
@@ -359,13 +367,24 @@ public class RoleAdminService {
                 .map(String::trim)
                 .distinct()
                 .toList();
-        // 校验合法性：库里没有的编码写进去，等于给了一个永远不会生效的"假权限"
-        Set<String> known = permissionMapper.selectList(null).stream()
+        List<SysPermission> all = permissionMapper.selectList(null);
+        // 校验①：库里没有的编码 = 假权限
+        Set<String> known = all.stream()
                 .map(SysPermission::getCode)
                 .collect(Collectors.toSet());
         List<String> unknown = distinct.stream().filter(c -> !known.contains(c)).toList();
         if (!unknown.isEmpty()) {
             throw BizException.of("以下权限点不存在：%s", String.join("、", unknown));
+        }
+        // 校验②：组点是纯目录节点，不参与绑定（界面本就不提供组点勾选，这里拦直调 API 的口子）
+        Set<String> groupCodes = all.stream()
+                .filter(p -> Integer.valueOf(1).equals(p.getPermType())
+                        && !StringUtils.hasText(p.getParentCode()))
+                .map(SysPermission::getCode)
+                .collect(Collectors.toSet());
+        List<String> groups = distinct.stream().filter(groupCodes::contains).toList();
+        if (!groups.isEmpty()) {
+            throw BizException.of("组点（一级目录）不参与绑定，请勾选具体菜单项：%s", String.join("、", groups));
         }
         Long operator = UserContext.currentUserId();
         for (String code : distinct) {
